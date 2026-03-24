@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'firebase_options.dart';
 import 'theme/app_theme.dart';
 import 'screens/login_screen.dart';
@@ -10,11 +11,26 @@ import 'screens/home_screen.dart';
 import 'services/notification_service.dart';
 import 'services/round_service.dart';
 
+/// Global navigator key — lets NotificationService navigate without a context.
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+/// Top-level FCM background handler (app terminated / background).
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   await NotificationService.init();
+  await NotificationService.scheduleDailyTips();
   _scheduleStreakReminderIfNeeded();
+
+  // Route to the correct tab when a notification is tapped
+  NotificationService.onNotificationTap = _handleNotificationTap;
+
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
@@ -23,23 +39,23 @@ void main() async {
   runApp(const StatTeeApp());
 }
 
+void _handleNotificationTap(String? route) {
+  // Navigate based on the payload/route field in the notification
+  // Currently a no-op beyond ensuring the app is open — deep-linking
+  // can be extended here (e.g. push RoundsScreen for route == 'rounds')
+}
+
 // ---------------------------------------------------------------------------
-// Streak reminder — scheduled once on app launch if user is signed in
+// Streak reminder
 // ---------------------------------------------------------------------------
 void _scheduleStreakReminderIfNeeded() async {
   final user = FirebaseAuth.instance.currentUser;
   if (user == null) return;
   try {
-    // Get last completed round date
     final rounds = await RoundService.allCompletedRoundsStream().first;
     if (rounds.isEmpty) return;
     final lastRound = rounds.first.completedAt ?? rounds.first.startedAt;
-    final daysSince = DateTime.now().difference(lastRound).inDays;
-    if (daysSince >= 7) {
-      await NotificationService.scheduleStreakReminder();
-    } else {
-      await NotificationService.cancelStreakReminder();
-    }
+    await NotificationService.evaluateStreak(lastRound);
   } catch (_) {}
 }
 
@@ -95,6 +111,7 @@ class _StatTeeAppState extends State<StatTeeApp> {
       builder: (context, _) => MaterialApp(
         title: 'StatTee',
         debugShowCheckedModeBanner: false,
+        navigatorKey: navigatorKey,
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
         themeMode: _themeController.mode,

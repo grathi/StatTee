@@ -236,6 +236,22 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
                             ),
                           ],
                         ]),
+                        if (round.weather != null) ...[
+                          const SizedBox(height: 4),
+                          Row(children: [
+                            Icon(Icons.thermostat_rounded,
+                                color: Colors.white.withValues(alpha: 0.6),
+                                size: label),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${round.weather!.tempF.round()}°F · ${round.weather!.condition} · ${round.weather!.windMph.round()} mph ${round.weather!.windDir}',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.7),
+                                fontSize: label * 0.9,
+                              ),
+                            ),
+                          ]),
+                        ],
                       ],
                     ),
                   ),

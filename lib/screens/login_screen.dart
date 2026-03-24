@@ -65,6 +65,257 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
+  Future<void> _showForgotPassword() async {
+    final c = AppColors.of(context);
+    final emailCtrl = TextEditingController(text: _emailController.text.trim());
+    final formKey = GlobalKey<FormState>();
+    bool sending = false;
+    bool sent = false;
+    String? error;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(sheetCtx).viewInsets.bottom,
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: c.sheetBg,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                  border: Border(top: BorderSide(color: c.cardBorder)),
+                ),
+                padding: EdgeInsets.fromLTRB(_cardPad, 20, _cardPad, _cardPad + 8),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Handle
+                    Center(
+                      child: Container(
+                        width: 36, height: 4,
+                        decoration: BoxDecoration(
+                          color: c.divider,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: _fieldSpacing * 1.2),
+                    // Icon + title
+                    Row(
+                      children: [
+                        Container(
+                          width: 44, height: 44,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: c.accentBg,
+                            border: Border.all(color: c.accentBorder),
+                          ),
+                          child: Icon(Icons.lock_reset_rounded, color: c.accent, size: 22),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Reset Password',
+                                style: TextStyle(fontFamily: 'Nunito',
+                                    color: c.primaryText,
+                                    fontSize: _headingSize * 0.88,
+                                    fontWeight: FontWeight.w700)),
+                            Text("We'll send a reset link to your email",
+                                style: TextStyle(color: c.secondaryText, fontSize: _bodySize * 0.85)),
+                          ],
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: _fieldSpacing * 1.4),
+                    if (!sent) ...[
+                      Form(
+                        key: formKey,
+                        child: TextFormField(
+                          controller: emailCtrl,
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.done,
+                          style: TextStyle(color: c.fieldText, fontSize: _bodySize),
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          onFieldSubmitted: (_) async {
+                            if (!formKey.currentState!.validate() || sending) return;
+                            setSheetState(() { sending = true; error = null; });
+                            try {
+                              await _authService.sendPasswordResetEmail(emailCtrl.text.trim());
+                              setSheetState(() { sent = true; sending = false; });
+                            } on FirebaseAuthException catch (e) {
+                              setSheetState(() {
+                                sending = false;
+                                error = e.code == 'user-not-found'
+                                    ? 'No account found with this email.'
+                                    : e.code == 'invalid-email'
+                                        ? 'Please enter a valid email.'
+                                        : 'Something went wrong. Try again.';
+                              });
+                            }
+                          },
+                          validator: (v) {
+                            if (v == null || v.isEmpty) return 'Enter your email';
+                            if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) return 'Enter a valid email';
+                            return null;
+                          },
+                          decoration: InputDecoration(
+                            labelText: 'Email address',
+                            labelStyle: TextStyle(color: c.fieldLabel, fontSize: _bodySize * 0.9),
+                            prefixIcon: Icon(Icons.email_outlined, color: c.fieldIcon, size: _bodySize * 1.3),
+                            filled: true,
+                            fillColor: c.fieldBg,
+                            errorStyle: const TextStyle(color: Color(0xFFFF6B6B), fontSize: 12),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(color: c.fieldBorder),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(color: c.accent, width: 1.5),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: const BorderSide(color: Color(0xFFFF6B6B)),
+                            ),
+                            focusedErrorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: const BorderSide(color: Color(0xFFFF6B6B), width: 1.5),
+                            ),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: (_buttonHeight * 0.28).clamp(12.0, 18.0),
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (error != null) ...[
+                        SizedBox(height: _fieldSpacing),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF6B6B).withValues(alpha: 0.10),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFFF6B6B).withValues(alpha: 0.30)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.error_outline, color: Color(0xFFFF6B6B), size: 16),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(error!,
+                                  style: TextStyle(color: const Color(0xFFFF6B6B), fontSize: _bodySize * 0.875))),
+                            ],
+                          ),
+                        ),
+                      ],
+                      SizedBox(height: _fieldSpacing * 1.4),
+                      SizedBox(
+                        height: _buttonHeight,
+                        child: ElevatedButton(
+                          onPressed: sending ? null : () async {
+                            if (!formKey.currentState!.validate()) return;
+                            setSheetState(() { sending = true; error = null; });
+                            try {
+                              await _authService.sendPasswordResetEmail(emailCtrl.text.trim());
+                              setSheetState(() { sent = true; sending = false; });
+                            } on FirebaseAuthException catch (e) {
+                              setSheetState(() {
+                                sending = false;
+                                error = e.code == 'user-not-found'
+                                    ? 'No account found with this email.'
+                                    : e.code == 'invalid-email'
+                                        ? 'Please enter a valid email.'
+                                        : 'Something went wrong. Try again.';
+                              });
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF5A9E1F),
+                            foregroundColor: Colors.white,
+                            disabledBackgroundColor: const Color(0xFF5A9E1F).withValues(alpha: 0.5),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            elevation: 0,
+                          ),
+                          child: sending
+                              ? SizedBox(
+                                  width: _bodySize * 1.4, height: _bodySize * 1.4,
+                                  child: const CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    valueColor: AlwaysStoppedAnimation(Colors.white),
+                                  ),
+                                )
+                              : Text('Send Reset Link',
+                                  style: TextStyle(fontSize: _bodySize, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
+                        ),
+                      ),
+                    ] else ...[
+                      // Success state
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF34D399).withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFF34D399).withValues(alpha: 0.30)),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 36, height: 36,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: const Color(0xFF34D399).withValues(alpha: 0.15),
+                              ),
+                              child: const Icon(Icons.check_rounded, color: Color(0xFF34D399), size: 20),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Reset link sent!',
+                                      style: TextStyle(color: const Color(0xFF34D399),
+                                          fontSize: _bodySize, fontWeight: FontWeight.w600)),
+                                  Text('Check your inbox for ${emailCtrl.text.trim()}',
+                                      style: TextStyle(color: c.secondaryText, fontSize: _bodySize * 0.85)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: _fieldSpacing * 1.4),
+                      SizedBox(
+                        height: _buttonHeight,
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(sheetCtx),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF5A9E1F),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            elevation: 0,
+                          ),
+                          child: Text('Done',
+                              style: TextStyle(fontSize: _bodySize, fontWeight: FontWeight.w600)),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+    emailCtrl.dispose();
+  }
+
   Future<void> _signIn() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() {
@@ -268,7 +519,7 @@ class _LoginScreenState extends State<LoginScreen>
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
-                onPressed: () {},
+                onPressed: _showForgotPassword,
                 style: TextButton.styleFrom(
                   padding: EdgeInsets.zero,
                   minimumSize: Size.zero,
@@ -378,9 +629,9 @@ class _LoginScreenState extends State<LoginScreen>
       child: ElevatedButton(
         onPressed: _isLoading ? null : _signIn,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF4F46E5),
+          backgroundColor: const Color(0xFF5A9E1F),
           foregroundColor: Colors.white,
-          disabledBackgroundColor: const Color(0xFF4F46E5).withValues(alpha: 0.5),
+          disabledBackgroundColor: const Color(0xFF5A9E1F).withValues(alpha: 0.5),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           elevation: 0,

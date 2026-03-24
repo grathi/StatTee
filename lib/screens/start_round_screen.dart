@@ -3,16 +3,31 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import '../services/places_service.dart';
 import '../services/round_service.dart';
+import '../services/weather_service.dart';
 import '../theme/app_theme.dart';
 import 'scorecard_screen.dart';
 
 class StartRoundScreen extends StatefulWidget {
   final String? initialCourseName;
   final String? initialLocation;
+  final bool isPractice;
+  final String? tournamentId;
+  final void Function(String roundId)? onComplete;
+  // Pre-supplied position from the home tab — avoids a second GPS request
+  final Position? initialPosition;
+  final double? initialCustomLat;
+  final double? initialCustomLng;
+
   const StartRoundScreen({
     super.key,
     this.initialCourseName,
     this.initialLocation,
+    this.isPractice = false,
+    this.tournamentId,
+    this.onComplete,
+    this.initialPosition,
+    this.initialCustomLat,
+    this.initialCustomLng,
   });
 
   @override
@@ -39,6 +54,8 @@ class _StartRoundScreenState extends State<StartRoundScreen>
   Timer?   _debounce;
   Position? _userPosition;
   String?   _locationName;
+  double?   _customLat;
+  double?   _customLng;
 
   late AnimationController _animCtrl;
   late Animation<double>   _fadeAnim;
@@ -60,7 +77,25 @@ class _StartRoundScreenState extends State<StartRoundScreen>
     _slideAnim = Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero)
         .animate(CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut));
     _animCtrl.forward();
-    _fetchLocation();
+
+    // Use position from home tab if available; otherwise fall back to GPS
+    if (widget.initialPosition != null) {
+      _userPosition = widget.initialPosition;
+      _locationName = widget.initialLocation;
+    } else if (widget.initialCustomLat != null && widget.initialCustomLng != null) {
+      _locationName = widget.initialLocation;
+      _customLat    = widget.initialCustomLat;
+      _customLng    = widget.initialCustomLng;
+    } else if (widget.initialLocation != null && widget.initialCourseName == null) {
+      _locationName = widget.initialLocation;
+    } else {
+      _fetchLocation();
+    }
+
+    // Pre-fill location field with the resolved location name
+    if (widget.initialCourseName == null && _locationName != null) {
+      _locationCtrl.text = _locationName!;
+    }
 
     _courseNameCtrl.addListener(_onCourseNameChanged);
 
@@ -123,6 +158,9 @@ class _StartRoundScreenState extends State<StartRoundScreen>
       final results = await PlacesService.autocomplete(
         input: text,
         location: _userPosition,
+        lat: _customLat,
+        lng: _customLng,
+        locationName: _locationName,
       );
 
       if (!mounted) return;
@@ -150,12 +188,25 @@ class _StartRoundScreenState extends State<StartRoundScreen>
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
+      // Fetch weather silently in parallel, don't block round creation
+      final weatherFuture = _userPosition != null
+          ? WeatherService.fetchWeather(_userPosition!.latitude, _userPosition!.longitude)
+          : (_customLat != null && _customLng != null)
+              ? WeatherService.fetchWeather(_customLat!, _customLng!)
+              : Future<WeatherData?>.value(null);
+
+      final weather = await weatherFuture;
       final roundId = await RoundService.startRound(
         courseName:     _courseNameCtrl.text.trim(),
-        courseLocation: _locationCtrl.text.trim(),
+        courseLocation: _locationCtrl.text.trim().isNotEmpty
+            ? _locationCtrl.text.trim()
+            : (_locationName ?? ''),
         totalHoles:     _holes,
         courseRating:   double.tryParse(_courseRatingCtrl.text.trim()),
         slopeRating:    int.tryParse(_slopeRatingCtrl.text.trim()),
+        weather:        weather,
+        isPractice:     widget.isPractice,
+        tournamentId:   widget.tournamentId,
       );
       if (!mounted) return;
       Navigator.pushReplacement(
@@ -165,6 +216,8 @@ class _StartRoundScreenState extends State<StartRoundScreen>
             roundId:    roundId,
             courseName: _courseNameCtrl.text.trim(),
             totalHoles: _holes,
+            weather:    weather,
+            onComplete: widget.onComplete,
           ),
         ),
       );
@@ -257,7 +310,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
           ),
           const Spacer(),
           // Location indicator
-          if (_userPosition != null)
+          if (_userPosition != null || _locationName != null || _customLat != null)
             Row(
               children: [
                 Icon(Icons.location_on_rounded,
@@ -300,13 +353,15 @@ class _StartRoundScreenState extends State<StartRoundScreen>
           decoration: const BoxDecoration(
             shape: BoxShape.circle,
             gradient: LinearGradient(
-              colors: [Color(0xFF1E1B4B), Color(0xFF818CF8)],
+              colors: [Color(0xFF1A3A08), Color(0xFF8FD44E)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
           ),
-          child: Icon(Icons.sports_golf_rounded,
-              color: Colors.white, size: (_sw * 0.09).clamp(30.0, 42.0)),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Image.asset('assets/golfBag.png', fit: BoxFit.contain),
+          ),
         ),
         SizedBox(height: _sh * 0.018),
         Text(
@@ -422,35 +477,6 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                         vertical: (_btnH * 0.28).clamp(12.0, 18.0)),
                   ),
                 ),
-              ),
-            ),
-
-            SizedBox(height: _sh * 0.016),
-
-            // ── Location (auto-filled or manual) ──────────────────────────
-            TextFormField(
-              controller: _locationCtrl,
-              readOnly: true,
-              style: TextStyle(color: c.fieldText, fontSize: _body),
-              decoration: InputDecoration(
-                labelText: 'Location',
-                labelStyle:
-                    TextStyle(color: c.fieldLabel, fontSize: _body * 0.9),
-                prefixIcon: Icon(Icons.location_on_rounded,
-                    color: c.fieldIcon, size: _body * 1.3),
-                filled: true,
-                fillColor: c.fieldBg,
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: c.fieldBorder),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: c.fieldBorder),
-                ),
-                contentPadding: EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: (_btnH * 0.28).clamp(12.0, 18.0)),
               ),
             ),
 
@@ -692,10 +718,10 @@ class _StartRoundScreenState extends State<StartRoundScreen>
               margin: EdgeInsets.only(right: h == 9 ? 8 : 0),
               height: (_sh * 0.068).clamp(52.0, 64.0),
               decoration: BoxDecoration(
-                color: selected ? const Color(0xFF4F46E5) : c.fieldBg,
+                color: selected ? const Color(0xFF5A9E1F) : c.fieldBg,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: selected ? const Color(0xFF4F46E5) : c.fieldBorder,
+                  color: selected ? const Color(0xFF5A9E1F) : c.fieldBorder,
                   width: selected ? 2 : 1,
                 ),
               ),
@@ -735,10 +761,10 @@ class _StartRoundScreenState extends State<StartRoundScreen>
       child: ElevatedButton(
         onPressed: _isLoading ? null : _teeOff,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF4F46E5),
+          backgroundColor: const Color(0xFF5A9E1F),
           foregroundColor: Colors.white,
           disabledBackgroundColor:
-              const Color(0xFF4F46E5).withValues(alpha: 0.5),
+              const Color(0xFF5A9E1F).withValues(alpha: 0.5),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           elevation: 0,

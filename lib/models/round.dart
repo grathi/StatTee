@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'hole_score.dart';
+import '../services/weather_service.dart';
 
 enum RoundStatus { active, completed }
 
@@ -15,6 +16,9 @@ class Round {
   final List<HoleScore> scores;
   final double? courseRating;  // USGA course rating e.g. 72.5
   final int? slopeRating;      // USGA slope rating e.g. 135
+  final WeatherData? weather;  // Conditions at round start
+  final bool isPractice;       // true = practice round (hidden from Rounds tab)
+  final String? tournamentId;  // set when started from Tournament tab
 
   const Round({
     this.id,
@@ -28,6 +32,9 @@ class Round {
     this.scores = const [],
     this.courseRating,
     this.slopeRating,
+    this.weather,
+    this.isPractice = false,
+    this.tournamentId,
   });
 
   // ── Computed stats ──────────────────────────────────────────────────────
@@ -87,6 +94,9 @@ class Round {
         'scores': scores.map((h) => h.toMap()).toList(),
         if (courseRating != null) 'courseRating': courseRating,
         if (slopeRating != null) 'slopeRating': slopeRating,
+        if (weather != null) 'weather': weather!.toMap(),
+        if (isPractice) 'isPractice': true,
+        if (tournamentId != null) 'tournamentId': tournamentId,
       };
 
   factory Round.fromFirestore(DocumentSnapshot doc) {
@@ -110,6 +120,11 @@ class Round {
           .toList(),
       courseRating: (d['courseRating'] as num?)?.toDouble(),
       slopeRating: (d['slopeRating'] as num?)?.toInt(),
+      weather: d['weather'] != null
+          ? WeatherData.fromMap(d['weather'] as Map<String, dynamic>)
+          : null,
+      isPractice: (d['isPractice'] as bool?) ?? false,
+      tournamentId: d['tournamentId'] as String?,
     );
   }
 
@@ -120,6 +135,9 @@ class Round {
     List<HoleScore>? scores,
     double? courseRating,
     int? slopeRating,
+    WeatherData? weather,
+    bool? isPractice,
+    String? tournamentId,
   }) =>
       Round(
         id: id ?? this.id,
@@ -133,5 +151,8 @@ class Round {
         scores: scores ?? this.scores,
         courseRating: courseRating ?? this.courseRating,
         slopeRating: slopeRating ?? this.slopeRating,
+        weather: weather ?? this.weather,
+        isPractice: isPractice ?? this.isPractice,
+        tournamentId: tournamentId ?? this.tournamentId,
       );
 }

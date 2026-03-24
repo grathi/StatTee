@@ -78,7 +78,8 @@ class _SignUpScreenState extends State<SignUpScreen>
         _passwordController.text,
         _nameController.text.trim(),
       );
-      // AuthGate stream will handle navigation automatically
+      // Pop all screens — AuthGate will show HomeScreen
+      if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
     } on FirebaseAuthException catch (e) {
       if (mounted) setState(() => _errorMessage = _friendlyError(e.code));
     } finally {
@@ -334,8 +335,8 @@ class _SignUpScreenState extends State<SignUpScreen>
       Colors.transparent,
       const Color(0xFFFF6B6B),
       const Color(0xFFFBBC05),
-      const Color(0xFF818CF8),
-      const Color(0xFF4F46E5),
+      const Color(0xFF8FD44E),
+      const Color(0xFF5A9E1F),
     ];
 
     return Column(
@@ -453,10 +454,10 @@ class _SignUpScreenState extends State<SignUpScreen>
       child: ElevatedButton(
         onPressed: _isLoading ? null : _signUp,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF4F46E5),
+          backgroundColor: const Color(0xFF5A9E1F),
           foregroundColor: Colors.white,
           disabledBackgroundColor:
-              const Color(0xFF4F46E5).withValues(alpha: 0.5),
+              const Color(0xFF5A9E1F).withValues(alpha: 0.5),
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14)),
           elevation: 0,

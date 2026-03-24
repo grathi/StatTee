@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/round.dart';
 import '../models/hole_score.dart';
+import '../services/weather_service.dart';
 
 class RoundService {
   static final _db   = FirebaseFirestore.instance;
@@ -19,6 +20,9 @@ class RoundService {
     required int totalHoles,
     double? courseRating,
     int? slopeRating,
+    WeatherData? weather,
+    bool isPractice = false,
+    String? tournamentId,
   }) async {
     final doc = await _col.add(Round(
       userId: _uid,
@@ -29,6 +33,9 @@ class RoundService {
       startedAt: DateTime.now(),
       courseRating: courseRating,
       slopeRating: slopeRating,
+      weather: weather,
+      isPractice: isPractice,
+      tournamentId: tournamentId,
     ).toFirestore());
     return doc.id;
   }
@@ -50,27 +57,62 @@ class RoundService {
   }
 
   /// Stream of the last [limit] completed rounds for the current user.
+  /// Excludes practice rounds.
   static Stream<List<Round>> recentRoundsStream({int limit = 10}) {
     return _col
         .where('userId', isEqualTo: _uid)
         .where('status', isEqualTo: 'completed')
         .snapshots()
         .map((snap) {
-          final rounds = snap.docs.map(Round.fromFirestore).toList()
+          final rounds = snap.docs.map(Round.fromFirestore)
+              .where((r) => !r.isPractice)
+              .toList()
             ..sort((a, b) => b.startedAt.compareTo(a.startedAt));
           return rounds.take(limit).toList();
         });
   }
 
   /// Stream of ALL completed rounds — used for stat calculations.
+  /// Excludes practice rounds.
   static Stream<List<Round>> allCompletedRoundsStream() {
     return _col
         .where('userId', isEqualTo: _uid)
         .where('status', isEqualTo: 'completed')
         .snapshots()
         .map((snap) {
-          final rounds = snap.docs.map(Round.fromFirestore).toList()
+          final rounds = snap.docs.map(Round.fromFirestore)
+              .where((r) => !r.isPractice)
+              .toList()
             ..sort((a, b) => b.startedAt.compareTo(a.startedAt));
+          return rounds;
+        });
+  }
+
+  /// Stream of completed practice rounds for the current user.
+  static Stream<List<Round>> practiceRoundsStream() {
+    return _col
+        .where('userId', isEqualTo: _uid)
+        .where('status', isEqualTo: 'completed')
+        .snapshots()
+        .map((snap) {
+          final rounds = snap.docs.map(Round.fromFirestore)
+              .where((r) => r.isPractice)
+              .toList()
+            ..sort((a, b) => b.startedAt.compareTo(a.startedAt));
+          return rounds;
+        });
+  }
+
+  /// Stream of completed rounds belonging to a specific tournament.
+  static Stream<List<Round>> tournamentRoundsStream(String tournamentId) {
+    return _col
+        .where('userId', isEqualTo: _uid)
+        .where('tournamentId', isEqualTo: tournamentId)
+        .where('status', isEqualTo: 'completed')
+        .snapshots()
+        .map((snap) {
+          final rounds = snap.docs.map(Round.fromFirestore).toList()
+            ..sort((a, b) => a.startedAt.compareTo(b.startedAt));
           return rounds;
         });
   }

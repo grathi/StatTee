@@ -74,31 +74,43 @@ class PlacesService {
     }
   }
 
-  // ── Autocomplete ────────────────────────────────────────────────────────
+  // ── Text Search (wildcard / area search) ────────────────────────────────
 
-  /// Returns Place autocomplete suggestions filtered to golf courses.
-  /// [input] is the user's typed text.
-  /// [location] biases results toward the user's position (optional).
+  /// Returns golf course results for a free-text query.
+  /// Works for city names ("Pleasanton"), partial course names, or both.
+  /// Falls back to autocomplete for very short inputs.
   static Future<List<GolfCourseSuggestion>> autocomplete({
     required String input,
     Position? location,
+    double? lat,
+    double? lng,
+    String? locationName,
   }) async {
     if (input.trim().isEmpty) return [];
 
+    final useLat = lat ?? location?.latitude;
+    final useLng = lng ?? location?.longitude;
+
+    // Build query: if we have coords use plain search + tight radius,
+    // otherwise append location name to anchor results geographically
+    final query = (useLat == null && locationName != null)
+        ? '$input golf course $locationName'
+        : '$input golf course';
+
     final params = <String, String>{
-      'input': '$input golf course',
-      'types': 'establishment',
+      'query': query,
+      'type': 'golf_course',
       'key': _apiKey,
     };
 
-    if (location != null) {
-      params['location'] = '${location.latitude},${location.longitude}';
-      params['radius'] = '50000'; // 50 km bias
+    if (useLat != null && useLng != null) {
+      params['location'] = '$useLat,$useLng';
+      params['radius'] = '30000'; // 30 km strict bias
     }
 
     final uri = Uri.https(
       'maps.googleapis.com',
-      '/maps/api/place/autocomplete/json',
+      '/maps/api/place/textsearch/json',
       params,
     );
 
@@ -106,15 +118,30 @@ class PlacesService {
       final res = await http.get(uri);
       if (res.statusCode != 200) return [];
       final data = json.decode(res.body) as Map<String, dynamic>;
-      final predictions = data['predictions'] as List<dynamic>? ?? [];
+      final results = data['results'] as List<dynamic>? ?? [];
 
-      return predictions.map((p) {
-        final structured = p['structured_formatting'] as Map<String, dynamic>?;
+      return results
+          .where((r) {
+            final types = List<String>.from(r['types'] as List? ?? []);
+            final name = (r['name'] as String? ?? '').toLowerCase();
+            return types.contains('golf_course') ||
+                name.contains('golf') ||
+                name.contains('country club') ||
+                name.contains('links');
+          })
+          .take(8)
+          .map((r) {
+        final address = r['formatted_address'] as String? ??
+            r['vicinity'] as String? ?? '';
+        // Shorten address to city + state for display
+        final parts = address.split(',');
+        final shortAddr = parts.length >= 2
+            ? '${parts[parts.length - 3 < 0 ? 0 : parts.length - 3].trim()}, ${parts[parts.length - 2].trim()}'
+            : address;
         return GolfCourseSuggestion(
-          placeId: p['place_id'] as String? ?? '',
-          name: structured?['main_text'] as String? ??
-              p['description'] as String? ?? '',
-          address: structured?['secondary_text'] as String? ?? '',
+          placeId: r['place_id'] as String? ?? '',
+          name: r['name'] as String? ?? '',
+          address: shortAddr,
         );
       }).toList();
     } catch (_) {
@@ -158,16 +185,147 @@ class PlacesService {
     }
   }
 
+  // ── City autocomplete suggestions ────────────────────────────────────────
+
+  /// Returns city name suggestions for the given input using Places Autocomplete.
+  static Future<List<({String description, String mainText, String secondaryText})>>
+      getCitySuggestions(String input) async {
+    if (input.trim().length < 2) return [];
+    final uri = Uri.https(
+      'maps.googleapis.com',
+      '/maps/api/place/autocomplete/json',
+      {
+        'input': input.trim(),
+        'types': '(cities)',
+        'key': _apiKey,
+      },
+    );
+    try {
+      final res = await http.get(uri);
+      if (res.statusCode != 200) return [];
+      final data = json.decode(res.body) as Map<String, dynamic>;
+      final predictions = data['predictions'] as List<dynamic>? ?? [];
+      return predictions.take(5).map((p) {
+        final fmt = p['structured_formatting'] as Map<String, dynamic>? ?? {};
+        return (
+          description: p['description'] as String? ?? '',
+          mainText: fmt['main_text'] as String? ?? p['description'] as String? ?? '',
+          secondaryText: fmt['secondary_text'] as String? ?? '',
+        );
+      }).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  // ── Search golf courses by city name ─────────────────────────────────────
+
+  /// Searches golf courses in a city/area using Text Search (no Geocoding API needed).
+  /// Returns up to 8 results with coordinates.
+  static Future<({List<GolfCourseDetail> courses, String label, double? lat, double? lng})?> searchGolfCoursesByCity(
+      String city) async {
+    if (city.trim().isEmpty) return null;
+    final uri = Uri.https(
+      'maps.googleapis.com',
+      '/maps/api/place/textsearch/json',
+      {
+        'query': '${city.trim()} golf course',
+        'type': 'golf_course',
+        'key': _apiKey,
+      },
+    );
+    try {
+      final res = await http.get(uri);
+      if (res.statusCode != 200) return null;
+      final data = json.decode(res.body) as Map<String, dynamic>;
+      if (data['status'] == 'ZERO_RESULTS') return (courses: <GolfCourseDetail>[], label: city.trim(), lat: null, lng: null);
+      final results = data['results'] as List<dynamic>? ?? [];
+      if (results.isEmpty) return null;
+
+      // Derive a short label from first result's address
+      final firstAddr = results.first['formatted_address'] as String? ?? city;
+      final parts = firstAddr.split(',');
+      final label = parts.length >= 2
+          ? '${parts[parts.length - 3 < 0 ? 0 : parts.length - 3].trim()}, ${parts[parts.length - 2].trim()}'
+          : city.trim();
+
+      // Extract lat/lng of first result for location bias
+      final firstGeo = results.first['geometry']?['location'];
+      final centerLat = (firstGeo?['lat'] as num?)?.toDouble();
+      final centerLng = (firstGeo?['lng'] as num?)?.toDouble();
+
+      final courses = results
+          .where((r) {
+            final types = List<String>.from(r['types'] as List? ?? []);
+            return types.contains('golf_course') ||
+                (r['name'] as String? ?? '').toLowerCase().contains('golf') ||
+                (r['name'] as String? ?? '').toLowerCase().contains('country club');
+          })
+          .take(8)
+          .map((r) {
+            final geo = r['geometry']?['location'];
+            return GolfCourseDetail(
+              placeId: r['place_id'] as String? ?? '',
+              name: r['name'] as String? ?? '',
+              address: r['formatted_address'] as String? ?? r['vicinity'] as String? ?? '',
+              lat: (geo?['lat'] as num?)?.toDouble(),
+              lng: (geo?['lng'] as num?)?.toDouble(),
+            );
+          })
+          .toList();
+
+      return (courses: courses, label: label, lat: centerLat, lng: centerLng);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ── Geocode a city/address to coordinates ───────────────────────────────
+
+  /// Resolves a city name or address to a [Position]-like lat/lng pair.
+  /// Returns null if the address cannot be resolved.
+  static Future<({double lat, double lng, String label})?> geocodeCity(
+      String address) async {
+    final uri = Uri.https(
+      'maps.googleapis.com',
+      '/maps/api/geocode/json',
+      {'address': address, 'key': _apiKey},
+    );
+    try {
+      final res = await http.get(uri);
+      if (res.statusCode != 200) return null;
+      final data = json.decode(res.body) as Map<String, dynamic>;
+      final results = data['results'] as List<dynamic>? ?? [];
+      if (results.isEmpty) return null;
+      final geo = results.first['geometry']['location'];
+      final label = (results.first['formatted_address'] as String?)
+              ?.split(',')
+              .take(2)
+              .join(',')
+              .trim() ??
+          address;
+      return (
+        lat: (geo['lat'] as num).toDouble(),
+        lng: (geo['lng'] as num).toDouble(),
+        label: label,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
   // ── Nearby search ────────────────────────────────────────────────────────
 
-  /// Returns nearby golf courses around [location].
+  /// Returns nearby golf courses. Pass a GPS [location] or explicit [lat]/[lng].
   static Future<List<GolfCourseDetail>> nearbyGolfCourses(
-      Position location) async {
+      Position? location, {double? lat, double? lng}) async {
+    final double useLat = lat ?? location!.latitude;
+    final double useLng = lng ?? location!.longitude;
     final uri = Uri.https(
       'maps.googleapis.com',
       '/maps/api/place/nearbysearch/json',
       {
-        'location': '${location.latitude},${location.longitude}',
+        'location': '$useLat,$useLng',
         'radius': '25000', // 25 km
         'type': 'golf_course',
         'key': _apiKey,
@@ -180,7 +338,13 @@ class PlacesService {
       final data = json.decode(res.body) as Map<String, dynamic>;
       final results = data['results'] as List<dynamic>? ?? [];
 
-      return results.take(8).map((r) {
+      return results
+          .where((r) {
+            final types = List<String>.from(r['types'] as List? ?? []);
+            return types.contains('golf_course');
+          })
+          .take(8)
+          .map((r) {
         final geo = r['geometry']?['location'];
         return GolfCourseDetail(
           placeId: r['place_id'] as String? ?? '',

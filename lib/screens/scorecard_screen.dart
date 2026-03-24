@@ -1,19 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'dart:async';
 import '../models/hole_score.dart';
 import '../services/round_service.dart';
 import '../services/notification_service.dart';
+import '../services/weather_service.dart';
 import '../theme/app_theme.dart';
 
 class ScorecardScreen extends StatefulWidget {
   final String roundId;
   final String courseName;
   final int totalHoles;
+  final WeatherData? weather;
+  final void Function(String roundId)? onComplete;
 
   const ScorecardScreen({
     super.key,
     required this.roundId,
     required this.courseName,
     required this.totalHoles,
+    this.weather,
+    this.onComplete,
   });
 
   @override
@@ -30,6 +37,11 @@ class _ScorecardScreenState extends State<ScorecardScreen>
   bool _gir        = false;
   String? _club;
   bool _isSaving   = false;
+
+  // GPS pin tracking
+  Position? _userPos;
+  Position? _pinPos;
+  StreamSubscription<Position>? _posSub;
 
   static const _clubs = [
     'Driver','3W','5W','4H','3I','4I','5I','6I','7I','8I','9I',
@@ -69,11 +81,32 @@ class _ScorecardScreenState extends State<ScorecardScreen>
         vsync: this, duration: const Duration(milliseconds: 300));
     _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
     _animCtrl.forward();
+    _startGps();
+  }
+
+  Future<void> _startGps() async {
+    try {
+      final permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        await Geolocator.requestPermission();
+      }
+      final settings = const LocationSettings(
+        accuracy: LocationAccuracy.best,
+        distanceFilter: 3,
+      );
+      _posSub = Geolocator.getPositionStream(locationSettings: settings)
+          .listen((pos) {
+        if (mounted) setState(() => _userPos = pos);
+      });
+    } catch (_) {
+      // GPS unavailable — feature silently disabled
+    }
   }
 
   @override
   void dispose() {
     _animCtrl.dispose();
+    _posSub?.cancel();
     super.dispose();
   }
 
@@ -88,6 +121,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
       _fairwayHit  = existing?.fairwayHit ?? true;
       _gir         = existing?.gir        ?? false;
       _club        = existing?.club;
+      _pinPos      = null; // reset pin for each hole
     });
     _animCtrl
       ..reset()
@@ -152,10 +186,12 @@ class _ScorecardScreenState extends State<ScorecardScreen>
           await NotificationService.showPersonalBest(thisScore);
         }
       }
-      await NotificationService.cancelStreakReminder();
+      // Re-evaluate streak (round just completed = reset the counter)
+      await NotificationService.evaluateStreak(DateTime.now());
     } catch (_) {}
 
     if (!mounted) return;
+    widget.onComplete?.call(widget.roundId);
     _showRoundSummary();
   }
 
@@ -208,7 +244,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                 _summaryTile(c, 'Score', '$totalScore'),
                 _summaryTile(c, 'vs Par', diffLabel,
                     valueColor: diff < 0
-                        ? const Color(0xFF818CF8)
+                        ? c.accent
                         : diff == 0
                             ? null
                             : const Color(0xFFE53935)),
@@ -227,7 +263,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                     ..pop();    // back to home
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4F46E5),
+                  backgroundColor: c.accent,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14)),
@@ -349,6 +385,10 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                   style: TextStyle(color: c.secondaryText, fontSize: _label),
                   textAlign: TextAlign.center,
                 ),
+                if (widget.weather != null) ...[
+                  const SizedBox(height: 2),
+                  _WeatherChip(weather: widget.weather!, label: _label),
+                ],
               ],
             ),
           ),
@@ -421,24 +461,18 @@ class _ScorecardScreenState extends State<ScorecardScreen>
       child: Column(
         children: [
           // Hole number big display
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Hole',
-                style: TextStyle(color: c.secondaryText, fontSize: _body),
+          _rowLabel(c, 'Hole'),
+          SizedBox(height: _sh * 0.004),
+          Center(
+            child: Text(
+              '$_currentHole',
+              style: TextStyle(fontFamily: 'Nunito',
+                color: c.primaryText,
+                fontSize: (_sw * 0.16).clamp(54.0, 72.0),
+                fontWeight: FontWeight.w800,
+                height: 1.0,
               ),
-              const SizedBox(width: 8),
-              Text(
-                '$_currentHole',
-                style: TextStyle(fontFamily: 'Nunito',
-                  color: c.primaryText,
-                  fontSize: (_sw * 0.16).clamp(54.0, 72.0),
-                  fontWeight: FontWeight.w800,
-                  height: 1.0,
-                ),
-              ),
-            ],
+            ),
           ),
           SizedBox(height: _sh * 0.024),
           // Par selector
@@ -459,10 +493,10 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                   width: (_sw * 0.17).clamp(56.0, 72.0),
                   height: (_sw * 0.12).clamp(40.0, 52.0),
                   decoration: BoxDecoration(
-                    color: sel ? const Color(0xFF4F46E5) : c.fieldBg,
+                    color: sel ? c.accent : c.fieldBg,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: sel ? const Color(0xFF4F46E5) : c.fieldBorder,
+                      color: sel ? c.accent : c.fieldBorder,
                       width: sel ? 2 : 1,
                     ),
                   ),
@@ -524,6 +558,9 @@ class _ScorecardScreenState extends State<ScorecardScreen>
             ],
           ),
           SizedBox(height: _sh * 0.022),
+          // GPS pin distance
+          if (_userPos != null) _buildGpsRow(c),
+          if (_userPos != null) SizedBox(height: _sh * 0.022),
           // Club selector
           _rowLabel(c, 'Club Used'),
           SizedBox(height: _sh * 0.010),
@@ -543,12 +580,12 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: selected
-                          ? const Color(0xFF4F46E5)
+                          ? c.accent
                           : c.fieldBg,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: selected
-                            ? const Color(0xFF4F46E5)
+                            ? c.accent
                             : c.fieldBorder,
                       ),
                     ),
@@ -567,6 +604,95 @@ class _ScorecardScreenState extends State<ScorecardScreen>
           ),
         ],
       ),
+    );
+  }
+
+  // ── GPS Pin distance ────────────────────────────────────────────────────────
+  int? get _pinDistanceYards {
+    if (_userPos == null || _pinPos == null) return null;
+    final meters = Geolocator.distanceBetween(
+      _userPos!.latitude, _userPos!.longitude,
+      _pinPos!.latitude, _pinPos!.longitude,
+    );
+    return (meters * 1.09361).round();
+  }
+
+  Color _distanceColor(int yards) {
+    if (yards <= 100) return const Color(0xFF4CAF50);   // green — short
+    if (yards <= 175) return const Color(0xFFFFB74D);   // amber — mid
+    return const Color(0xFFE53935);                      // red — long
+  }
+
+  Widget _buildGpsRow(AppColors c) {
+    final yards = _pinDistanceYards;
+    return Row(
+      children: [
+        if (yards == null) ...[
+          // No pin set yet
+          GestureDetector(
+            onTap: () => setState(() => _pinPos = _userPos),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: c.accentBg,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: c.accentBorder),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.push_pin_rounded, color: c.accent, size: _label * 1.1),
+                  const SizedBox(width: 6),
+                  Text('Set Pin',
+                      style: TextStyle(
+                          color: c.accent,
+                          fontSize: _label,
+                          fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
+          ),
+        ] else ...[
+          // Pin set — show live distance
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: _distanceColor(yards).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                  color: _distanceColor(yards).withValues(alpha: 0.4)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.push_pin_rounded,
+                    color: _distanceColor(yards), size: _label * 1.1),
+                const SizedBox(width: 6),
+                Text('$yards yds',
+                    style: TextStyle(
+                        fontFamily: 'Nunito',
+                        color: _distanceColor(yards),
+                        fontSize: _label * 1.1,
+                        fontWeight: FontWeight.w700)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () => setState(() => _pinPos = null),
+            child: Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: c.fieldBg,
+                shape: BoxShape.circle,
+                border: Border.all(color: c.fieldBorder),
+              ),
+              child: Icon(Icons.close_rounded,
+                  color: c.tertiaryText, size: _label),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -804,10 +930,10 @@ class _ScorecardScreenState extends State<ScorecardScreen>
         child: ElevatedButton(
           onPressed: _isSaving ? null : _saveAndAdvance,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF4F46E5),
+            backgroundColor: c.accent,
             foregroundColor: Colors.white,
             disabledBackgroundColor:
-                const Color(0xFF4F46E5).withValues(alpha: 0.5),
+                c.accent.withValues(alpha: 0.5),
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16)),
             elevation: 0,
@@ -848,34 +974,113 @@ class _ScorecardScreenState extends State<ScorecardScreen>
   void _showAbandonDialog(AppColors c) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: c.sheetBg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Abandon Round?',
-            style: TextStyle(fontFamily: 'Nunito',
-                color: c.primaryText, fontWeight: FontWeight.w700)),
-        content: Text(
-            'Your progress will be lost.',
-            style: TextStyle(color: c.secondaryText)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Keep Playing',
-                style: TextStyle(color: c.accent)),
+      barrierColor: Colors.black.withValues(alpha: 0.6),
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          decoration: BoxDecoration(
+            color: c.sheetBg,
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: c.cardBorder),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 32,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () async {
-              await RoundService.abandonRound(widget.roundId);
-              if (mounted) {
-                Navigator.of(context)
-                  ..pop()  // close dialog
-                  ..pop(); // back to home
-              }
-            },
-            child: const Text('Abandon',
-                style: TextStyle(color: Color(0xFFE53935))),
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE53935).withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.flag_outlined,
+                    color: Color(0xFFE53935), size: 28),
+              ),
+              const SizedBox(height: 16),
+              Text('Abandon Round?',
+                  style: TextStyle(
+                    fontFamily: 'Nunito',
+                    color: c.primaryText,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                  )),
+              const SizedBox(height: 8),
+              Text(
+                'All progress for this round\nwill be permanently lost.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: c.secondaryText,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: c.cardBg,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: c.cardBorder),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text('Keep Playing',
+                            style: TextStyle(
+                              fontFamily: 'Nunito',
+                              color: c.primaryText,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            )),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () async {
+                        await RoundService.abandonRound(widget.roundId);
+                        if (mounted) {
+                          Navigator.of(context)
+                            ..pop()
+                            ..pop();
+                        }
+                      },
+                      child: Container(
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE53935).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                              color: const Color(0xFFE53935).withValues(alpha: 0.4)),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Text('Abandon',
+                            style: TextStyle(
+                              fontFamily: 'Nunito',
+                              color: Color(0xFFE53935),
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            )),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -896,5 +1101,38 @@ class _ScorecardScreenState extends State<ScorecardScreen>
     if (diff == 1)  return 'Bogey';
     if (diff == 2)  return 'Double';
     return '+$diff';
+  }
+}
+
+class _WeatherChip extends StatelessWidget {
+  final WeatherData weather;
+  final double label;
+  const _WeatherChip({required this.weather, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: c.iconContainerBg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: c.cardBorder),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.thermostat_rounded, color: c.secondaryText, size: label),
+          const SizedBox(width: 2),
+          Text('${weather.tempF.round()}°F',
+              style: TextStyle(color: c.secondaryText, fontSize: label * 0.88)),
+          const SizedBox(width: 6),
+          Icon(Icons.air_rounded, color: c.secondaryText, size: label),
+          const SizedBox(width: 2),
+          Text('${weather.windMph.round()} mph ${weather.windDir}',
+              style: TextStyle(color: c.secondaryText, fontSize: label * 0.88)),
+        ],
+      ),
+    );
   }
 }
