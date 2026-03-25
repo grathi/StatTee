@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:superellipse_shape/superellipse_shape.dart';
 import '../models/round.dart';
 import '../services/round_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/weather_widgets.dart';
 
 class RoundDetailScreen extends StatefulWidget {
   final Round round;
@@ -26,7 +28,7 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
   Color _scoreColor(int diff) {
     if (diff <= -2) return const Color(0xFFFFD700);
     if (diff == -1) return const Color(0xFF4CAF82);
-    if (diff == 0)  return const Color(0xFF64B5F6);
+    if (diff == 0)  return const Color(0xFFFFB74D);
     if (diff == 1)  return const Color(0xFFFFB74D);
     return const Color(0xFFE53935);
   }
@@ -147,13 +149,23 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
           children: [
             // ── Summary header card ────────────────────────────────────────
             Container(
-              decoration: BoxDecoration(
+              decoration: ShapeDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF1E1B4B), Color(0xFF4F46E5)],
+                  colors: [Color(0xFF1A3A08), Color(0xFF3D6E14), Color(0xFF5A9E1F)],
+                  stops: [0.0, 0.55, 1.0],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(20),
+                shape: SuperellipseShape(
+                  borderRadius: BorderRadius.circular(48),
+                ),
+                shadows: [
+                  BoxShadow(
+                    color: const Color(0xFF5A9E1F).withValues(alpha: 0.35),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
               padding: EdgeInsets.all((_sw * 0.055).clamp(18.0, 24.0)),
               child: Row(
@@ -263,11 +275,13 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
 
             // ── Mini stats row ─────────────────────────────────────────────
             Container(
-              decoration: BoxDecoration(
+              decoration: ShapeDecoration(
                 color: c.cardBg,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: c.cardBorder),
-                boxShadow: c.cardShadow,
+                shape: SuperellipseShape(
+                  borderRadius: BorderRadius.circular(40),
+                  side: BorderSide(color: c.cardBorder),
+                ),
+                shadows: c.cardShadow,
               ),
               padding: EdgeInsets.symmetric(
                   vertical: _sh * 0.016,
@@ -276,11 +290,11 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _statChip(c, '${round.birdies}', 'Birdies',
-                      const Color(0xFF818CF8), label),
+                      const Color(0xFF4CAF82), label),
                   _statChip(c, '${round.pars}', 'Pars',
-                      const Color(0xFF64B5F6), label),
-                  _statChip(c, '${round.bogeys}', 'Bogeys',
                       const Color(0xFFFFB74D), label),
+                  _statChip(c, '${round.bogeys}', 'Bogeys',
+                      const Color(0xFFE53935), label),
                   _statChip(c, '${round.totalPutts}', 'Putts',
                       c.secondaryText, label),
                   _statChip(
@@ -296,6 +310,12 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
             ),
 
             SizedBox(height: _sh * 0.022),
+
+            // ── Weather conditions ─────────────────────────────────────────
+            if (round.weather != null) ...[
+              RoundConditionsCard(existingWeather: round.weather),
+              SizedBox(height: _sh * 0.022),
+            ],
 
             // ── Hole-by-hole scorecard (screenshotted) ─────────────────────
             Text(
@@ -324,33 +344,35 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
     final hasClub = round.scores.any((h) => h.club != null);
 
     return Container(
-      decoration: BoxDecoration(
+      decoration: ShapeDecoration(
         color: c.cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: c.cardBorder),
-        boxShadow: c.cardShadow,
+        shape: SuperellipseShape(
+          borderRadius: BorderRadius.circular(40),
+          side: BorderSide(color: c.cardBorder),
+        ),
+        shadows: c.cardShadow,
       ),
       child: Column(
         children: [
           // Header row
           Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF1E1B4B),
+              color: const Color(0xFF1A3A08),
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(15),
-                topRight: Radius.circular(15),
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
               ),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
               children: [
-                _headerCell('Hole', 36, label, center: true),
-                _headerCell('Par', 32, label, center: true),
-                _headerCell('Score', 40, label, center: true),
-                _headerCell('Putts', 36, label, center: true),
-                _headerCell('FIR', 32, label, center: true),
-                _headerCell('GIR', 32, label, center: true),
-                if (hasClub) Expanded(child: _headerCell('Club', 60, label)),
+                _headerFlex(1, 'Hole', label, center: true),
+                _headerFlex(1, 'Par', label, center: true),
+                _headerFlex(1, 'Score', label, center: true),
+                _headerFlex(1, 'Putts', label, center: true),
+                _headerFlex(1, 'FIR', label, center: true),
+                _headerFlex(1, 'GIR', label, center: true),
+                if (hasClub) _headerFlex(2, 'Club', label),
               ],
             ),
           ),
@@ -365,80 +387,67 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
                     ? null
                     : Border(bottom: BorderSide(color: c.divider, width: 0.5)),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
               child: Row(
                 children: [
-                  _dataCell('${h.hole}', 36, label, c.secondaryText,
-                      center: true),
-                  _dataCell('${h.par}', 32, label, c.tertiaryText,
-                      center: true),
+                  _dataFlex(1, '${h.hole}', label, c.secondaryText, center: true),
+                  _dataFlex(1, '${h.par}', label, c.tertiaryText, center: true),
                   // Score chip
-                  SizedBox(
-                    width: 40,
+                  Expanded(
                     child: Center(
                       child: Container(
-                        width: 28,
-                        height: 28,
+                        width: 26,
+                        height: 26,
                         decoration: BoxDecoration(
                           color: color.withValues(alpha: 0.15),
                           shape: BoxShape.circle,
-                          border: Border.all(
-                              color: color.withValues(alpha: 0.4)),
+                          border: Border.all(color: color.withValues(alpha: 0.4)),
                         ),
-                        child: Center(
-                          child: Text(
-                            '${h.score}',
-                            style: TextStyle(fontFamily: 'Nunito',
-                              color: color,
-                              fontSize: label,
-                              fontWeight: FontWeight.w700,
-                            ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '${h.score}',
+                          style: TextStyle(
+                            fontFamily: 'Nunito',
+                            color: color,
+                            fontSize: label,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
                     ),
                   ),
-                  _dataCell('${h.putts}', 36, label, c.secondaryText,
-                      center: true),
-                  SizedBox(
-                    width: 32,
+                  _dataFlex(1, '${h.putts}', label, c.secondaryText, center: true),
+                  Expanded(
                     child: Center(
                       child: Icon(
                         h.par >= 4
-                            ? (h.fairwayHit
-                                ? Icons.check_rounded
-                                : Icons.close_rounded)
+                            ? (h.fairwayHit ? Icons.check_rounded : Icons.close_rounded)
                             : Icons.remove_rounded,
                         color: h.par >= 4
-                            ? (h.fairwayHit
-                                ? const Color(0xFF34D399)
-                                : const Color(0xFFFF6B6B))
+                            ? (h.fairwayHit ? const Color(0xFF34D399) : const Color(0xFFFF6B6B))
                             : c.tertiaryText,
                         size: label * 1.1,
                       ),
                     ),
                   ),
-                  SizedBox(
-                    width: 32,
+                  Expanded(
                     child: Center(
                       child: Icon(
                         h.gir ? Icons.check_rounded : Icons.close_rounded,
-                        color: h.gir
-                            ? const Color(0xFF34D399)
-                            : const Color(0xFFFF6B6B),
+                        color: h.gir ? const Color(0xFF34D399) : const Color(0xFFFF6B6B),
                         size: label * 1.1,
                       ),
                     ),
                   ),
                   if (hasClub)
                     Expanded(
+                      flex: 2,
                       child: Text(
                         h.club ?? '—',
                         style: TextStyle(
-                            color: h.club != null
-                                ? c.secondaryText
-                                : c.tertiaryText,
-                            fontSize: label * 0.9),
+                          color: h.club != null ? c.secondaryText : c.tertiaryText,
+                          fontSize: label * 0.9,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -451,22 +460,21 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
             decoration: BoxDecoration(
               color: c.cardBorder.withValues(alpha: 0.3),
               borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(15),
-                bottomRight: Radius.circular(15),
+                bottomLeft: Radius.circular(16),
+                bottomRight: Radius.circular(16),
               ),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
             child: Row(
               children: [
-                _dataCell('TOT', 36, label, c.tertiaryText, center: true),
-                _dataCell('${round.totalPar}', 32, label, c.tertiaryText,
-                    center: true),
-                SizedBox(
-                  width: 40,
+                _dataFlex(1, 'TOT', label, c.tertiaryText, center: true),
+                _dataFlex(1, '${round.totalPar}', label, c.tertiaryText, center: true),
+                Expanded(
                   child: Center(
                     child: Text(
                       '${round.totalScore}',
-                      style: TextStyle(fontFamily: 'Nunito',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
                         color: c.primaryText,
                         fontSize: label,
                         fontWeight: FontWeight.w800,
@@ -474,11 +482,10 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
                     ),
                   ),
                 ),
-                _dataCell('${round.totalPutts}', 36, label, c.tertiaryText,
-                    center: true),
-                SizedBox(width: 32),
-                SizedBox(width: 32),
-                if (hasClub) const Expanded(child: SizedBox.shrink()),
+                _dataFlex(1, '${round.totalPutts}', label, c.tertiaryText, center: true),
+                const Expanded(child: SizedBox.shrink()),
+                const Expanded(child: SizedBox.shrink()),
+                if (hasClub) const Expanded(flex: 2, child: SizedBox.shrink()),
               ],
             ),
           ),
@@ -487,10 +494,9 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
     );
   }
 
-  Widget _headerCell(String text, double width, double fontSize,
-      {bool center = false}) {
-    return SizedBox(
-      width: width,
+  Widget _headerFlex(int flex, String text, double fontSize, {bool center = false}) {
+    return Expanded(
+      flex: flex,
       child: Text(
         text,
         textAlign: center ? TextAlign.center : TextAlign.start,
@@ -498,16 +504,16 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
           color: Colors.white.withValues(alpha: 0.7),
           fontSize: fontSize * 0.85,
           fontWeight: FontWeight.w600,
-          letterSpacing: 0.5,
+          letterSpacing: 0.3,
         ),
       ),
     );
   }
 
-  Widget _dataCell(String text, double width, double fontSize, Color color,
+  Widget _dataFlex(int flex, String text, double fontSize, Color color,
       {bool center = false}) {
-    return SizedBox(
-      width: width,
+    return Expanded(
+      flex: flex,
       child: Text(
         text,
         textAlign: center ? TextAlign.center : TextAlign.start,

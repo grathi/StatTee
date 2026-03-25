@@ -10,6 +10,7 @@ import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'services/notification_service.dart';
 import 'services/round_service.dart';
+import 'services/smart_notification_service.dart';
 
 /// Global navigator key — lets NotificationService navigate without a context.
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -24,11 +25,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  await NotificationService.init();
-  await NotificationService.scheduleDailyTips();
-  _scheduleStreakReminderIfNeeded();
 
-  // Route to the correct tab when a notification is tapped
+  // Run notification setup in background — never block app launch.
+  // FCM.getToken() can hang indefinitely on physical devices without this.
+  unawaited(_initNotificationsInBackground());
+
+  _scheduleStreakReminderIfNeeded();
   NotificationService.onNotificationTap = _handleNotificationTap;
 
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
@@ -37,6 +39,16 @@ void main() async {
     statusBarIconBrightness: Brightness.light,
   ));
   runApp(const StatTeeApp());
+}
+
+Future<void> _initNotificationsInBackground() async {
+  try {
+    await NotificationService.init().timeout(const Duration(seconds: 10));
+    await NotificationService.scheduleDailyTips()
+        .timeout(const Duration(seconds: 5));
+  } catch (_) {
+    // Notification setup failed — app continues normally without it.
+  }
 }
 
 void _handleNotificationTap(String? route) {
@@ -60,32 +72,6 @@ void _scheduleStreakReminderIfNeeded() async {
 }
 
 // ---------------------------------------------------------------------------
-// Theme controller — re-evaluates every minute, fires only on boundary cross
-// ---------------------------------------------------------------------------
-class _ThemeController extends ChangeNotifier {
-  ThemeMode _mode = resolveThemeModeFromTime();
-  Timer? _timer;
-
-  ThemeMode get mode => _mode;
-
-  _ThemeController() {
-    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
-      final next = resolveThemeModeFromTime();
-      if (next != _mode) {
-        _mode = next;
-        notifyListeners();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-}
-
-// ---------------------------------------------------------------------------
 // App root
 // ---------------------------------------------------------------------------
 class StatTeeApp extends StatefulWidget {
@@ -96,27 +82,60 @@ class StatTeeApp extends StatefulWidget {
 }
 
 class _StatTeeAppState extends State<StatTeeApp> {
-  final _themeController = _ThemeController();
+  late final AppLifecycleListener _lifecycleListener;
+
+  /// Timestamp when the app was last sent to background.
+  DateTime? _pausedAt;
+
+  /// Minimum time the app must be in the background before smart notifications
+  /// are re-evaluated on resume. Prevents firing when users briefly switch apps.
+  static const _minBackgroundDuration = Duration(minutes: 30);
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycleListener = AppLifecycleListener(
+      onPause:  _onAppPause,
+      onResume: _onAppResume,
+    );
+  }
+
+  void _onAppPause() {
+    _pausedAt = DateTime.now();
+  }
+
+  /// Called every time the app returns to the foreground.
+  /// Only evaluates if the app was backgrounded for at least [_minBackgroundDuration].
+  Future<void> _onAppResume() async {
+    final paused = _pausedAt;
+    _pausedAt = null;
+
+    // Skip if we don't know when it was paused (cold start) or too brief.
+    if (paused == null) return;
+    if (DateTime.now().difference(paused) < _minBackgroundDuration) return;
+
+    if (FirebaseAuth.instance.currentUser == null) return;
+    try {
+      final ctx = await SmartNotificationService.buildContext();
+      await SmartNotificationService.evaluate(ctx);
+    } catch (_) {}
+  }
 
   @override
   void dispose() {
-    _themeController.dispose();
+    _lifecycleListener.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: _themeController,
-      builder: (context, _) => MaterialApp(
-        title: 'StatTee',
-        debugShowCheckedModeBanner: false,
-        navigatorKey: navigatorKey,
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
-        themeMode: _themeController.mode,
-        home: const AuthGate(),
-      ),
+    return MaterialApp(
+      title: 'StatTee',
+      debugShowCheckedModeBanner: false,
+      navigatorKey: navigatorKey,
+      theme: AppTheme.light,
+      themeMode: ThemeMode.light,
+      home: const AuthGate(),
     );
   }
 }

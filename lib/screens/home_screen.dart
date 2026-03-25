@@ -10,12 +10,16 @@ import '../services/places_service.dart';
 import '../services/round_service.dart';
 import '../services/stats_service.dart';
 import '../services/tournament_service.dart';
+import '../services/user_profile_service.dart';
 import '../theme/app_theme.dart';
 import 'start_round_screen.dart';
 import 'scorecard_screen.dart';
 import 'rounds_screen.dart';
 import 'stats_screen.dart';
 import 'profile_screen.dart';
+import '../widgets/resume_round_card.dart';
+import '../widgets/shimmer_widgets.dart';
+import '../widgets/weather_widgets.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
 
 // ---------------------------------------------------------------------------
@@ -124,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           decoration: BoxDecoration(
             color: active
-                ? c.accent.withValues(alpha: c.isDark ? 0.18 : 0.10)
+                ? c.accent.withValues(alpha: 0.10)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(24),
           ),
@@ -264,6 +268,11 @@ class _HomeTabState extends State<_HomeTab>
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
 
+  final PageController _carouselCtrl = PageController();
+  final ValueNotifier<int> _carouselPageNotifier = ValueNotifier(0);
+  int _carouselPage = 0;
+  bool? _prevHasActive;
+
   Position? _userPosition;
   String?   _locationName;
   double?   _customLat;
@@ -287,6 +296,20 @@ class _HomeTabState extends State<_HomeTab>
     );
     _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
     _animController.forward();
+    _initLocation();
+  }
+
+  /// Restores any previously saved custom location from Firestore,
+  /// then kicks off the nearby-courses load.
+  Future<void> _initLocation() async {
+    final saved = await UserProfileService.getSavedLocation();
+    if (saved != null && mounted) {
+      setState(() {
+        _customLat    = saved.lat;
+        _customLng    = saved.lng;
+        _locationName = saved.label;
+      });
+    }
     _loadNearbyCourses();
   }
 
@@ -294,13 +317,14 @@ class _HomeTabState extends State<_HomeTab>
     final gen = ++_loadGeneration;
     setState(() => _loadingNearby = true);
 
-    // Custom location path — no GPS needed
-    if (_customLat != null && _customLng != null) {
-      final courses = await PlacesService.nearbyGolfCourses(
-        null, lat: _customLat, lng: _customLng,
-      );
+    // Custom location path — use Text Search (same API as the city picker)
+    if (_locationName != null && (_customLat != null || _userPosition == null)) {
+      final result = await PlacesService.searchGolfCoursesByCity(_locationName!);
       if (!mounted || gen != _loadGeneration) return;
-      setState(() { _nearbyCourses = courses; _loadingNearby = false; });
+      setState(() {
+        _nearbyCourses = result?.courses ?? [];
+        _loadingNearby = false;
+      });
       return;
     }
 
@@ -311,13 +335,13 @@ class _HomeTabState extends State<_HomeTab>
       setState(() => _loadingNearby = false);
       return;
     }
-    final name    = await PlacesService.getLocationName(pos);
-    final courses = await PlacesService.nearbyGolfCourses(pos);
+    final name   = await PlacesService.getLocationName(pos);
+    final result = await PlacesService.searchGolfCoursesByCity(name ?? '');
     if (!mounted || gen != _loadGeneration) return;
     setState(() {
       _userPosition  = pos;
       _locationName  = name;
-      _nearbyCourses = courses;
+      _nearbyCourses = result?.courses ?? [];
       _loadingNearby = false;
     });
   }
@@ -350,6 +374,7 @@ class _HomeTabState extends State<_HomeTab>
         _customLng     = result.lng;
         _loadingNearby = false;
       });
+      UserProfileService.saveLocation(result.lat!, result.lng!, result.label);
       if (mounted && sheetCtxRef != null) Navigator.pop(sheetCtxRef!);
     }
 
@@ -513,6 +538,7 @@ class _HomeTabState extends State<_HomeTab>
                       _userPosition = null;
                       _nearbyCourses = [];
                     });
+                    UserProfileService.clearSavedLocation();
                     Navigator.pop(sheetCtxRef!);
                     _loadNearbyCourses();
                   },
@@ -561,6 +587,8 @@ class _HomeTabState extends State<_HomeTab>
   @override
   void dispose() {
     _animController.dispose();
+    _carouselCtrl.dispose();
+    _carouselPageNotifier.dispose();
     super.dispose();
   }
 
@@ -584,6 +612,34 @@ class _HomeTabState extends State<_HomeTab>
     final parts = name.trim().split(' ');
     if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     return name[0].toUpperCase();
+  }
+
+  Widget _initialsCircle(double size) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          colors: [Color(0xFF5A9E1F), Color(0xFF8FD44E)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(
+            color: const Color(0xFF8FD44E).withValues(alpha: 0.5), width: 2),
+      ),
+      child: Center(
+        child: Text(
+          _initials,
+          style: TextStyle(
+            fontFamily: 'Nunito',
+            color: Colors.white,
+            fontSize: (size * 0.35).clamp(14.0, 18.0),
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
   }
 
   String _timeAgo(DateTime dt) {
@@ -610,13 +666,16 @@ class _HomeTabState extends State<_HomeTab>
       stream: RoundService.activeRoundStream(),
       builder: (context, activeSnap) {
         final activeRound = activeSnap.data;
+        final loading = activeSnap.connectionState == ConnectionState.waiting;
         return StreamBuilder<List<Round>>(
           stream: RoundService.recentRoundsStream(limit: 10),
           builder: (context, recentSnap) {
             final recentRounds = recentSnap.data ?? [];
+            final recentLoading = recentSnap.connectionState == ConnectionState.waiting;
             return StreamBuilder<List<Round>>(
               stream: RoundService.allCompletedRoundsStream(),
               builder: (context, allSnap) {
+                final allLoading = allSnap.connectionState == ConnectionState.waiting;
                 final stats = StatsService.calculate(allSnap.data ?? []);
                 return Container(
                   decoration: BoxDecoration(
@@ -635,25 +694,48 @@ class _HomeTabState extends State<_HomeTab>
                         children: [
                           _buildHeader(c),
                           Expanded(
-                            child: SingleChildScrollView(
-                              physics: const BouncingScrollPhysics(),
+                            child: RefreshIndicator(
+                              onRefresh: _loadNearbyCourses,
+                              color: const Color(0xFF5A9E1F),
+                              backgroundColor: Colors.white,
+                              displacement: 20,
+                              child: SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(
+                                  parent: BouncingScrollPhysics()),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   SizedBox(height: _sh * 0.022),
-                                  _buildStartRoundCTA(activeRound),
+                                  loading
+                                      ? ShimmerCarouselCard(height: (_sh * 0.215).clamp(160.0, 215.0))
+                                      : _buildTopCarousel(activeRound),
                                   SizedBox(height: _sh * 0.024),
-                                  _buildRecentRounds(activeRound, recentRounds),
+                                  SmallWeatherCard(
+                                    lat: _userPosition?.latitude ?? _customLat,
+                                    lng: _userPosition?.longitude ?? _customLng,
+                                  ),
                                   SizedBox(height: _sh * 0.024),
-                                  _buildPerformanceSummary(stats),
+                                  recentLoading
+                                      ? _buildRecentRoundsShimmer()
+                                      : _buildRecentRounds(activeRound, recentRounds),
                                   SizedBox(height: _sh * 0.024),
-                                  _buildQuickStats(stats),
+                                  allLoading
+                                      ? Padding(
+                                          padding: EdgeInsets.symmetric(horizontal: (_sw * 0.055).clamp(18.0, 28.0)),
+                                          child: const ShimmerPerformanceCard(),
+                                        )
+                                      : _buildPerformanceSummary(stats),
+                                  SizedBox(height: _sh * 0.024),
+                                  allLoading
+                                      ? _buildQuickStatsShimmer()
+                                      : _buildQuickStats(stats),
                                   SizedBox(height: _sh * 0.024),
                                   _buildNearbyCourses(),
                                   SizedBox(height: _sh * 0.14),
                                 ],
                               ),
                             ),
+                            ),  // RefreshIndicator
                           ),
                         ],
                       ),
@@ -674,30 +756,34 @@ class _HomeTabState extends State<_HomeTab>
       padding: EdgeInsets.fromLTRB(_hPad, _sh * 0.018, _hPad, _sh * 0.012),
       child: Row(
         children: [
-          Container(
-            width: (_sw * 0.115).clamp(40.0, 52.0),
-            height: (_sw * 0.115).clamp(40.0, 52.0),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                colors: [Color(0xFF5A9E1F), Color(0xFF8FD44E)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              border: Border.all(
-                  color: const Color(0xFF8FD44E).withValues(alpha: 0.5),
-                  width: 2),
-            ),
-            child: Center(
-              child: Text(
-                _initials,
-                style: TextStyle(fontFamily: 'Nunito',
-                  color: Colors.white,
-                  fontSize: (_sw * 0.040).clamp(14.0, 18.0),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
+          StreamBuilder<String?>(
+            stream: UserProfileService.avatarUrlStream(),
+            builder: (context, snap) {
+              final url = snap.data;
+              final size = (_sw * 0.115).clamp(40.0, 52.0);
+              if (url != null) {
+                return Container(
+                  width: size,
+                  height: size,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                        color: const Color(0xFF8FD44E).withValues(alpha: 0.5),
+                        width: 2),
+                  ),
+                  child: ClipOval(
+                    child: Image.network(
+                      url,
+                      width: size,
+                      height: size,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _initialsCircle(size),
+                    ),
+                  ),
+                );
+              }
+              return _initialsCircle(size);
+            },
           ),
           SizedBox(width: _sw * 0.030),
           Expanded(
@@ -736,73 +822,148 @@ class _HomeTabState extends State<_HomeTab>
               ],
             ),
           ),
-          GestureDetector(
-            onTap: () {},
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  width: (_sw * 0.110).clamp(38.0, 48.0),
-                  height: (_sw * 0.110).clamp(38.0, 48.0),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: c.iconContainerBg,
-                    border:
-                        Border.all(color: c.iconContainerBorder, width: 1),
-                  ),
-                  child: Icon(Icons.notifications_none_rounded,
-                      color: c.iconColor,
-                      size: (_sw * 0.056).clamp(20.0, 24.0)),
-                ),
-                Positioned(
-                  top: 6,
-                  right: 6,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFFF6B6B),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
   }
 
-  // ── Start Round / Continue Round CTA ─────────────────────────────────────
+  // ── Shimmer helpers ────────────────────────────────────────────────────────
+  Widget _buildRecentRoundsShimmer() {
+    final cardW = (_sw * 0.52).clamp(175.0, 220.0);
+    final cardH = (_sh * 0.155).clamp(120.0, 145.0);
+    return SizedBox(
+      height: cardH,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.symmetric(horizontal: _hPad),
+        itemCount: 3,
+        separatorBuilder: (_, __) => SizedBox(width: _sw * 0.03),
+        itemBuilder: (_, __) =>
+            ShimmerRoundCard(width: cardW, height: cardH),
+      ),
+    );
+  }
+
+  Widget _buildQuickStatsShimmer() {
+    final tileH = (_sh * 0.155).clamp(130.0, 155.0);
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: _hPad),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.zero,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: _sw * 0.03,
+          mainAxisSpacing: _sw * 0.03,
+          mainAxisExtent: tileH,
+        ),
+        itemCount: 4,
+        itemBuilder: (_, __) => ShimmerStatTile(height: tileH),
+      ),
+    );
+  }
+
+  Widget _buildNearbyShimmer() {
+    final cardW = (_sw * 0.60).clamp(200.0, 260.0);
+    final cardH = (_sh * 0.165).clamp(130.0, 160.0);
+    return SizedBox(
+      height: cardH,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.symmetric(horizontal: _hPad),
+        itemCount: 3,
+        separatorBuilder: (_, __) => SizedBox(width: _sw * 0.03),
+        itemBuilder: (_, __) =>
+            ShimmerCourseCard(width: cardW, height: cardH),
+      ),
+    );
+  }
+
+  // ── Top carousel — Resume card (page 0) + Start New card (page 1) ──────────
+  Widget _buildTopCarousel(Round? activeRound) {
+    final cardHeight = (_sh * 0.215).clamp(160.0, 215.0);
+    final hasActive  = activeRound != null;
+    final pageCount  = hasActive ? 2 : 1;
+
+    // Jump to page 0 only when the active-round presence flips — NOT on every rebuild
+    if (_prevHasActive != hasActive) {
+      _prevHasActive = hasActive;
+      _carouselPageNotifier.value = 0;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _carouselCtrl.hasClients) {
+          _carouselCtrl.jumpToPage(0);
+        }
+      });
+    }
+
+    return Column(
+      children: [
+        SizedBox(
+          height: cardHeight,
+          child: PageView.builder(
+            controller: _carouselCtrl,
+            itemCount: pageCount,
+            // No physics override — PageView's default PageScrollPhysics
+            // commits the page change once you cross 50% and never bounces back.
+            onPageChanged: (i) {
+              _carouselPage = i;
+              _carouselPageNotifier.value = i;
+            },
+            itemBuilder: (context, i) {
+              if (i == 0 && hasActive) {
+                return ResumeRoundCard(round: activeRound!);
+              }
+              return _buildStartRoundCTA(null);
+            },
+          ),
+        ),
+        // Dot indicators rebuilt ONLY when the notifier changes — not the whole tree
+        if (hasActive) ...[
+          const SizedBox(height: 10),
+          ValueListenableBuilder<int>(
+            valueListenable: _carouselPageNotifier,
+            builder: (context, page, _) => Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(pageCount, (i) {
+                final sel = page == i;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOut,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width:  sel ? 18 : 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: sel
+                        ? AppColors.of(context).accent
+                        : AppColors.of(context).accent.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  // ── Start Round CTA (shown only when no active round) ─────────────────────
   Widget _buildStartRoundCTA(Round? activeRound) {
-    final hasActive = activeRound != null;
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: _hPad),
       child: GestureDetector(
-        onTap: () {
-          if (hasActive) {
-            Navigator.push(context, MaterialPageRoute(
-              builder: (_) => ScorecardScreen(
-                roundId: activeRound.id!,
-                courseName: activeRound.courseName,
-                totalHoles: activeRound.totalHoles,
-              ),
-            ));
-          } else {
-            Navigator.push(context, MaterialPageRoute(
-              builder: (_) => StartRoundScreen(
-                initialPosition: _userPosition,
-                initialCustomLat: _customLat,
-                initialCustomLng: _customLng,
-                initialLocation: _locationName,
-              ),
-            ));
-          }
-        },
+        onTap: () => Navigator.push(context, MaterialPageRoute(
+          builder: (_) => StartRoundScreen(
+            initialPosition: _userPosition,
+            initialCustomLat: _customLat,
+            initialCustomLng: _customLng,
+            initialLocation: _locationName,
+          ),
+        )),
         child: Container(
           width: double.infinity,
-          height: (_sh * 0.195).clamp(150.0, 200.0),
+          height: double.infinity,
           decoration: ShapeDecoration(
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
@@ -810,9 +971,7 @@ class _HomeTabState extends State<_HomeTab>
               colors: [Color(0xFF1A3A08), Color(0xFF3D6E14), Color(0xFF5A9E1F)],
               stops: [0.0, 0.55, 1.0],
             ),
-            shape: SuperellipseShape(
-              borderRadius: BorderRadius.circular(48),
-            ),
+            shape: SuperellipseShape(borderRadius: BorderRadius.circular(48)),
             shadows: [
               BoxShadow(
                 color: const Color(0xFF5A9E1F).withValues(alpha: 0.45),
@@ -858,10 +1017,15 @@ class _HomeTabState extends State<_HomeTab>
                 ),
               ),
               Padding(
-                padding: EdgeInsets.all((_sw * 0.058).clamp(18.0, 26.0)),
+                padding: EdgeInsets.fromLTRB(
+                  (_sw * 0.058).clamp(18.0, 26.0),
+                  (_sw * 0.058).clamp(18.0, 26.0),
+                  (_sw * 0.058).clamp(18.0, 26.0),
+                  (_sw * 0.058).clamp(18.0, 26.0),
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -871,7 +1035,7 @@ class _HomeTabState extends State<_HomeTab>
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        hasActive ? '⛳  Round in progress' : '⛳  Ready to play?',
+                        '⛳  Ready to play?',
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.9),
                           fontSize: _labelSize,
@@ -881,7 +1045,7 @@ class _HomeTabState extends State<_HomeTab>
                     ),
                     SizedBox(height: _sh * 0.012),
                     Text(
-                      hasActive ? 'Continue Round' : 'Start Round',
+                      'Start Round',
                       style: TextStyle(
                         fontFamily: 'Nunito',
                         color: Colors.white,
@@ -891,32 +1055,21 @@ class _HomeTabState extends State<_HomeTab>
                       ),
                     ),
                     SizedBox(height: _sh * 0.006),
-                    if (hasActive)
-                      Text(
-                        '${activeRound.courseName}  •  ${activeRound.holesPlayed}/${activeRound.totalHoles} holes',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: _bodySize * 0.875,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      )
-                    else
-                      Row(
-                        children: [
-                          Text(
-                            'Tap to tee off',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.7),
-                              fontSize: _bodySize * 0.875,
-                            ),
+                    Row(
+                      children: [
+                        Text(
+                          'Tap to tee off',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: _bodySize * 0.875,
                           ),
-                          const SizedBox(width: 6),
-                          Icon(Icons.arrow_forward_rounded,
-                              color: Colors.white.withValues(alpha: 0.7),
-                              size: _bodySize),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: 6),
+                        Icon(Icons.arrow_forward_rounded,
+                            color: Colors.white.withValues(alpha: 0.7),
+                            size: _bodySize),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -986,6 +1139,8 @@ class _HomeTabState extends State<_HomeTab>
                         roundId: activeRound.id!,
                         courseName: activeRound.courseName,
                         totalHoles: activeRound.totalHoles,
+                        initialHole: activeRound.currentHole,
+                        savedScores: activeRound.scores,
                       ),
                     ));
                   }
@@ -1037,7 +1192,7 @@ class _HomeTabState extends State<_HomeTab>
       decoration: ShapeDecoration(
         gradient: LinearGradient(
           colors: round.isActive
-              ? [c.cardBg.withValues(alpha: c.isDark ? 0.11 : 1.0), c.cardBg.withValues(alpha: c.isDark ? 0.11 : 1.0)]
+              ? [c.cardBg, c.cardBg]
               : c.cardGradient,
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
@@ -1522,33 +1677,7 @@ class _HomeTabState extends State<_HomeTab>
         ),
         SizedBox(height: _sh * 0.014),
         if (_loadingNearby)
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: _hPad),
-            child: Container(
-              height: 100,
-              decoration: ShapeDecoration(
-                gradient: LinearGradient(colors: c.cardGradient, begin: Alignment.topCenter, end: Alignment.bottomCenter),
-                shape: SuperellipseShape(
-                  borderRadius: BorderRadius.circular(48),
-                  side: BorderSide(color: c.cardBorder),
-                ),
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(
-                        strokeWidth: 2, color: c.accent),
-                    const SizedBox(height: 10),
-                    Text('Finding courses near you…',
-                        style: TextStyle(
-                            color: c.secondaryText,
-                            fontSize: _labelSize)),
-                  ],
-                ),
-              ),
-            ),
-          )
+          _buildNearbyShimmer()
         else if (_nearbyCourses.isEmpty)
           Padding(
             padding: EdgeInsets.symmetric(horizontal: _hPad),

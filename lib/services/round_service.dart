@@ -142,6 +142,11 @@ class RoundService {
     });
   }
 
+  /// Persists the hole the user is currently on so they can resume later.
+  static Future<void> saveCurrentHole(String roundId, int hole) async {
+    await _col.doc(roundId).update({'currentHole': hole});
+  }
+
   /// Marks the round as completed and records completedAt timestamp.
   static Future<void> completeRound(String roundId) async {
     await _col.doc(roundId).update({

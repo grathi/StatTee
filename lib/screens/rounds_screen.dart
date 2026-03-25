@@ -4,6 +4,7 @@ import 'package:superellipse_shape/superellipse_shape.dart';
 import '../models/round.dart';
 import '../services/round_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/shimmer_widgets.dart';
 import 'scorecard_screen.dart';
 import 'round_detail_screen.dart';
 import 'practice_screen.dart';
@@ -62,193 +63,147 @@ class _RoundsScreenState extends State<RoundsScreen> {
       ),
       child: SafeArea(
         bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Padding(
-              padding: EdgeInsets.fromLTRB(hPad, sh * 0.022, hPad, sh * 0.014),
-              child: Text(
-                'My Rounds',
-                style: TextStyle(fontFamily: 'Nunito',
-                  color: c.primaryText,
-                  fontSize: (sw * 0.068).clamp(24.0, 30.0),
-                  fontWeight: FontWeight.w800,
-                ),
+        child: CustomScrollView(
+          physics: const NeverScrollableScrollPhysics(),
+          slivers: [
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _RoundsHeaderDelegate(
+                c: c,
+                sw: sw,
+                sh: sh,
+                hPad: hPad,
+                body: body,
+                tab: _tab,
+                onTabSelected: _selectTab,
               ),
             ),
-            // Segmented control
-            Padding(
-              padding: EdgeInsets.fromLTRB(hPad, 0, hPad, sh * 0.016),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: c.fieldBg,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: c.fieldBorder),
-                ),
-                padding: const EdgeInsets.all(3),
-                child: Row(
-                  children: [
-                    _tabBtn('Rounds',      0, c, body),
-                    _tabBtn('Practice',    1, c, body),
-                    _tabBtn('Tournaments', 2, c, body),
-                  ],
-                ),
-              ),
-            ),
-            // Active round banner (only in Rounds tab, fades out on other tabs)
-            AnimatedSize(
-              duration: const Duration(milliseconds: 280),
-              curve: Curves.easeInOut,
-              child: _tab == 0
-                  ? StreamBuilder<Round?>(
-                      stream: RoundService.activeRoundStream(),
-                      builder: (context, snap) {
-                        final active = snap.data;
-                        if (active == null) return const SizedBox.shrink();
-                        return Padding(
-                          padding: EdgeInsets.fromLTRB(hPad, 0, hPad, sh * 0.016),
-                          child: GestureDetector(
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => ScorecardScreen(
-                                  roundId: active.id!,
-                                  courseName: active.courseName,
-                                  totalHoles: active.totalHoles,
-                                ),
-                              ),
-                            ),
-                            child: Container(
-                              width: double.infinity,
-                              decoration: ShapeDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFF1A3A08), Color(0xFF2D5E0E), Color(0xFF7BC344)],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                shape: SuperellipseShape(
-                                  borderRadius: BorderRadius.circular(48),
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                  Padding(
-                                    padding: EdgeInsets.fromLTRB(
-                                      (sw * 0.045).clamp(14.0, 20.0),
-                                      sh * 0.016,
-                                      (sw * 0.045).clamp(14.0, 20.0),
-                                      sh * 0.016,
+            SliverFillRemaining(
+              hasScrollBody: true,
+              child: Column(
+                children: [
+                  // Active round banner (only in Rounds tab)
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 280),
+                    curve: Curves.easeInOut,
+                    child: _tab == 0
+                        ? StreamBuilder<Round?>(
+                            stream: RoundService.activeRoundStream(),
+                            builder: (context, snap) {
+                              final active = snap.data;
+                              if (active == null) return const SizedBox.shrink();
+                              return Padding(
+                                padding: EdgeInsets.fromLTRB(hPad, 0, hPad, sh * 0.016),
+                                child: GestureDetector(
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => ScorecardScreen(
+                                        roundId: active.id!,
+                                        courseName: active.courseName,
+                                        totalHoles: active.totalHoles,
+                                      ),
                                     ),
-                                    child: Row(
+                                  ),
+                                  child: Container(
+                                    width: double.infinity,
+                                    decoration: ShapeDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [Color(0xFF1A3A08), Color(0xFF2D5E0E), Color(0xFF7BC344)],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      shape: SuperellipseShape(
+                                        borderRadius: BorderRadius.circular(48),
+                                      ),
+                                    ),
+                                    child: Column(
                                       children: [
-                                        _PulsingPlayIcon(color: Colors.white),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                        Padding(
+                                          padding: EdgeInsets.fromLTRB(
+                                            (sw * 0.045).clamp(14.0, 20.0),
+                                            sh * 0.016,
+                                            (sw * 0.045).clamp(14.0, 20.0),
+                                            sh * 0.016,
+                                          ),
+                                          child: Row(
                                             children: [
+                                              _PulsingPlayIcon(color: Colors.white),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      'Round in Progress',
+                                                      style: TextStyle(
+                                                        color: Colors.white.withValues(alpha: 0.7),
+                                                        fontSize: label,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      active.courseName,
+                                                      style: TextStyle(fontFamily: 'Nunito',
+                                                        color: Colors.white,
+                                                        fontSize: body,
+                                                        fontWeight: FontWeight.w700,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
                                               Text(
-                                                'Round in Progress',
+                                                '${active.holesPlayed}/${active.totalHoles} holes',
                                                 style: TextStyle(
-                                                  color: Colors.white.withValues(alpha: 0.7),
+                                                  color: Colors.white.withValues(alpha: 0.8),
                                                   fontSize: label,
+                                                  fontWeight: FontWeight.w600,
                                                 ),
                                               ),
-                                              Text(
-                                                active.courseName,
-                                                style: TextStyle(fontFamily: 'Nunito',
-                                                  color: Colors.white,
-                                                  fontSize: body,
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                              ),
+                                              const SizedBox(width: 6),
+                                              Icon(Icons.arrow_forward_ios_rounded,
+                                                  color: Colors.white.withValues(alpha: 0.6),
+                                                  size: 14),
                                             ],
                                           ),
                                         ),
-                                        Text(
-                                          '${active.holesPlayed}/${active.totalHoles} holes',
-                                          style: TextStyle(
-                                            color: Colors.white.withValues(alpha: 0.8),
-                                            fontSize: label,
-                                            fontWeight: FontWeight.w600,
+                                        ClipSuperellipse(
+                                          cornerRadius: 20,
+                                          child: LinearProgressIndicator(
+                                            value: active.totalHoles > 0
+                                                ? active.holesPlayed / active.totalHoles
+                                                : 0.0,
+                                            backgroundColor: Colors.white.withValues(alpha: 0.15),
+                                            valueColor: const AlwaysStoppedAnimation(Colors.white),
+                                            minHeight: 3,
                                           ),
                                         ),
-                                        const SizedBox(width: 6),
-                                        Icon(Icons.arrow_forward_ios_rounded,
-                                            color: Colors.white.withValues(alpha: 0.6),
-                                            size: 14),
                                       ],
                                     ),
                                   ),
-                                  ClipSuperellipse(
-                                    cornerRadius: 20,
-                                    child: LinearProgressIndicator(
-                                      value: active.totalHoles > 0
-                                          ? active.holesPlayed / active.totalHoles
-                                          : 0.0,
-                                      backgroundColor: Colors.white.withValues(alpha: 0.15),
-                                      valueColor: const AlwaysStoppedAnimation(Colors.white),
-                                      minHeight: 3,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    )
-                  : const SizedBox.shrink(),
-            ),
-            // PageView — smooth slide between tabs
-            Expanded(
-              child: PageView(
-                controller: _pageCtrl,
-                physics: const BouncingScrollPhysics(),
-                onPageChanged: (i) => setState(() => _tab = i),
-                children: [
-                  _buildRoundsList(context, c, sw, sh, hPad, body, label),
-                  const PracticeScreen(),
-                  const TournamentScreen(),
+                                ),
+                              );
+                            },
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                  // PageView — smooth slide between tabs
+                  Expanded(
+                    child: PageView(
+                      controller: _pageCtrl,
+                      physics: const BouncingScrollPhysics(),
+                      onPageChanged: (i) => setState(() => _tab = i),
+                      children: [
+                        _buildRoundsList(context, c, sw, sh, hPad, body, label),
+                        const PracticeScreen(),
+                        const TournamentScreen(),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _tabBtn(String title, int idx, AppColors c, double body) {
-    final sel = _tab == idx;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => _selectTab(idx),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: EdgeInsets.symmetric(vertical: 8),
-          decoration: ShapeDecoration(
-            gradient: sel
-                ? const LinearGradient(
-                    colors: [Color(0xFF5A9E1F), Color(0xFF8FD44E)],
-                  )
-                : null,
-            shape: SuperellipseShape(
-              borderRadius: BorderRadius.circular(48),
-            ),
-            shadows: sel ? c.cardShadow : null,
-          ),
-          child: Center(
-            child: Text(
-              title,
-              style: TextStyle(
-                color: sel ? c.primaryText : c.tertiaryText,
-                fontSize: body * 0.88,
-                fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
-              ),
-            ),
-          ),
         ),
       ),
     );
@@ -260,16 +215,26 @@ class _RoundsScreenState extends State<RoundsScreen> {
       stream: RoundService.allCompletedRoundsStream(),
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
-          return Center(
-            child: CircularProgressIndicator(color: c.accent, strokeWidth: 2),
+          return ListView.separated(
+            physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(hPad, 0, hPad, sh * 0.14),
+            itemCount: 5,
+            separatorBuilder: (_, __) => SizedBox(height: sh * 0.012),
+            itemBuilder: (_, __) => const ShimmerRoundListCard(),
           );
         }
         final rounds = snap.data ?? [];
         if (rounds.isEmpty) {
           return _buildEmpty(c, sw, sh, body, label);
         }
-        return ListView.separated(
-          physics: const BouncingScrollPhysics(),
+        return RefreshIndicator(
+          onRefresh: () async => await Future.delayed(const Duration(milliseconds: 600)),
+          color: const Color(0xFF5A9E1F),
+          backgroundColor: Colors.white,
+          displacement: 20,
+          child: ListView.separated(
+          physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics()),
           padding: EdgeInsets.fromLTRB(hPad, 0, hPad, sh * 0.14),
           itemCount: rounds.length,
           separatorBuilder: (_, __) => SizedBox(height: sh * 0.012),
@@ -328,7 +293,8 @@ class _RoundsScreenState extends State<RoundsScreen> {
               ),
             );
           },
-        );
+        ),  // ListView.separated
+        );  // RefreshIndicator
       },
     );
   }
@@ -696,4 +662,113 @@ class _PulsingPlayIconState extends State<_PulsingPlayIcon>
       ),
     );
   }
+}
+
+// ── Sliver header delegate for rounds screen ─────────────────────────────────
+class _RoundsHeaderDelegate extends SliverPersistentHeaderDelegate {
+  const _RoundsHeaderDelegate({
+    required this.c,
+    required this.sw,
+    required this.sh,
+    required this.hPad,
+    required this.body,
+    required this.tab,
+    required this.onTabSelected,
+  });
+
+  final AppColors c;
+  final double sw;
+  final double sh;
+  final double hPad;
+  final double body;
+  final int tab;
+  final ValueChanged<int> onTabSelected;
+
+  // Title text rendered height: Nunito ascender+descender ≈ fontSize × 1.5
+  double get _titleFontSize => (sw * 0.068).clamp(24.0, 30.0);
+  double get _titleRowH => sh * 0.022 + _titleFontSize * 1.5 + sh * 0.014;
+  // Tab row: container padding(6) + btn vertical padding(16) + text line height + bottom gap
+  double get _tabRowH => 6 + 16 + (body * 0.88 * 1.5) + sh * 0.016;
+
+  @override
+  double get minExtent => _titleRowH + _tabRowH;
+  @override
+  double get maxExtent => _titleRowH + _tabRowH;
+
+  Widget _tabBtn(String title, int idx) {
+    final sel = tab == idx;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => onTabSelected(idx),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: ShapeDecoration(
+            gradient: sel
+                ? const LinearGradient(
+                    colors: [Color(0xFF5A9E1F), Color(0xFF8FD44E)],
+                  )
+                : null,
+            shape: SuperellipseShape(
+              borderRadius: BorderRadius.circular(48),
+            ),
+            shadows: sel ? c.cardShadow : null,
+          ),
+          child: Center(
+            child: Text(
+              title,
+              style: TextStyle(
+                color: sel ? c.primaryText : c.tertiaryText,
+                fontSize: body * 0.88,
+                fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(hPad, sh * 0.022, hPad, sh * 0.014),
+          child: Text(
+            'My Rounds',
+            style: TextStyle(
+              fontFamily: 'Nunito',
+              color: c.primaryText,
+              fontSize: _titleFontSize,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+        Padding(
+          padding: EdgeInsets.fromLTRB(hPad, 0, hPad, sh * 0.016),
+          child: Container(
+            decoration: BoxDecoration(
+              color: c.fieldBg,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: c.fieldBorder),
+            ),
+            padding: const EdgeInsets.all(3),
+            child: Row(
+              children: [
+                _tabBtn('Rounds',      0),
+                _tabBtn('Practice',    1),
+                _tabBtn('Tournaments', 2),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  bool shouldRebuild(_RoundsHeaderDelegate old) =>
+      old.tab != tab || old.c != c;
 }

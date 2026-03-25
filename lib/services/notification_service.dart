@@ -75,7 +75,11 @@ class NotificationService {
 
     if (settings.authorizationStatus == AuthorizationStatus.denied) return;
 
-    await _saveToken(await _fcm.getToken());
+    try {
+      await _saveToken(
+        await _fcm.getToken().timeout(const Duration(seconds: 8)),
+      );
+    } catch (_) {}
     _fcm.onTokenRefresh.listen(_saveToken);
 
     // Foreground FCM — display via local notifications (Android)
@@ -228,6 +232,17 @@ class NotificationService {
   // ── Cancel all ────────────────────────────────────────────────────────────
 
   static Future<void> cancelAll() => _plugin.cancelAll();
+
+  // ── Smart notification (fired by SmartNotificationService) ───────────────
+
+  static Future<void> showSmartNotification({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    await _plugin.show(id, title, body, _details(payload: payload));
+  }
 
   // ── Notification settings (stored in Firestore per user) ──────────────────
 

@@ -19,6 +19,9 @@ class Round {
   final WeatherData? weather;  // Conditions at round start
   final bool isPractice;       // true = practice round (hidden from Rounds tab)
   final String? tournamentId;  // set when started from Tournament tab
+  /// The hole the user was on when they last left the round (1-indexed).
+  /// Used to resume from the correct position.
+  final int currentHole;
 
   const Round({
     this.id,
@@ -35,6 +38,7 @@ class Round {
     this.weather,
     this.isPractice = false,
     this.tournamentId,
+    this.currentHole = 1,
   });
 
   // ── Computed stats ──────────────────────────────────────────────────────
@@ -97,6 +101,7 @@ class Round {
         if (weather != null) 'weather': weather!.toMap(),
         if (isPractice) 'isPractice': true,
         if (tournamentId != null) 'tournamentId': tournamentId,
+        'currentHole': currentHole,
       };
 
   factory Round.fromFirestore(DocumentSnapshot doc) {
@@ -125,6 +130,7 @@ class Round {
           : null,
       isPractice: (d['isPractice'] as bool?) ?? false,
       tournamentId: d['tournamentId'] as String?,
+      currentHole: (d['currentHole'] as num?)?.toInt() ?? 1,
     );
   }
 
@@ -138,6 +144,7 @@ class Round {
     WeatherData? weather,
     bool? isPractice,
     String? tournamentId,
+    int? currentHole,
   }) =>
       Round(
         id: id ?? this.id,
@@ -154,5 +161,6 @@ class Round {
         weather: weather ?? this.weather,
         isPractice: isPractice ?? this.isPractice,
         tournamentId: tournamentId ?? this.tournamentId,
+        currentHole: currentHole ?? this.currentHole,
       );
 }

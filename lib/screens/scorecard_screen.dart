@@ -6,6 +6,7 @@ import '../services/round_service.dart';
 import '../services/notification_service.dart';
 import '../services/weather_service.dart';
 import '../theme/app_theme.dart';
+import 'round_summary_screen.dart';
 
 class ScorecardScreen extends StatefulWidget {
   final String roundId;
@@ -13,6 +14,10 @@ class ScorecardScreen extends StatefulWidget {
   final int totalHoles;
   final WeatherData? weather;
   final void Function(String roundId)? onComplete;
+  /// Hole to start on when resuming an unfinished round (1-indexed).
+  final int initialHole;
+  /// Previously saved hole scores to pre-populate the scorecard.
+  final List<HoleScore> savedScores;
 
   const ScorecardScreen({
     super.key,
@@ -21,6 +26,8 @@ class ScorecardScreen extends StatefulWidget {
     required this.totalHoles,
     this.weather,
     this.onComplete,
+    this.initialHole = 1,
+    this.savedScores = const [],
   });
 
   @override
@@ -51,6 +58,9 @@ class _ScorecardScreenState extends State<ScorecardScreen>
   // Completed hole scores saved so far
   final List<HoleScore> _saved = [];
 
+  // Track when the round started to compute duration for calorie estimate
+  final DateTime _roundStartTime = DateTime.now();
+
   late AnimationController _animCtrl;
   late Animation<double> _fadeAnim;
 
@@ -80,6 +90,9 @@ class _ScorecardScreenState extends State<ScorecardScreen>
     _animCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 300));
     _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
+    // Pre-populate any scores already saved (resume path)
+    _saved.addAll(widget.savedScores);
+    _resetForHole(widget.initialHole);
     _animCtrl.forward();
     _startGps();
   }
@@ -153,7 +166,10 @@ class _ScorecardScreenState extends State<ScorecardScreen>
       if (_isLastHole) {
         await _completeRound();
       } else {
-        _resetForHole(_currentHole + 1);
+        final nextHole = _currentHole + 1;
+        // Persist the current hole position so the round can be resumed.
+        unawaited(RoundService.saveCurrentHole(widget.roundId, nextHole));
+        _resetForHole(nextHole);
       }
     } catch (e) {
       if (mounted) {
@@ -196,108 +212,46 @@ class _ScorecardScreenState extends State<ScorecardScreen>
   }
 
   void _showRoundSummary() {
-    final totalScore = _saved.fold(0, (s, h) => s + h.score);
-    final totalPar   = _saved.fold(0, (s, h) => s + h.par);
-    final diff       = totalScore - totalPar;
-    final diffLabel  = diff == 0 ? 'Even' : diff > 0 ? '+$diff' : '$diff';
-    final c = AppColors.of(context);
+    final putts      = _saved.fold(0, (s, h) => s + h.putts);
+    final fhit       = _saved.where((h) => h.par >= 4 && h.fairwayHit).length;
+    final ftotal     = _saved.where((h) => h.par >= 4).length;
+    final gir        = _saved.where((h) => h.gir).length;
+    final birdies    = _saved.where((h) => h.diff == -1).length;
+    final pars       = _saved.where((h) => h.diff == 0).length;
+    final bogeys     = _saved.where((h) => h.diff == 1).length;
+    final doublePlus = _saved.where((h) => h.diff >= 2).length;
+    final front9     = _saved.take(9).fold(0, (s, h) => s + h.score);
+    final back9      = _saved.skip(9).fold(0, (s, h) => s + h.score);
+    final bestHole   = _saved.isEmpty ? 1 : _saved.reduce((a, b) => a.diff <= b.diff ? a : b).hole;
+    final worstHole  = _saved.isEmpty ? 1 : _saved.reduce((a, b) => a.diff >= b.diff ? a : b).hole;
+    final duration   = DateTime.now().difference(_roundStartTime).inMinutes;
 
-    showModalBottomSheet(
-      context: context,
-      isDismissible: false,
-      enableDrag: false,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        decoration: BoxDecoration(
-          color: c.sheetBg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          border: Border.all(color: c.cardBorder),
-        ),
-        padding: EdgeInsets.all((_sw * 0.065).clamp(22.0, 32.0)),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40, height: 4,
-              decoration: BoxDecoration(
-                color: c.divider,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            SizedBox(height: _sh * 0.024),
-            const Text('🏆', style: TextStyle(fontSize: 48)),
-            SizedBox(height: _sh * 0.012),
-            Text(
-              'Round Complete!',
-              style: TextStyle(fontFamily: 'Nunito',
-                  color: c.primaryText,
-                  fontSize: (_sw * 0.062).clamp(22.0, 28.0),
-                  fontWeight: FontWeight.w800),
-            ),
-            SizedBox(height: _sh * 0.006),
-            Text(widget.courseName,
-                style: TextStyle(color: c.secondaryText, fontSize: _body)),
-            SizedBox(height: _sh * 0.028),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _summaryTile(c, 'Score', '$totalScore'),
-                _summaryTile(c, 'vs Par', diffLabel,
-                    valueColor: diff < 0
-                        ? c.accent
-                        : diff == 0
-                            ? null
-                            : const Color(0xFFE53935)),
-                _summaryTile(c, 'Holes',
-                    '${widget.totalHoles}'),
-              ],
-            ),
-            SizedBox(height: _sh * 0.032),
-            SizedBox(
-              width: double.infinity,
-              height: (_sh * 0.068).clamp(48.0, 60.0),
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context)
-                    ..pop()     // close sheet
-                    ..pop();    // back to home
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: c.accent,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                  elevation: 0,
-                ),
-                child: Text('Back to Home',
-                    style: TextStyle(fontFamily: 'Nunito',
-                        fontSize: _body,
-                        fontWeight: FontWeight.w600)),
-              ),
-            ),
-            SizedBox(height: _sh * 0.012),
-          ],
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => RoundSummaryScreen(
+          roundId:         widget.roundId,
+          courseName:      widget.courseName,
+          totalHoles:      widget.totalHoles,
+          totalScore:      _saved.fold(0, (s, h) => s + h.score),
+          totalPar:        _saved.fold(0, (s, h) => s + h.par),
+          front9:          front9,
+          back9:           back9,
+          putts:           putts,
+          fairwaysHit:     fhit,
+          fairwaysTotal:   ftotal,
+          gir:             gir,
+          birdies:         birdies,
+          pars:            pars,
+          bogeys:          bogeys,
+          doublePlus:      doublePlus,
+          bestHole:        bestHole,
+          worstHole:       worstHole,
+          durationMinutes: duration,
+          carriedBag:      true,  // default: walking with bag
         ),
       ),
     );
   }
-
-  Widget _summaryTile(AppColors c, String label, String value,
-      {Color? valueColor}) =>
-      Column(
-        children: [
-          Text(
-            value,
-            style: TextStyle(fontFamily: 'Nunito',
-              color: valueColor ?? c.primaryText,
-              fontSize: (_sw * 0.065).clamp(22.0, 28.0),
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          Text(label,
-              style: TextStyle(color: c.secondaryText, fontSize: _label)),
-        ],
-      );
 
   // ── Build ──────────────────────────────────────────────────────────────────
 
@@ -998,14 +952,14 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE53935).withValues(alpha: 0.12),
+                  color: c.accentBg,
                   shape: BoxShape.circle,
+                  border: Border.all(color: c.accentBorder),
                 ),
-                child: const Icon(Icons.flag_outlined,
-                    color: Color(0xFFE53935), size: 28),
+                child: Icon(Icons.flag_rounded, color: c.accent, size: 26),
               ),
               const SizedBox(height: 16),
-              Text('Abandon Round?',
+              Text('Leave Round?',
                   style: TextStyle(
                     fontFamily: 'Nunito',
                     color: c.primaryText,
@@ -1014,7 +968,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                   )),
               const SizedBox(height: 8),
               Text(
-                'All progress for this round\nwill be permanently lost.',
+                'Your progress is saved automatically.\nYou can resume this round from the home screen.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: c.secondaryText,
@@ -1023,13 +977,60 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                 ),
               ),
               const SizedBox(height: 24),
+              // Save & Exit
+              GestureDetector(
+                onTap: () {
+                  // currentHole is already persisted on every advance.
+                  // Just close the dialog and pop back to home.
+                  Navigator.of(context)
+                    ..pop() // dialog
+                    ..pop(); // scorecard screen
+                },
+                child: Container(
+                  width: double.infinity,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF7BC344), Color(0xFF5A9E1F)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF5A9E1F).withValues(alpha: 0.35),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.save_rounded,
+                          color: Colors.white, size: 18),
+                      const SizedBox(width: 8),
+                      Text('Save & Exit',
+                          style: TextStyle(
+                            fontFamily: 'Nunito',
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          )),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              // Keep Playing + Abandon row
               Row(
                 children: [
                   Expanded(
                     child: GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: Container(
-                        height: 48,
+                        height: 46,
                         decoration: BoxDecoration(
                           color: c.cardBg,
                           borderRadius: BorderRadius.circular(14),
@@ -1040,13 +1041,13 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                             style: TextStyle(
                               fontFamily: 'Nunito',
                               color: c.primaryText,
-                              fontSize: 15,
+                              fontSize: 14,
                               fontWeight: FontWeight.w700,
                             )),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: GestureDetector(
                       onTap: () async {
@@ -1058,19 +1059,20 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                         }
                       },
                       child: Container(
-                        height: 48,
+                        height: 46,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE53935).withValues(alpha: 0.12),
+                          color: const Color(0xFFE53935).withValues(alpha: 0.10),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                              color: const Color(0xFFE53935).withValues(alpha: 0.4)),
+                            color: const Color(0xFFE53935).withValues(alpha: 0.30),
+                          ),
                         ),
                         alignment: Alignment.center,
                         child: const Text('Abandon',
                             style: TextStyle(
                               fontFamily: 'Nunito',
                               color: Color(0xFFE53935),
-                              fontSize: 15,
+                              fontSize: 14,
                               fontWeight: FontWeight.w700,
                             )),
                       ),

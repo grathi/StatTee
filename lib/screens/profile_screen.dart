@@ -8,7 +8,21 @@ import '../services/achievement_service.dart';
 import '../services/user_profile_service.dart';
 import '../theme/app_theme.dart';
 import '../services/notification_service.dart';
+import '../screens/notification_preferences_screen.dart';
+import '../widgets/shimmer_widgets.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
+
+const List<String> _kAvatarUrls = [
+  'https://cdn.jsdelivr.net/gh/grathi/stattee_profile_pic@v1/avt/1.jpg',
+  'https://cdn.jsdelivr.net/gh/grathi/stattee_profile_pic@v1/avt/2.jpg',
+  'https://cdn.jsdelivr.net/gh/grathi/stattee_profile_pic@v1/avt/3.jpg',
+  'https://cdn.jsdelivr.net/gh/grathi/stattee_profile_pic@v1/avt/4.jpg',
+  'https://cdn.jsdelivr.net/gh/grathi/stattee_profile_pic@v1/avt/5.jpg',
+  'https://cdn.jsdelivr.net/gh/grathi/stattee_profile_pic@v1/avt/6.jpg',
+  'https://cdn.jsdelivr.net/gh/grathi/stattee_profile_pic@v1/avt/7.jpg',
+  'https://cdn.jsdelivr.net/gh/grathi/stattee_profile_pic@v1/avt/8.jpg',
+  'https://cdn.jsdelivr.net/gh/grathi/stattee_profile_pic@v1/avt/9.jpg',
+];
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -38,99 +52,119 @@ class ProfileScreen extends StatelessWidget {
       ),
       child: SafeArea(
         bottom: false,
-        child: SingleChildScrollView(
+        child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
-          padding: EdgeInsets.fromLTRB(hPad, sh * 0.022, hPad, sh * 0.14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Profile',
-                style: TextStyle(fontFamily: 'Nunito',
-                  color: c.primaryText,
-                  fontSize: (sw * 0.068).clamp(24.0, 30.0),
-                  fontWeight: FontWeight.w800,
+          slivers: [
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _StickyTitleDelegate(
+                title: 'Profile',
+                topPad: sh * 0.022,
+                hPad: hPad,
+                fontSize: (sw * 0.068).clamp(24.0, 30.0),
+                c: c,
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(hPad, sh * 0.028, hPad, sh * 0.14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Avatar + name card
+                    _buildProfileCard(context, c, sw, sh, body, label, initials, name, email),
+
+                    SizedBox(height: sh * 0.022),
+
+                    // Stats summary + Achievements
+                    StreamBuilder(
+                      stream: RoundService.allCompletedRoundsStream(),
+                      builder: (context, snap) {
+                        if (snap.connectionState == ConnectionState.waiting) {
+                          return Column(
+                            children: [
+                              const ShimmerStatsRow(),
+                              SizedBox(height: sh * 0.022),
+                              ShimmerAchievementsGrid(count: 6),
+                            ],
+                          );
+                        }
+                        final rounds = snap.data ?? [];
+                        final stats = StatsService.calculate(rounds);
+                        final unlocked = AchievementService.evaluate(stats, rounds);
+                        return Column(
+                          children: [
+                            _buildStatsRow(c, sw, sh, body, label, stats),
+                            SizedBox(height: sh * 0.022),
+                            _buildAchievementsSection(context, c, sw, sh, body, label, unlocked),
+                          ],
+                        );
+                      },
+                    ),
+
+                    SizedBox(height: sh * 0.022),
+
+                    // Settings section
+                    _buildSection(c, sw, sh, body, label, 'Account', [
+                      _MenuItem(
+                        icon: Icons.person_outline_rounded,
+                        label: 'Edit Profile',
+                        color: const Color(0xFF8FD44E),
+                        onTap: () => _showEditProfileSheet(context, c, sw, sh, body, label),
+                      ),
+                      _MenuItem(
+                        icon: Icons.notifications_active_rounded,
+                        label: 'Smart Notifications',
+                        color: const Color(0xFF7BC344),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const NotificationPreferencesScreen(),
+                          ),
+                        ),
+                      ),
+                    ]),
+                    SizedBox(height: sh * 0.016),
+
+                    // Sign out
+                    _buildSignOutButton(context, c, sw, sh, body),
+
+                    SizedBox(height: sh * 0.028),
+
+                    // Version + copyright
+                    Center(
+                      child: Column(
+                        children: [
+                          Text('StatTee v1.0.0',
+                            style: TextStyle(
+                              color: c.tertiaryText,
+                              fontSize: label * 0.95,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text('© ${DateTime.now().year} StatTee. All rights reserved.',
+                            style: TextStyle(
+                              color: c.tertiaryText.withValues(alpha: 0.6),
+                              fontSize: label * 0.85,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              SizedBox(height: sh * 0.028),
-
-              // Avatar + name card
-              _buildProfileCard(c, sw, sh, body, label, initials, name, email),
-
-              SizedBox(height: sh * 0.022),
-
-              // Stats summary + Achievements
-              StreamBuilder(
-                stream: RoundService.allCompletedRoundsStream(),
-                builder: (context, snap) {
-                  final rounds = snap.data ?? [];
-                  final stats = StatsService.calculate(rounds);
-                  final unlocked = AchievementService.evaluate(stats, rounds);
-                  return Column(
-                    children: [
-                      _buildStatsRow(c, sw, sh, body, label, stats),
-                      SizedBox(height: sh * 0.022),
-                      _buildAchievementsSection(context, c, sw, sh, body, label, unlocked),
-                    ],
-                  );
-                },
-              ),
-
-              SizedBox(height: sh * 0.022),
-
-              // Settings section
-              _buildSection(c, sw, sh, body, label, 'Account', [
-                _MenuItem(
-                  icon: Icons.person_outline_rounded,
-                  label: 'Edit Profile',
-                  color: const Color(0xFF8FD44E),
-                  onTap: () {},
-                ),
-                _MenuItem(
-                  icon: Icons.notifications_none_rounded,
-                  label: 'Notifications',
-                  color: const Color(0xFF64B5F6),
-                  onTap: () {},
-                ),
-                _MenuItem(
-                  icon: Icons.lock_outline_rounded,
-                  label: 'Change Password',
-                  color: const Color(0xFFFFB74D),
-                  onTap: () {},
-                ),
-              ]),
-              SizedBox(height: sh * 0.010),
-              _buildHandicapGoalRow(context, c, sw, sh, body, label),
-
-              SizedBox(height: sh * 0.016),
-
-              _buildSection(c, sw, sh, body, label, 'App', [
-                _MenuItem(
-                  icon: Icons.info_outline_rounded,
-                  label: 'About StatTee',
-                  color: const Color(0xFF6DBD35),
-                  onTap: () {},
-                ),
-              ]),
-
-              SizedBox(height: sh * 0.016),
-
-              // Notifications
-              _buildNotificationsSection(context, c, sw, sh, body, label),
-
-              SizedBox(height: sh * 0.016),
-
-              // Sign out
-              _buildSignOutButton(context, c, sw, sh, body),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildProfileCard(AppColors c, double sw, double sh, double body,
+  Widget _buildProfileCard(BuildContext context, AppColors c, double sw, double sh, double body,
       double label, String initials, String name, String email) {
+    final avatarSize = (sw * 0.18).clamp(62.0, 76.0);
     return Container(
       decoration: ShapeDecoration(
         color: c.cardBg,
@@ -141,43 +175,30 @@ class ProfileScreen extends StatelessWidget {
         shadows: c.cardShadow,
       ),
       padding: EdgeInsets.all((sw * 0.055).clamp(18.0, 24.0)),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: ClipSuperellipse(
-              cornerRadius: 40,
-              child: CustomPaint(
-                painter: _ProfileWavePainter(waveColor: c.accent),
-              ),
-            ),
-          ),
-          Row(
+      child: Row(
             children: [
-              // Avatar
-              Container(
-                width: (sw * 0.18).clamp(62.0, 76.0),
-                height: (sw * 0.18).clamp(62.0, 76.0),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF1A3A08), Color(0xFF7BC344)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  border: Border.all(
-                    color: const Color(0xFF8FD44E).withValues(alpha: 0.4),
-                    width: 2,
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    initials,
-                    style: TextStyle(fontFamily: 'Nunito',
-                      color: Colors.white,
-                      fontSize: (sw * 0.065).clamp(20.0, 28.0),
-                      fontWeight: FontWeight.w700,
+              // Tappable avatar with edit badge
+              GestureDetector(
+                onTap: () => _showAvatarPickerSheet(context, c, sw, sh, body, label),
+                child: Stack(
+                  children: [
+                    _AvatarWidget(initials: initials, avatarSize: avatarSize),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: c.accent,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: c.cardBg, width: 2),
+                        ),
+                        child: const Icon(Icons.edit_rounded,
+                            color: Colors.white, size: 12),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
               SizedBox(width: (sw * 0.04).clamp(12.0, 18.0)),
@@ -222,8 +243,16 @@ class ProfileScreen extends StatelessWidget {
               ),
             ],
           ),
-        ],
-      ),
+    );
+  }
+
+  void _showAvatarPickerSheet(BuildContext context, AppColors c, double sw,
+      double sh, double body, double label) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _AvatarPickerSheet(c: c, sw: sw, sh: sh, body: body, label: label),
     );
   }
 
@@ -292,16 +321,16 @@ class ProfileScreen extends StatelessWidget {
           ),
         ),
 
-        // ── 2-column card grid ─────────────────────────────────────────────
+        // ── 3-column card grid ─────────────────────────────────────────────
         GridView.builder(
           shrinkWrap: true,
           padding: EdgeInsets.zero,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-            mainAxisExtent: (sh * 0.155).clamp(120.0, 145.0),
+            crossAxisCount: 3,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+            mainAxisExtent: (sh * 0.130).clamp(100.0, 120.0),
           ),
           itemCount: all.length,
           itemBuilder: (context, i) {
@@ -340,7 +369,7 @@ class ProfileScreen extends StatelessWidget {
                     ? ShapeDecoration(
                         color: c.cardBg,
                         shape: SuperellipseShape(
-                          borderRadius: BorderRadius.circular(48),
+                          borderRadius: BorderRadius.circular(40),
                           side: BorderSide(color: const Color(0xFF5A9E1F).withValues(alpha: 0.25), width: 1.5),
                         ),
                         shadows: c.cardShadow,
@@ -348,42 +377,36 @@ class ProfileScreen extends StatelessWidget {
                     : ShapeDecoration(
                         color: c.cardBg,
                         shape: SuperellipseShape(
-                          borderRadius: BorderRadius.circular(48),
+                          borderRadius: BorderRadius.circular(40),
                           side: BorderSide(color: c.cardBorder),
                         ),
                         shadows: c.cardShadow,
                       ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       // Emoji / lock badge
-                      Stack(
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isUnlocked
+                              ? const Color(0xFF5A9E1F).withValues(alpha: 0.10)
+                              : c.cardBorder.withValues(alpha: 0.25),
+                        ),
                         alignment: Alignment.center,
-                        children: [
-                          Container(
-                            width: 52,
-                            height: 52,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: isUnlocked
-                                  ? const Color(0xFF5A9E1F).withValues(alpha: 0.10)
-                                  : c.cardBorder.withValues(alpha: 0.25),
-                            ),
+                        child: Opacity(
+                          opacity: isUnlocked ? 1.0 : 0.45,
+                          child: Text(
+                            isUnlocked ? a.emoji : '🔒',
+                            style: TextStyle(fontSize: (sw * 0.052).clamp(18.0, 22.0)),
                           ),
-                          Opacity(
-                            opacity: isUnlocked ? 1.0 : 0.45,
-                            child: Text(
-                              isUnlocked ? a.emoji : '🔒',
-                              style: TextStyle(
-                                  fontSize: (sw * 0.072).clamp(24.0, 30.0)),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                      const SizedBox(height: 8),
-                      // Name
+                      const SizedBox(height: 6),
                       Text(
                         a.name,
                         textAlign: TextAlign.center,
@@ -392,7 +415,7 @@ class ProfileScreen extends StatelessWidget {
                         style: TextStyle(
                           fontFamily: 'Nunito',
                           color: isUnlocked ? c.primaryText : c.tertiaryText,
-                          fontSize: label,
+                          fontSize: label * 0.88,
                           fontWeight: isUnlocked ? FontWeight.w700 : FontWeight.w400,
                           height: 1.2,
                         ),
@@ -757,6 +780,176 @@ class ProfileScreen extends StatelessWidget {
     return _NotificationsSection(c: c, sw: sw, sh: sh, body: body, label: label);
   }
 
+  void _showEditProfileSheet(BuildContext context, AppColors c, double sw,
+      double sh, double body, double label) {
+    final user = FirebaseAuth.instance.currentUser;
+    final nameCtrl = TextEditingController(text: user?.displayName ?? '');
+    final formKey = GlobalKey<FormState>();
+    bool saving = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            decoration: BoxDecoration(
+              color: c.sheetBg,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              border: Border(top: BorderSide(color: c.cardBorder)),
+            ),
+            padding: EdgeInsets.fromLTRB(
+                (sw * 0.055).clamp(18.0, 28.0), 12,
+                (sw * 0.055).clamp(18.0, 28.0), 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Handle
+                Center(
+                  child: Container(
+                    width: 40, height: 4,
+                    decoration: BoxDecoration(
+                      color: c.divider,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                SizedBox(height: sh * 0.022),
+                // Icon + title
+                Row(children: [
+                  Container(
+                    width: 44, height: 44,
+                    decoration: BoxDecoration(
+                      color: c.accentBg,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: c.accentBorder),
+                    ),
+                    child: Icon(Icons.person_rounded, color: c.accent, size: 22),
+                  ),
+                  const SizedBox(width: 14),
+                  Text('Edit Profile',
+                    style: TextStyle(fontFamily: 'Nunito',
+                      color: c.primaryText,
+                      fontSize: (sw * 0.052).clamp(18.0, 22.0),
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ]),
+                SizedBox(height: sh * 0.024),
+                Form(
+                  key: formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Display name
+                      TextFormField(
+                        controller: nameCtrl,
+                        style: TextStyle(color: c.fieldText, fontSize: body),
+                        textCapitalization: TextCapitalization.words,
+                        validator: (v) =>
+                            (v == null || v.trim().isEmpty) ? 'Enter your name' : null,
+                        decoration: InputDecoration(
+                          labelText: 'Display Name',
+                          labelStyle: TextStyle(color: c.fieldLabel, fontSize: body * 0.9),
+                          prefixIcon: Icon(Icons.badge_outlined, color: c.fieldIcon, size: body * 1.3),
+                          filled: true,
+                          fillColor: c.fieldBg,
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(color: c.fieldBorder),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(color: c.accent, width: 1.5),
+                          ),
+                          errorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: const BorderSide(color: Color(0xFFE53935)),
+                          ),
+                          focusedErrorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: const BorderSide(color: Color(0xFFE53935), width: 1.5),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        ),
+                      ),
+                      SizedBox(height: sh * 0.012),
+                      // Email (read-only)
+                      TextFormField(
+                        initialValue: user?.email ?? '',
+                        readOnly: true,
+                        style: TextStyle(color: c.tertiaryText, fontSize: body),
+                        decoration: InputDecoration(
+                          labelText: 'Email',
+                          labelStyle: TextStyle(color: c.fieldLabel, fontSize: body * 0.9),
+                          prefixIcon: Icon(Icons.email_outlined, color: c.fieldIcon, size: body * 1.3),
+                          filled: true,
+                          fillColor: c.fieldBg.withValues(alpha: 0.5),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(color: c.fieldBorder),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(color: c.fieldBorder),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          suffixIcon: Icon(Icons.lock_outline_rounded, color: c.tertiaryText, size: 16),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: sh * 0.028),
+                // Save button
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: c.accent,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                      elevation: 0,
+                    ),
+                    onPressed: saving
+                        ? null
+                        : () async {
+                            if (!formKey.currentState!.validate()) return;
+                            setState(() => saving = true);
+                            try {
+                              await user?.updateDisplayName(nameCtrl.text.trim());
+                              if (ctx.mounted) Navigator.pop(ctx);
+                            } catch (_) {
+                              setState(() => saving = false);
+                            }
+                          },
+                    child: saving
+                        ? const SizedBox(
+                            width: 20, height: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white),
+                          )
+                        : Text('Save Changes',
+                            style: TextStyle(
+                              fontFamily: 'Nunito',
+                              fontSize: body,
+                              fontWeight: FontWeight.w700,
+                            )),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSignOutButton(BuildContext context, AppColors c, double sw,
       double sh, double body) {
     const red = Color(0xFFFF6B6B);
@@ -926,6 +1119,305 @@ class ProfileScreen extends StatelessWidget {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
     return name.isNotEmpty ? name[0].toUpperCase() : '?';
+  }
+}
+
+class _AvatarPickerSheet extends StatefulWidget {
+  final AppColors c;
+  final double sw, sh, body, label;
+  const _AvatarPickerSheet({
+    required this.c,
+    required this.sw,
+    required this.sh,
+    required this.body,
+    required this.label,
+  });
+
+  @override
+  State<_AvatarPickerSheet> createState() => _AvatarPickerSheetState();
+}
+
+class _AvatarPickerSheetState extends State<_AvatarPickerSheet> {
+  String? _selectedUrl;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    UserProfileService.avatarUrlStream().first.then((url) {
+      if (mounted) setState(() => _selectedUrl = url);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.c;
+    final sw = widget.sw;
+    final sh = widget.sh;
+    final body = widget.body;
+    final label = widget.label;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: c.sheetBg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        border: Border(top: BorderSide(color: c.cardBorder)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        (sw * 0.055).clamp(18.0, 28.0),
+        12,
+        (sw * 0.055).clamp(18.0, 28.0),
+        (sh * 0.05).clamp(24.0, 40.0),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Handle
+          Center(
+            child: Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: c.divider,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          SizedBox(height: sh * 0.022),
+          // Header
+          Row(
+            children: [
+              Container(
+                width: 44, height: 44,
+                decoration: BoxDecoration(
+                  color: c.accentBg,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: c.accentBorder),
+                ),
+                child: Icon(Icons.face_rounded, color: c.accent, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Choose Avatar',
+                    style: TextStyle(fontFamily: 'Nunito',
+                      color: c.primaryText,
+                      fontSize: (sw * 0.052).clamp(18.0, 22.0),
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Text('Select a preset avatar',
+                    style: TextStyle(color: c.secondaryText, fontSize: label),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          SizedBox(height: sh * 0.024),
+          // Avatar grid
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.zero,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              childAspectRatio: 1,
+            ),
+            itemCount: _kAvatarUrls.length,
+            itemBuilder: (_, i) {
+              final url = _kAvatarUrls[i];
+              final isSelected = _selectedUrl == url;
+              return GestureDetector(
+                onTap: () => setState(() => _selectedUrl = url),
+                child: Stack(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isSelected ? c.accent : c.cardBorder,
+                          width: isSelected ? 3 : 1.5,
+                        ),
+                      ),
+                      child: ClipOval(
+                        child: Image.network(
+                          url,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (_, child, progress) => progress == null
+                              ? child
+                              : Container(
+                                  color: c.cardBg,
+                                  child: Center(
+                                    child: SizedBox(
+                                      width: 20, height: 20,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2, color: c.accent),
+                                    ),
+                                  ),
+                                ),
+                          errorBuilder: (_, __, ___) => Container(
+                            color: c.cardBg,
+                            child: Icon(Icons.person_rounded,
+                                color: c.tertiaryText, size: 32),
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (isSelected)
+                      Positioned(
+                        bottom: 2, right: 2,
+                        child: Container(
+                          width: 22, height: 22,
+                          decoration: BoxDecoration(
+                            color: c.accent,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: c.sheetBg, width: 2),
+                          ),
+                          child: const Icon(Icons.check_rounded,
+                              color: Colors.white, size: 12),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+          // Remove button
+          if (_selectedUrl != null)
+            Center(
+              child: TextButton(
+                onPressed: () => setState(() => _selectedUrl = null),
+                child: Text('Remove Avatar',
+                  style: TextStyle(
+                    color: c.tertiaryText,
+                    fontSize: label,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          SizedBox(height: sh * 0.016),
+          // Save button
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: c.accent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+                elevation: 0,
+              ),
+              onPressed: _saving
+                  ? null
+                  : () async {
+                      setState(() => _saving = true);
+                      try {
+                        if (_selectedUrl != null) {
+                          await UserProfileService.setAvatarUrl(_selectedUrl!);
+                        } else {
+                          await UserProfileService.clearAvatarUrl();
+                        }
+                        if (mounted) Navigator.pop(context);
+                      } catch (_) {
+                        if (mounted) setState(() => _saving = false);
+                      }
+                    },
+              child: _saving
+                  ? const SizedBox(
+                      width: 20, height: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : Text('Save Avatar',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: body,
+                        fontWeight: FontWeight.w700,
+                      )),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AvatarWidget extends StatelessWidget {
+  final String initials;
+  final double avatarSize;
+
+  const _AvatarWidget({required this.initials, required this.avatarSize});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<String?>(
+      stream: UserProfileService.avatarUrlStream(),
+      builder: (context, snap) {
+        final url = snap.data;
+        return Container(
+          width: avatarSize,
+          height: avatarSize,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: url == null
+                ? const LinearGradient(
+                    colors: [Color(0xFF1A3A08), Color(0xFF7BC344)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
+            border: Border.all(
+              color: const Color(0xFF8FD44E).withValues(alpha: 0.4),
+              width: 2,
+            ),
+          ),
+          child: url != null
+              ? ClipOval(
+                  child: Image.network(
+                    url,
+                    width: avatarSize,
+                    height: avatarSize,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (_, child, progress) => progress == null
+                        ? child
+                        : _initialsCircle(),
+                    errorBuilder: (_, __, ___) => _initialsCircle(),
+                  ),
+                )
+              : _initialsCircle(),
+        );
+      },
+    );
+  }
+
+  Widget _initialsCircle() {
+    return Container(
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: [Color(0xFF1A3A08), Color(0xFF7BC344)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: Text(
+          initials,
+          style: TextStyle(
+            fontFamily: 'Nunito',
+            color: Colors.white,
+            fontSize: (avatarSize * 0.36).clamp(20.0, 28.0),
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -1150,4 +1642,59 @@ class _NotificationsSectionState extends State<_NotificationsSection> {
       ],
     );
   }
+}
+
+// ── Sticky title delegate ─────────────────────────────────────────────────────
+
+class _StickyTitleDelegate extends SliverPersistentHeaderDelegate {
+  const _StickyTitleDelegate({
+    required this.title,
+    required this.topPad,
+    required this.hPad,
+    required this.fontSize,
+    required this.c,
+  });
+
+  final String title;
+  final double topPad;
+  final double hPad;
+  final double fontSize;
+  final AppColors c;
+
+  double get _extent => topPad + fontSize * 1.6 + 14;
+
+  @override
+  double get minExtent => _extent;
+
+  @override
+  double get maxExtent => _extent;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: c.bgGradient.take(2).toList(),
+          stops: const [0.0, 1.0],
+        ),
+      ),
+      alignment: Alignment.bottomLeft,
+      padding: EdgeInsets.fromLTRB(hPad, topPad, hPad, 14),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontFamily: 'Nunito',
+          color: c.primaryText,
+          fontSize: fontSize,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(_StickyTitleDelegate old) =>
+      old.title != title || old.c != c;
 }

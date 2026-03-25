@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:superellipse_shape/superellipse_shape.dart';
 import '../services/places_service.dart';
 import '../services/round_service.dart';
 import '../services/weather_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/weather_widgets.dart';
 import 'scorecard_screen.dart';
 
 class StartRoundScreen extends StatefulWidget {
@@ -253,37 +255,56 @@ class _StartRoundScreenState extends State<StartRoundScreen>
             stops: const [0.0, 0.5, 1.0],
           ),
         ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildTopBar(c),
-              Expanded(
-                child: Center(
-                  child: SingleChildScrollView(
-                    physics: const ClampingScrollPhysics(),
-                    padding: EdgeInsets.symmetric(horizontal: _hPad),
-                    child: FadeTransition(
-                      opacity: _fadeAnim,
-                      child: SlideTransition(
-                        position: _slideAnim,
+        child: Stack(
+          children: [
+            // ── Background image at bottom ─────────────────────────────────
+            Positioned(
+              left: 0, right: 0, bottom: -4,
+              child: IgnorePointer(
+                child: ShaderMask(
+                  shaderCallback: (rect) => const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, Colors.white],
+                    stops: [0.0, 0.40],
+                  ).createShader(rect),
+                  blendMode: BlendMode.dstIn,
+                  child: Image.asset(
+                    'assets/round_bg.png',
+                    fit: BoxFit.fitWidth,
+                  ),
+                ),
+              ),
+            ),
+            // ── Content ───────────────────────────────────────────────────
+            SafeArea(
+              child: Column(
+                children: [
+                  _buildTopBar(c),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: EdgeInsets.symmetric(horizontal: _hPad),
+                      child: FadeTransition(
+                        opacity: _fadeAnim,
                         child: Column(
                           children: [
-                            SizedBox(height: _sh * 0.02),
+                            SizedBox(height: _sh * 0.004),
                             _buildHeader(c),
-                            SizedBox(height: _sh * 0.032),
+                            SizedBox(height: _sh * 0.020),
                             _buildForm(c),
-                            SizedBox(height: _sh * 0.036),
+                            SizedBox(height: _sh * 0.024),
                             _buildTeeOffButton(c),
-                            SizedBox(height: _sh * 0.04),
+                            SizedBox(height: _sh * 0.028),
                           ],
                         ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -291,7 +312,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
 
   Widget _buildTopBar(AppColors c) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: _hPad * 0.5, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: _hPad * 0.5, vertical: 2),
       child: Row(
         children: [
           IconButton(
@@ -309,35 +330,10 @@ class _StartRoundScreenState extends State<StartRoundScreen>
             ),
           ),
           const Spacer(),
-          // Location indicator
-          if (_userPosition != null || _locationName != null || _customLat != null)
-            Row(
-              children: [
-                Icon(Icons.location_on_rounded,
-                    color: c.accent, size: _label * 1.2),
-                const SizedBox(width: 4),
-                Text(
-                  _locationName ?? 'Location found',
-                  style: TextStyle(color: c.accent, fontSize: _label),
-                ),
-              ],
-            )
-          else
-            Row(
-              children: [
-                SizedBox(
-                  width: 12,
-                  height: 12,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 1.5, color: c.tertiaryText),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  'Finding location…',
-                  style: TextStyle(color: c.tertiaryText, fontSize: _label),
-                ),
-              ],
-            ),
+          RoundWeatherTopBar(
+            lat: _userPosition?.latitude ?? _customLat,
+            lng: _userPosition?.longitude ?? _customLng,
+          ),
           SizedBox(width: _hPad * 0.5),
         ],
       ),
@@ -345,39 +341,102 @@ class _StartRoundScreenState extends State<StartRoundScreen>
   }
 
   Widget _buildHeader(AppColors c) {
-    return Column(
-      children: [
-        Container(
-          width: (_sw * 0.18).clamp(60.0, 80.0),
-          height: (_sw * 0.18).clamp(60.0, 80.0),
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              colors: [Color(0xFF1A3A08), Color(0xFF8FD44E)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+    final cardH = (_sh * 0.195).clamp(150.0, 190.0);
+    const overflowTop = 55.0;
+    return SizedBox(
+      height: cardH + overflowTop,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // ── Card ──────────────────────────────────────────────────────
+          Positioned(
+            left: 0, right: 0, bottom: 0,
+            height: cardH,
+            child: Container(
+              decoration: ShapeDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF2E6B10), Color(0xFF4E9E20), Color(0xFF7BC344)],
+                  stops: [0.0, 0.55, 1.0],
+                ),
+                shape: SuperellipseShape(
+                  borderRadius: BorderRadius.circular(48),
+                ),
+                shadows: [
+                  BoxShadow(
+                    color: const Color(0xFF5A9E1F).withValues(alpha: 0.38),
+                    blurRadius: 22,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              padding: EdgeInsets.only(
+                left: (_sw * 0.058).clamp(18.0, 26.0),
+                top: (_sw * 0.038).clamp(10.0, 16.0),
+                bottom: (_sw * 0.038).clamp(10.0, 16.0),
+                right: (_sw * 0.42).clamp(130.0, 170.0),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text('📍  Pick your course',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: _label * 0.9,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: _sh * 0.007),
+                  Text('Where are\nyou playing?',
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      color: Colors.white,
+                      fontSize: (_sw * 0.065).clamp(22.0, 28.0),
+                      fontWeight: FontWeight.w800,
+                      height: 1.15,
+                    ),
+                  ),
+                  SizedBox(height: _sh * 0.005),
+                  Text('Search for a nearby golf course',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.70),
+                      fontSize: _body * 0.82,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Image.asset('assets/golfBag.png', fit: BoxFit.contain),
+
+          // ── Golf bag — anchored to card bottom, overflows above card ─
+          Positioned(
+            right: 0,
+            bottom: 0,
+            top: -40,  // fills full SizedBox = cardH + overflowTop
+            width: (_sw * 0.46).clamp(145.0, 185.0),
+            child: IgnorePointer(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Image.asset(
+                  'assets/golfBag.png',
+                  height: double.infinity,
+                  fit: BoxFit.fitHeight,
+                ),
+              ),
+            ),
           ),
-        ),
-        SizedBox(height: _sh * 0.018),
-        Text(
-          'Start a Round',
-          style: TextStyle(fontFamily: 'Nunito',
-            color: c.primaryText,
-            fontSize: (_sw * 0.072).clamp(24.0, 32.0),
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        SizedBox(height: _sh * 0.006),
-        Text(
-          'Where are you playing today?',
-          style: TextStyle(color: c.secondaryText, fontSize: _body * 0.9),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -389,14 +448,14 @@ class _StartRoundScreenState extends State<StartRoundScreen>
         border: Border.all(color: c.cardBorder),
         boxShadow: c.cardShadow,
       ),
-      padding: EdgeInsets.all((_sw * 0.06).clamp(20.0, 28.0)),
+      padding: EdgeInsets.all((_sw * 0.048).clamp(16.0, 22.0)),
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _sectionLabel(c, 'COURSE DETAILS'),
-            SizedBox(height: _sh * 0.014),
+            SizedBox(height: _sh * 0.010),
 
             // ── Course name with autocomplete ─────────────────────────────
             OverlayPortal(
@@ -480,16 +539,16 @@ class _StartRoundScreenState extends State<StartRoundScreen>
               ),
             ),
 
-            SizedBox(height: _sh * 0.028),
+            SizedBox(height: _sh * 0.018),
             _sectionLabel(c, 'COURSE RATING (OPTIONAL)'),
             Padding(
-              padding: const EdgeInsets.only(bottom: 4),
+              padding: const EdgeInsets.only(bottom: 3),
               child: Text(
                 'For an accurate USGA Handicap Index',
                 style: TextStyle(color: c.tertiaryText, fontSize: _label * 0.9),
               ),
             ),
-            SizedBox(height: _sh * 0.010),
+            SizedBox(height: _sh * 0.008),
             Row(
               children: [
                 Expanded(
@@ -568,9 +627,9 @@ class _StartRoundScreenState extends State<StartRoundScreen>
               ],
             ),
 
-            SizedBox(height: _sh * 0.028),
+            SizedBox(height: _sh * 0.018),
             _sectionLabel(c, 'NUMBER OF HOLES'),
-            SizedBox(height: _sh * 0.014),
+            SizedBox(height: _sh * 0.010),
             _buildHolesSelector(c),
           ],
         ),

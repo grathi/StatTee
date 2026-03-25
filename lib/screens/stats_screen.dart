@@ -7,6 +7,7 @@ import '../services/stats_service.dart';
 import '../services/strokes_gained_service.dart';
 import '../services/user_profile_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/shimmer_widgets.dart';
 
 class StatsScreen extends StatelessWidget {
   const StatsScreen({super.key});
@@ -36,54 +37,105 @@ class StatsScreen extends StatelessWidget {
           ),
           child: SafeArea(
             bottom: false,
-            child: isLoading
-                ? Center(child: CircularProgressIndicator(color: c.accent, strokeWidth: 2))
-                : SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: EdgeInsets.fromLTRB(hPad, sh * 0.022, hPad, sh * 0.14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Statistics',
-                          style: TextStyle(fontFamily: 'Nunito',
-                            color: c.primaryText,
-                            fontSize: (sw * 0.068).clamp(24.0, 30.0),
-                            fontWeight: FontWeight.w800,
+            child: RefreshIndicator(
+              onRefresh: () async => await Future.delayed(const Duration(milliseconds: 600)),
+              color: const Color(0xFF5A9E1F),
+              backgroundColor: Colors.white,
+              displacement: 20,
+              child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics()),
+              slivers: [
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _StickyTitleDelegate(
+                    title: 'Statistics',
+                    topPad: sh * 0.022,
+                    hPad: hPad,
+                    fontSize: (sw * 0.068).clamp(24.0, 30.0),
+                    c: c,
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: isLoading
+                      ? _buildStatsShimmer(context, sw, sh, hPad)
+                      : Padding(
+                          padding: EdgeInsets.fromLTRB(hPad, 0, hPad, sh * 0.14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(height: sh * 0.024),
+                              _buildHandicapCard(c, sw, sh, stats),
+                              SizedBox(height: sh * 0.022),
+                              if (rounds.length >= 3) ...[
+                                _buildHandicapTrend(context, c, sw, sh, rounds),
+                                SizedBox(height: sh * 0.022),
+                              ],
+                              _buildOverviewGrid(c, sw, sh, stats),
+                              SizedBox(height: sh * 0.022),
+                              if (rounds.isNotEmpty) ...[
+                                _buildScoreDistribution(c, sw, sh, rounds),
+                                SizedBox(height: sh * 0.022),
+                                _buildScoringTrend(c, sw, sh, rounds),
+                                SizedBox(height: sh * 0.022),
+                                _buildStrokesGained(c, sw, sh, rounds),
+                                SizedBox(height: sh * 0.022),
+                                if (_hasClubData(rounds)) ...[
+                                  _buildClubStats(c, sw, sh, rounds),
+                                  SizedBox(height: sh * 0.022),
+                                ],
+                              ],
+                              _buildDetailedStats(c, sw, sh, stats),
+                            ],
                           ),
                         ),
-                        SizedBox(height: sh * 0.024),
-                        _buildHandicapCard(c, sw, sh, stats),
-                        SizedBox(height: sh * 0.022),
-                        if (rounds.length >= 3) ...[
-                          _buildHandicapTrend(context, c, sw, sh, rounds),
-                          SizedBox(height: sh * 0.022),
-                        ],
-                        _buildOverviewGrid(c, sw, sh, stats),
-                        SizedBox(height: sh * 0.022),
-                        if (rounds.isNotEmpty) ...[
-                          _buildScoreDistribution(c, sw, sh, rounds),
-                          SizedBox(height: sh * 0.022),
-                          _buildScoringTrend(c, sw, sh, rounds),
-                          SizedBox(height: sh * 0.022),
-                          _buildStrokesGained(c, sw, sh, rounds),
-                          SizedBox(height: sh * 0.022),
-                          if (_hasClubData(rounds)) ...[
-                            _buildClubStats(c, sw, sh, rounds),
-                            SizedBox(height: sh * 0.022),
-                          ],
-                        ],
-                        _buildDetailedStats(c, sw, sh, stats),
-                      ],
-                    ),
-                  ),
-          ),
-        );
+                ),
+              ],
+            ),  // CustomScrollView
+            ),  // RefreshIndicator
+          ),    // SafeArea
+        );      // Container
       },
     );
   }
 
   // ── Handicap card ─────────────────────────────────────────────────────────
+  Widget _buildStatsShimmer(BuildContext context, double sw, double sh, double hPad) {
+    final tileH = (sh * 0.115).clamp(96.0, 116.0);
+    return Padding(
+      padding: EdgeInsets.fromLTRB(hPad, 0, hPad, sh * 0.14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(height: sh * 0.024),
+          const ShimmerHandicapCard(),
+          SizedBox(height: sh * 0.022),
+          ShimmerChartCard(height: (sh * 0.22).clamp(150.0, 220.0)),
+          SizedBox(height: sh * 0.022),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.zero,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: sw * 0.03,
+              mainAxisSpacing: sw * 0.03,
+              mainAxisExtent: tileH,
+            ),
+            itemCount: 4,
+            itemBuilder: (_, __) => ShimmerOverviewTile(height: tileH),
+          ),
+          SizedBox(height: sh * 0.022),
+          ShimmerChartCard(height: (sh * 0.28).clamp(180.0, 260.0)),
+          SizedBox(height: sh * 0.022),
+          ShimmerChartCard(height: (sh * 0.18).clamp(130.0, 160.0)),
+          SizedBox(height: sh * 0.022),
+          ShimmerChartCard(height: (sh * 0.30).clamp(200.0, 300.0)),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHandicapCard(AppColors c, double sw, double sh, AppStats stats) {
     final body = (sw * 0.036).clamp(13.0, 16.0);
     final label = (sw * 0.030).clamp(11.0, 13.0);
@@ -1326,4 +1378,59 @@ class _HandicapTrendPainter extends CustomPainter {
   @override
   bool shouldRepaint(_HandicapTrendPainter old) =>
       old.data != data || old.goal != goal;
+}
+
+// ── Sticky title delegate ─────────────────────────────────────────────────────
+
+class _StickyTitleDelegate extends SliverPersistentHeaderDelegate {
+  const _StickyTitleDelegate({
+    required this.title,
+    required this.topPad,
+    required this.hPad,
+    required this.fontSize,
+    required this.c,
+  });
+
+  final String title;
+  final double topPad;
+  final double hPad;
+  final double fontSize;
+  final AppColors c;
+
+  double get _extent => topPad + fontSize * 1.6 + 14;
+
+  @override
+  double get minExtent => _extent;
+
+  @override
+  double get maxExtent => _extent;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: c.bgGradient.take(2).toList(),
+          stops: const [0.0, 1.0],
+        ),
+      ),
+      alignment: Alignment.bottomLeft,
+      padding: EdgeInsets.fromLTRB(hPad, topPad, hPad, 14),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontFamily: 'Nunito',
+          color: c.primaryText,
+          fontSize: fontSize,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(_StickyTitleDelegate old) =>
+      old.title != title || old.c != c;
 }
