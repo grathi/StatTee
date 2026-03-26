@@ -1,10 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
-import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import 'signup_screen.dart';
@@ -25,8 +20,6 @@ class _LoginScreenState extends State<LoginScreen>
 
   bool _obscurePassword = true;
   bool _isLoading = false;
-  bool _isGoogleLoading = false;
-  bool _isAppleLoading = false;
   String? _errorMessage;
 
   late AnimationController _animController;
@@ -337,43 +330,6 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-  Future<void> _signInWithGoogle() async {
-    setState(() {
-      _isGoogleLoading = true;
-      _errorMessage = null;
-    });
-    try {
-      await _authService.signInWithGoogle();
-    } on FirebaseAuthException catch (e) {
-      if (mounted) setState(() => _errorMessage = _friendlyError(e.code));
-    } catch (_) {
-      if (mounted) setState(() => _errorMessage = 'Google sign-in cancelled.');
-    } finally {
-      if (mounted) setState(() => _isGoogleLoading = false);
-    }
-  }
-
-  Future<void> _signInWithApple() async {
-    setState(() {
-      _isAppleLoading = true;
-      _errorMessage = null;
-    });
-    try {
-      await _authService.signInWithApple();
-    } on FirebaseAuthException catch (e) {
-      if (mounted) setState(() => _errorMessage = _friendlyError(e.code));
-    } on SignInWithAppleAuthorizationException catch (e) {
-      if (e.code != AuthorizationErrorCode.canceled) {
-        if (mounted) setState(() => _errorMessage = 'Apple sign-in failed: ${e.message}');
-      }
-      // Cancelled by user — silently dismiss
-    } catch (e) {
-      if (mounted) setState(() => _errorMessage = 'Apple sign-in failed: $e');
-    } finally {
-      if (mounted) setState(() => _isAppleLoading = false);
-    }
-  }
-
   String _friendlyError(String code) {
     switch (code) {
       case 'user-not-found':
@@ -608,10 +564,6 @@ class _LoginScreenState extends State<LoginScreen>
             ],
             SizedBox(height: _fieldSpacing * 1.4),
             _buildPrimaryButton(),
-            SizedBox(height: _fieldSpacing * 1.2),
-            _buildDivider(),
-            SizedBox(height: _fieldSpacing * 1.2),
-            _buildSocialButtons(),
           ],
         ),
       ),
@@ -724,98 +676,6 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildDivider() {
-    final c = AppColors.of(context);
-    return Row(
-      children: [
-        Expanded(
-            child: Divider(
-                color: c.divider, thickness: 1)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text(
-            'or continue with',
-            style: TextStyle(
-              color: c.tertiaryText,
-              fontSize: _bodySize * 0.8,
-            ),
-          ),
-        ),
-        Expanded(
-            child: Divider(
-                color: c.divider, thickness: 1)),
-      ],
-    );
-  }
-
-  // Single row of icon-only sign-in buttons
-  Widget _buildSocialButtons() {
-    final c   = AppColors.of(context);
-    final dia = _buttonHeight; // square buttons same height as primary button
-
-    Widget iconBtn({
-      required Widget icon,
-      required bool loading,
-      required VoidCallback onTap,
-    }) {
-      return GestureDetector(
-        onTap: loading ? null : onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          width: dia,
-          height: dia,
-          decoration: BoxDecoration(
-            color: c.sheetBg,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: c.fieldBorder),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Center(
-            child: loading
-                ? SizedBox(
-                    width: _bodySize * 1.2,
-                    height: _bodySize * 1.2,
-                    child: const CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation(Colors.black45),
-                    ),
-                  )
-                : icon,
-          ),
-        ),
-      );
-    }
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (!kIsWeb && Platform.isIOS) ...[
-          iconBtn(
-            icon: FaIcon(FontAwesomeIcons.apple, size: dia * 0.42, color: c.primaryText),
-            loading: _isAppleLoading,
-            onTap: _signInWithApple,
-          ),
-          SizedBox(width: _buttonHeight * 0.4),
-        ],
-        iconBtn(
-          icon: SvgPicture.string(
-            _kGoogleLogoSvg,
-            width: dia * 0.42,
-            height: dia * 0.42,
-          ),
-          loading: _isGoogleLoading,
-          onTap: _signInWithGoogle,
-        ),
-      ],
-    );
-  }
-
   Widget _buildError(String message) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -883,12 +743,4 @@ class _LoginScreenState extends State<LoginScreen>
   }
 }
 
-const String _kGoogleLogoSvg = '''
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-  <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-  <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-  <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-  <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-</svg>
-''';
 

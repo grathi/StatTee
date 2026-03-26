@@ -111,7 +111,7 @@ class AIRoundSummaryCard extends StatelessWidget {
                       height: 1.2,
                     )),
               ),
-              if (d.calories != null) ...[
+              if (d.calories != null && d.calories! > 0) ...[
                 const SizedBox(width: 10),
                 _CalorieBadge(calories: d.calories!, label: label),
               ],
@@ -234,22 +234,14 @@ class _CalorieBadge extends StatelessWidget {
 class _GeminiPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: ShapeDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
-        shape: SuperellipseShape(
-          borderRadius: BorderRadius.circular(40),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.25)),
-        ),
+    return Text(
+      'Gemini',
+      style: TextStyle(
+        color: Colors.white.withValues(alpha: 0.55),
+        fontSize: 11,
+        fontWeight: FontWeight.w500,
+        letterSpacing: 0.2,
       ),
-      child: const Text('Gemini',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.3,
-          )),
     );
   }
 }

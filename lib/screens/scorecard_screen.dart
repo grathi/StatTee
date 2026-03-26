@@ -380,22 +380,23 @@ class _ScorecardScreenState extends State<ScorecardScreen>
               ],
             ),
           ),
-          // Running total
+          // Running total — only show when there's a non-zero diff
+          if (_saved.isNotEmpty && _runningDiff != 0)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: ShapeDecoration(
-              color: _runningDiff <= 0 ? c.accentBg : const Color(0xFFE53935).withValues(alpha: 0.12),
+              color: _runningDiff < 0 ? c.accentBg : const Color(0xFFE53935).withValues(alpha: 0.12),
               shape: SuperellipseShape(
-                borderRadius: BorderRadius.circular(40),
+                borderRadius: BorderRadius.circular(24),
                 side: BorderSide(
-                  color: _runningDiff <= 0 ? c.accentBorder : const Color(0xFFE53935).withValues(alpha: 0.3),
+                  color: _runningDiff < 0 ? c.accentBorder : const Color(0xFFE53935).withValues(alpha: 0.3),
                 ),
               ),
             ),
             child: Text(
               _runningDiffLabel,
               style: TextStyle(fontFamily: 'Nunito',
-                color: _runningDiff <= 0 ? c.accent : const Color(0xFFE53935),
+                color: _runningDiff < 0 ? c.accent : const Color(0xFFE53935),
                 fontSize: _body,
                 fontWeight: FontWeight.w700,
               ),
@@ -633,7 +634,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
               decoration: ShapeDecoration(
                 color: c.accentBg,
                 shape: SuperellipseShape(
-                  borderRadius: BorderRadius.circular(40),
+                  borderRadius: BorderRadius.circular(24),
                   side: BorderSide(color: c.accentBorder),
                 ),
               ),
@@ -1181,10 +1182,21 @@ class _ScorecardScreenState extends State<ScorecardScreen>
             height: (_sh * 0.072).clamp(52.0, 64.0),
             alignment: Alignment.center,
             decoration: ShapeDecoration(
-              color: c.accent,
+              gradient: const LinearGradient(
+                colors: [Color(0xFF7BC344), Color(0xFF5A9E1F)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               shape: SuperellipseShape(
                 borderRadius: BorderRadius.circular(32),
               ),
+              shadows: const [
+                BoxShadow(
+                  color: Color(0x445A9E1F),
+                  blurRadius: 12,
+                  offset: Offset(0, 4),
+                ),
+              ],
             ),
             child: _isSaving
                 ? const SizedBox(

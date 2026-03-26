@@ -189,23 +189,37 @@ class _RoundSummaryScreenState extends State<RoundSummaryScreen> {
                   SizedBox(height: sh * 0.036),
 
                   // Back to Home button
-                  SizedBox(
-                    width: double.infinity,
-                    height: (sh * 0.068).clamp(48.0, 60.0),
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: c.accent,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        elevation: 0,
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      width: double.infinity,
+                      height: (sh * 0.068).clamp(48.0, 60.0),
+                      decoration: ShapeDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF7BC344), Color(0xFF5A9E1F)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        shape: SuperellipseShape(
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                        shadows: const [
+                          BoxShadow(
+                            color: Color(0x445A9E1F),
+                            blurRadius: 12,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
                       ),
+                      alignment: Alignment.center,
                       child: Text(
                         'Back to Home',
                         style: TextStyle(
                           fontFamily: 'Nunito',
+                          color: Colors.white,
                           fontSize: body,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3,
                         ),
                       ),
                     ),

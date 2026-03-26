@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -74,6 +75,14 @@ class NotificationService {
     );
 
     if (settings.authorizationStatus == AuthorizationStatus.denied) return;
+
+    // Android 13+ — POST_NOTIFICATIONS requires runtime approval
+    if (Platform.isAndroid) {
+      await _plugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestNotificationsPermission();
+    }
 
     try {
       await _saveToken(

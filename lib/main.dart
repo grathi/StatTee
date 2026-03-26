@@ -7,6 +7,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'firebase_options.dart';
 import 'theme/app_theme.dart';
 import 'screens/login_screen.dart';
+import 'screens/rounds_screen.dart';
 import 'screens/home_screen.dart';
 import 'services/notification_service.dart';
 import 'services/round_service.dart';
@@ -52,9 +53,15 @@ Future<void> _initNotificationsInBackground() async {
 }
 
 void _handleNotificationTap(String? route) {
-  // Navigate based on the payload/route field in the notification
-  // Currently a no-op beyond ensuring the app is open — deep-linking
-  // can be extended here (e.g. push RoundsScreen for route == 'rounds')
+  if (route == null) return;
+  final nav = navigatorKey.currentState;
+  if (nav == null) return;
+  switch (route) {
+    case 'rounds':
+      nav.push(MaterialPageRoute(builder: (_) => const RoundsScreen()));
+    default:
+      nav.popUntil((r) => r.isFirst);
+  }
 }
 
 // ---------------------------------------------------------------------------

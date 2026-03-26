@@ -60,27 +60,109 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
   // ── Delete ────────────────────────────────────────────────────────────────
   Future<void> _delete() async {
     final c = AppColors.of(context);
-    final confirm = await showDialog<bool>(
+    final sw = _sw;
+    final sh = _sh;
+    final body = (sw * 0.036).clamp(13.0, 16.0);
+    const red = Color(0xFFFF6B6B);
+
+    final confirm = await showModalBottomSheet<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: c.sheetBg,
-        shape: SuperellipseShape(borderRadius: BorderRadius.circular(40)),
-        title: Text('Delete Round?',
-            style: TextStyle(fontFamily: 'Nunito',
-                color: c.primaryText, fontWeight: FontWeight.w700)),
-        content: Text(
-          'This will permanently remove your round at ${widget.round.courseName}.',
-          style: TextStyle(color: c.secondaryText),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetCtx) => Container(
+        decoration: BoxDecoration(
+          color: c.sheetBg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          border: Border(top: BorderSide(color: c.cardBorder)),
         ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text('Cancel', style: TextStyle(color: c.secondaryText))),
-          TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Delete',
-                  style: TextStyle(color: Color(0xFFFF6B6B)))),
-        ],
+        padding: EdgeInsets.fromLTRB(
+          (sw * 0.065).clamp(22.0, 32.0),
+          20,
+          (sw * 0.065).clamp(22.0, 32.0),
+          (sh * 0.05).clamp(24.0, 40.0),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: c.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            SizedBox(height: sh * 0.032),
+            Container(
+              width: 60, height: 60,
+              decoration: ShapeDecoration(
+                color: red.withValues(alpha: 0.12),
+                shape: SuperellipseShape(
+                  borderRadius: BorderRadius.circular(36),
+                  side: BorderSide(color: red.withValues(alpha: 0.3)),
+                ),
+              ),
+              child: const Icon(Icons.delete_outline_rounded, color: red, size: 26),
+            ),
+            SizedBox(height: sh * 0.020),
+            Text('Delete Round?',
+                style: TextStyle(
+                    fontFamily: 'Nunito',
+                    color: c.primaryText,
+                    fontSize: (sw * 0.052).clamp(18.0, 22.0),
+                    fontWeight: FontWeight.w700)),
+            SizedBox(height: sh * 0.008),
+            Text(
+              'This will permanently remove your round at ${widget.round.courseName}.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: c.secondaryText, fontSize: body * 0.9),
+            ),
+            SizedBox(height: sh * 0.036),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: (sh * 0.065).clamp(48.0, 58.0),
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(sheetCtx, false),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: c.primaryText,
+                        side: BorderSide(color: c.cardBorder),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: Text('Cancel',
+                          style: TextStyle(
+                              fontSize: body, fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SizedBox(
+                    height: (sh * 0.065).clamp(48.0, 58.0),
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(sheetCtx, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: red,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: Text('Delete',
+                          style: TextStyle(
+                              fontFamily: 'Nunito',
+                              fontSize: body,
+                              fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
     if (confirm == true && mounted) {

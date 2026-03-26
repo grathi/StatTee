@@ -17,6 +17,7 @@ import '../services/golf_dna_service.dart';
 import '../widgets/play_style_widgets.dart';
 import '../services/play_style_service.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 const List<String> _kAvatarUrls = [
   'https://cdn.jsdelivr.net/gh/grathi/stattee_profile_pic@v1/avt/1.jpg',
@@ -158,23 +159,29 @@ class ProfileScreen extends StatelessWidget {
 
                     // Version + copyright
                     Center(
-                      child: Column(
-                        children: [
-                          Text('TeeStats v1.0.0',
-                            style: TextStyle(
-                              color: c.tertiaryText,
-                              fontSize: label * 0.95,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text('© ${DateTime.now().year} TeeStats. All rights reserved.',
-                            style: TextStyle(
-                              color: c.tertiaryText.withValues(alpha: 0.6),
-                              fontSize: label * 0.85,
-                            ),
-                          ),
-                        ],
+                      child: FutureBuilder<PackageInfo>(
+                        future: PackageInfo.fromPlatform(),
+                        builder: (context, snap) {
+                          final version = snap.data?.version ?? '1.3.0';
+                          return Column(
+                            children: [
+                              Text('TeeStats v$version',
+                                style: TextStyle(
+                                  color: c.tertiaryText,
+                                  fontSize: label * 0.95,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text('© ${DateTime.now().year} TeeStats. All rights reserved.',
+                                style: TextStyle(
+                                  color: c.tertiaryText.withValues(alpha: 0.6),
+                                  fontSize: label * 0.85,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
                   ],
