@@ -107,46 +107,93 @@ class _SignUpScreenState extends State<SignUpScreen>
     final c = AppColors.of(context);
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: c.bgGradient,
-            stops: const [0.0, 0.5, 1.0],
+      body: Stack(
+        children: [
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: c.bgGradient,
+                stops: const [0.0, 0.5, 1.0],
+              ),
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildTopBar(),
-              Expanded(
-                child: Center(
-                  child: SingleChildScrollView(
-                    physics: const ClampingScrollPhysics(),
-                    padding: EdgeInsets.symmetric(horizontal: _hPad),
-                    child: FadeTransition(
-                      opacity: _fadeAnim,
-                      child: SlideTransition(
-                        position: _slideAnim,
-                        child: Column(
-                          children: [
-                            _buildCard(),
-                            SizedBox(height: _sectionSpacing * 0.8),
-                            _buildSignInLink(),
-                            SizedBox(height: _sectionSpacing),
-                          ],
+          // Hero image — bleeds under status bar from the very top
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: ShaderMask(
+              shaderCallback: (rect) => const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.white, Colors.transparent],
+                stops: [0.6, 1.0],
+              ).createShader(rect),
+              blendMode: BlendMode.dstIn,
+              child: Image.asset(
+                'assets/login.png',
+                width: double.infinity,
+                height: _sh * 0.32,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: -4,
+            child: IgnorePointer(
+              child: ShaderMask(
+                shaderCallback: (rect) => const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Colors.white],
+                  stops: [0.0, 0.35],
+                ).createShader(rect),
+                blendMode: BlendMode.dstIn,
+                child: Image.asset(
+                  'assets/bg_image.png',
+                  fit: BoxFit.fitWidth,
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                _buildTopBar(),
+                Expanded(
+                  child: Center(
+                    child: SingleChildScrollView(
+                      physics: const ClampingScrollPhysics(),
+                      padding: EdgeInsets.symmetric(horizontal: _hPad),
+                      child: FadeTransition(
+                        opacity: _fadeAnim,
+                        child: SlideTransition(
+                          position: _slideAnim,
+                          child: Column(
+                            children: [
+                              // Space for hero image in Stack
+                              SizedBox(height: _sh * 0.22),
+                              _buildCard(),
+                              SizedBox(height: _sectionSpacing * 0.8),
+                              _buildSignInLink(),
+                              SizedBox(height: _sectionSpacing),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -284,19 +331,6 @@ class _SignUpScreenState extends State<SignUpScreen>
     final iconSize = (_sw * 0.11).clamp(38.0, 52.0);
     return Row(
       children: [
-        Container(
-          width: iconSize,
-          height: iconSize,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: c.accentBg,
-            border: Border.all(color: c.accentBorder),
-          ),
-          child: Icon(Icons.sports_golf,
-              color: c.accent,
-              size: iconSize * 0.50),
-        ),
-        const SizedBox(width: 14),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -309,7 +343,7 @@ class _SignUpScreenState extends State<SignUpScreen>
               ),
             ),
             Text(
-              'Join StatTee today',
+              'Join TeeStats today',
               style: TextStyle(
                 color: c.secondaryText,
                 fontSize: _bodySize * 0.875,

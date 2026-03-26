@@ -8,6 +8,8 @@ import '../services/strokes_gained_service.dart';
 import '../services/user_profile_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shimmer_widgets.dart';
+import '../widgets/tip_banner.dart';
+import '../services/onboarding_service.dart';
 
 class StatsScreen extends StatelessWidget {
   const StatsScreen({super.key});
@@ -54,6 +56,14 @@ class StatsScreen extends StatelessWidget {
                     hPad: hPad,
                     fontSize: (sw * 0.068).clamp(24.0, 30.0),
                     c: c,
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: TipBanner(
+                    title: 'Your Stats Hub',
+                    body: 'Play more rounds to unlock trend charts, strokes gained and score distribution analysis.',
+                    hasSeenFn: OnboardingService.hasSeenStatsTip,
+                    markSeenFn: OnboardingService.markStatsTipSeen,
                   ),
                 ),
                 SliverToBoxAdapter(
@@ -268,9 +278,11 @@ class StatsScreen extends StatelessWidget {
                 Container(
                   width: (sw * 0.10).clamp(36.0, 44.0),
                   height: (sw * 0.10).clamp(36.0, 44.0),
-                  decoration: BoxDecoration(
+                  decoration: ShapeDecoration(
                     color: item.color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
+                    shape: SuperellipseShape(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
                   ),
                   child: Icon(item.icon, color: item.color,
                       size: (sw * 0.052).clamp(18.0, 22.0)),
@@ -371,9 +383,11 @@ class StatsScreen extends StatelessWidget {
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
+                decoration: ShapeDecoration(
                   color: c.accent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
+                  shape: SuperellipseShape(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                 ),
                 child: Text(
                   '$total holes',
@@ -614,11 +628,13 @@ class StatsScreen extends StatelessWidget {
                   if (goal != null)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
+                      decoration: ShapeDecoration(
                         color: const Color(0xFFFFB74D).withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                            color: const Color(0xFFFFB74D).withValues(alpha: 0.4)),
+                        shape: SuperellipseShape(
+                          borderRadius: BorderRadius.circular(24),
+                          side: BorderSide(
+                              color: const Color(0xFFFFB74D).withValues(alpha: 0.4)),
+                        ),
                       ),
                       child: Text(
                         'Goal: $goal',
@@ -714,9 +730,11 @@ class StatsScreen extends StatelessWidget {
                 Container(
                   width: (sw * 0.088).clamp(30.0, 38.0),
                   height: (sw * 0.088).clamp(30.0, 38.0),
-                  decoration: BoxDecoration(
+                  decoration: ShapeDecoration(
                     color: row.color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
+                    shape: SuperellipseShape(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                   ),
                   child: Icon(row.icon, color: row.color,
                       size: (sw * 0.044).clamp(15.0, 20.0)),
@@ -915,11 +933,13 @@ class StatsScreen extends StatelessWidget {
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
+                decoration: ShapeDecoration(
                   color: sg.total >= 0
                       ? const Color(0xFF6DBD35).withValues(alpha: 0.15)
                       : const Color(0xFFFF6B6B).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
+                  shape: SuperellipseShape(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                 ),
                 child: Text(
                   '${sg.total >= 0 ? '+' : ''}${sg.total.toStringAsFixed(2)} total',
@@ -951,9 +971,11 @@ class StatsScreen extends StatelessWidget {
                   Container(
                     width: (sw * 0.078).clamp(28.0, 34.0),
                     height: (sw * 0.078).clamp(28.0, 34.0),
-                    decoration: BoxDecoration(
+                    decoration: ShapeDecoration(
                       color: item.color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(9),
+                      shape: SuperellipseShape(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
                     ),
                     child: Icon(item.icon, color: item.color,
                         size: (sw * 0.038).clamp(13.0, 17.0)),
@@ -1408,14 +1430,7 @@ class _StickyTitleDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: c.bgGradient.take(2).toList(),
-          stops: const [0.0, 1.0],
-        ),
-      ),
+      color: c.bgGradient[0],
       alignment: Alignment.bottomLeft,
       padding: EdgeInsets.fromLTRB(hPad, topPad, hPad, 14),
       child: Text(

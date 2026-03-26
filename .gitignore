@@ -43,6 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+/android/build/
 
 # Signing secrets — never commit these
 android/key.properties
@@ -53,3 +54,9 @@ android/app/*.keystore
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 .claude/
+
+# iOS & Xcode build artifacts
+ios/build/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/.symlinks/

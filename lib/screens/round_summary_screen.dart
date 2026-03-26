@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
+import 'package:superellipse_shape/superellipse_shape.dart';
 import '../models/round_summary_ai.dart';
 import '../services/ai_round_summary_service.dart';
 import '../theme/app_theme.dart';
@@ -196,8 +197,7 @@ class _RoundSummaryScreenState extends State<RoundSummaryScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: c.accent,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         elevation: 0,
                       ),
                       child: Text(

@@ -24,7 +24,6 @@ class ResumeRoundCard extends StatelessWidget {
           roundId: round.id!,
           courseName: round.courseName,
           totalHoles: round.totalHoles,
-          weather: round.weather,
           initialHole: round.currentHole,
           savedScores: round.scores,
         ),
@@ -39,14 +38,21 @@ class ResumeRoundCard extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.6),
-      builder: (dialogCtx) => Dialog(
+      builder: (dialogCtx) {
+        final sw = MediaQuery.of(dialogCtx).size.width;
+        final dialogBody = (sw * 0.038).clamp(13.0, 16.0);
+        final btnH = (sw * 0.125).clamp(44.0, 52.0);
+        final iconSz = (sw * 0.14).clamp(48.0, 58.0);
+        return Dialog(
         backgroundColor: Colors.transparent,
         child: Container(
-          decoration: BoxDecoration(
+          decoration: ShapeDecoration(
             color: c.sheetBg,
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: c.cardBorder),
-            boxShadow: [
+            shape: SuperellipseShape(
+              borderRadius: BorderRadius.circular(56),
+              side: BorderSide(color: c.cardBorder),
+            ),
+            shadows: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.3),
                 blurRadius: 32,
@@ -54,62 +60,65 @@ class ResumeRoundCard extends StatelessWidget {
               ),
             ],
           ),
-          padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+          padding: EdgeInsets.fromLTRB(
+            (sw * 0.06).clamp(20.0, 28.0),
+            (sw * 0.07).clamp(24.0, 32.0),
+            (sw * 0.06).clamp(20.0, 28.0),
+            (sw * 0.05).clamp(18.0, 24.0),
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 56,
-                height: 56,
+                width: iconSz,
+                height: iconSz,
                 decoration: BoxDecoration(
                   color: const Color(0xFFE53935).withValues(alpha: 0.10),
                   shape: BoxShape.circle,
                   border: Border.all(
                       color: const Color(0xFFE53935).withValues(alpha: 0.25)),
                 ),
-                child: const Icon(Icons.delete_outline_rounded,
-                    color: Color(0xFFE53935), size: 26),
+                child: Icon(Icons.delete_outline_rounded,
+                    color: const Color(0xFFE53935), size: iconSz * 0.46),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: sw * 0.04),
               Text(
                 'Discard Round?',
                 style: TextStyle(
                   fontFamily: 'Nunito',
                   color: c.primaryText,
-                  fontSize: 20,
+                  fontSize: (sw * 0.052).clamp(18.0, 22.0),
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: sw * 0.02),
               Text(
                 'All progress on "${round.courseName}" will be permanently lost.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: c.secondaryText,
-                  fontSize: 14,
+                  fontSize: dialogBody * 0.9,
                   height: 1.5,
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: sw * 0.06),
               Row(
                 children: [
                   Expanded(
-                    child: GestureDetector(
-                      onTap: () => Navigator.pop(dialogCtx, false),
-                      child: Container(
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: c.cardBg,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: c.cardBorder),
+                    child: SizedBox(
+                      height: btnH,
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(dialogCtx, false),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: c.primaryText,
+                          side: BorderSide(color: c.cardBorder),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         ),
-                        alignment: Alignment.center,
                         child: Text(
                           'Keep',
                           style: TextStyle(
                             fontFamily: 'Nunito',
-                            color: c.primaryText,
-                            fontSize: 15,
+                            fontSize: dialogBody,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -118,24 +127,22 @@ class ResumeRoundCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: GestureDetector(
-                      onTap: () => Navigator.pop(dialogCtx, true),
-                      child: Container(
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE53935).withValues(alpha: 0.10),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                              color: const Color(0xFFE53935)
-                                  .withValues(alpha: 0.30)),
+                    child: SizedBox(
+                      height: btnH,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(dialogCtx, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE53935).withValues(alpha: 0.10),
+                          foregroundColor: const Color(0xFFE53935),
+                          elevation: 0,
+                          side: BorderSide(color: const Color(0xFFE53935).withValues(alpha: 0.30)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         ),
-                        alignment: Alignment.center,
-                        child: const Text(
+                        child: Text(
                           'Discard',
                           style: TextStyle(
                             fontFamily: 'Nunito',
-                            color: Color(0xFFE53935),
-                            fontSize: 15,
+                            fontSize: dialogBody,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -147,7 +154,8 @@ class ResumeRoundCard extends StatelessWidget {
             ],
           ),
         ),
-      ),
+      );
+      },
     );
 
     if (confirmed == true) {
@@ -208,7 +216,7 @@ class ResumeRoundCard extends StatelessWidget {
                       if (wasSynchronous || frame != null) return child;
                       return const SizedBox.shrink();
                     },
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    errorBuilder: (context, error, stack) => const SizedBox.shrink(),
                   ),
                 ),
               ),
@@ -224,11 +232,12 @@ class ResumeRoundCard extends StatelessWidget {
                   width: btnH * 0.82,
                   height: btnH * 0.82,
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(
+                  decoration: ShapeDecoration(
                     color: Colors.white.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.18)),
+                    shape: SuperellipseShape(
+                      borderRadius: BorderRadius.circular(20),
+                      side: BorderSide(color: Colors.white.withValues(alpha: 0.18)),
+                    ),
                   ),
                   child: Icon(
                     Icons.delete_outline_rounded,
@@ -291,14 +300,14 @@ class ResumeRoundCard extends StatelessWidget {
                     height: btnH,
                     padding: EdgeInsets.symmetric(
                         horizontal: (sw * 0.052).clamp(14.0, 20.0)),
-                    decoration: BoxDecoration(
+                    decoration: ShapeDecoration(
                       gradient: const LinearGradient(
                         colors: [Color(0xFF7BC344), Color(0xFF5A9E1F)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
+                      shape: SuperellipseShape(borderRadius: BorderRadius.circular(24)),
+                      shadows: [
                         BoxShadow(
                           color: const Color(0xFF5A9E1F).withValues(alpha: 0.40),
                           blurRadius: 8,

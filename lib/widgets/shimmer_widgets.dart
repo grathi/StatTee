@@ -42,9 +42,11 @@ class ShimmerBox extends StatelessWidget {
     return Container(
       width: width,
       height: height,
-      decoration: BoxDecoration(
+      decoration: ShapeDecoration(
         color: c.cardBg,
-        borderRadius: BorderRadius.circular(radius),
+        shape: SuperellipseShape(
+          borderRadius: BorderRadius.circular(radius * 2),
+        ),
       ),
     );
   }

@@ -32,6 +32,6 @@ class DefaultFirebaseOptions {
     projectId: 'teetime-main',
     storageBucket: 'teetime-main.firebasestorage.app',
     iosClientId: '340096103166-mr9aa7aonb7g9adcnd3ievids77685f6.apps.googleusercontent.com',
-    iosBundleId: 'com.example.teeTime',
+    iosBundleId: 'com.teetime.golf',
   );
 }

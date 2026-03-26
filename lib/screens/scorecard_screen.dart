@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:superellipse_shape/superellipse_shape.dart';
 import 'dart:async';
 import '../models/hole_score.dart';
 import '../services/round_service.dart';
 import '../services/notification_service.dart';
 import '../services/weather_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/tip_banner.dart';
+import '../services/onboarding_service.dart';
 import 'round_summary_screen.dart';
 
 class ScorecardScreen extends StatefulWidget {
   final String roundId;
   final String courseName;
   final int totalHoles;
-  final WeatherData? weather;
+  /// Course coordinates — used to fetch live weather during scoring.
+  final double? lat;
+  final double? lng;
   final void Function(String roundId)? onComplete;
   /// Hole to start on when resuming an unfinished round (1-indexed).
   final int initialHole;
@@ -24,7 +29,8 @@ class ScorecardScreen extends StatefulWidget {
     required this.roundId,
     required this.courseName,
     required this.totalHoles,
-    this.weather,
+    this.lat,
+    this.lng,
     this.onComplete,
     this.initialHole = 1,
     this.savedScores = const [],
@@ -49,6 +55,8 @@ class _ScorecardScreenState extends State<ScorecardScreen>
   Position? _userPos;
   Position? _pinPos;
   StreamSubscription<Position>? _posSub;
+  bool _weatherFetched = false;
+  WeatherNow? _liveWeather;
 
   static const _clubs = [
     'Driver','3W','5W','4H','3I','4I','5I','6I','7I','8I','9I',
@@ -103,14 +111,33 @@ class _ScorecardScreenState extends State<ScorecardScreen>
       if (permission == LocationPermission.denied) {
         await Geolocator.requestPermission();
       }
-      final settings = const LocationSettings(
+      const settings = LocationSettings(
         accuracy: LocationAccuracy.best,
         distanceFilter: 3,
       );
       _posSub = Geolocator.getPositionStream(locationSettings: settings)
           .listen((pos) {
-        if (mounted) setState(() => _userPos = pos);
+        if (mounted) {
+          setState(() => _userPos = pos);
+          // Fetch weather once: prefer course coords, fall back to device GPS
+          if (!_weatherFetched) {
+            _weatherFetched = true;
+            final lat = widget.lat ?? pos.latitude;
+            final lng = widget.lng ?? pos.longitude;
+            WeatherService.getCurrentWeather(lat, lng).then((w) {
+              if (mounted && w != null) setState(() => _liveWeather = w);
+            });
+          }
+        }
       });
+
+      // Also try fetching weather immediately from course coords (no GPS needed)
+      if (!_weatherFetched && widget.lat != null && widget.lng != null) {
+        _weatherFetched = true;
+        WeatherService.getCurrentWeather(widget.lat!, widget.lng!).then((w) {
+          if (mounted && w != null) setState(() => _liveWeather = w);
+        });
+      }
     } catch (_) {
       // GPS unavailable — feature silently disabled
     }
@@ -274,6 +301,13 @@ class _ScorecardScreenState extends State<ScorecardScreen>
             children: [
               _buildTopBar(c),
               _buildProgressDots(c),
+              TipBanner(
+                title: 'Scoring a Round',
+                body: 'Enter your score, putts, fairway and GIR for each hole. Tap the club to track your club selection.',
+                hasSeenFn: OnboardingService.hasSeenScorecardTip,
+                markSeenFn: OnboardingService.markScorecardTipSeen,
+              ),
+              SizedBox(height: _sh * 0.012),
               Expanded(
                 child: FadeTransition(
                   opacity: _fadeAnim,
@@ -339,9 +373,9 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                   style: TextStyle(color: c.secondaryText, fontSize: _label),
                   textAlign: TextAlign.center,
                 ),
-                if (widget.weather != null) ...[
+                if (_liveWeather != null) ...[
                   const SizedBox(height: 2),
-                  _WeatherChip(weather: widget.weather!, label: _label),
+                  _WeatherChip(weather: _liveWeather!, label: _label),
                 ],
               ],
             ),
@@ -349,11 +383,13 @@ class _ScorecardScreenState extends State<ScorecardScreen>
           // Running total
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
+            decoration: ShapeDecoration(
               color: _runningDiff <= 0 ? c.accentBg : const Color(0xFFE53935).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: _runningDiff <= 0 ? c.accentBorder : const Color(0xFFE53935).withValues(alpha: 0.3),
+              shape: SuperellipseShape(
+                borderRadius: BorderRadius.circular(40),
+                side: BorderSide(
+                  color: _runningDiff <= 0 ? c.accentBorder : const Color(0xFFE53935).withValues(alpha: 0.3),
+                ),
               ),
             ),
             child: Text(
@@ -405,11 +441,20 @@ class _ScorecardScreenState extends State<ScorecardScreen>
   // ── Hole entry card ────────────────────────────────────────────────────────
   Widget _buildHoleCard(AppColors c) {
     return Container(
-      decoration: BoxDecoration(
+      decoration: ShapeDecoration(
         color: c.cardBg,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: c.cardBorder),
-        boxShadow: c.cardShadow,
+        shape: SuperellipseShape(
+          borderRadius: BorderRadius.circular(28),
+          side: BorderSide(color: c.cardBorder),
+        ),
+        shadows: c.cardShadow
+            .map((s) => BoxShadow(
+                  color: s.color,
+                  blurRadius: s.blurRadius,
+                  offset: s.offset,
+                  spreadRadius: s.spreadRadius,
+                ))
+            .toList(),
       ),
       padding: EdgeInsets.all((_sw * 0.06).clamp(20.0, 28.0)),
       child: Column(
@@ -446,12 +491,14 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                   margin: const EdgeInsets.symmetric(horizontal: 6),
                   width: (_sw * 0.17).clamp(56.0, 72.0),
                   height: (_sw * 0.12).clamp(40.0, 52.0),
-                  decoration: BoxDecoration(
+                  decoration: ShapeDecoration(
                     color: sel ? c.accent : c.fieldBg,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: sel ? c.accent : c.fieldBorder,
-                      width: sel ? 2 : 1,
+                    shape: SuperellipseShape(
+                      borderRadius: BorderRadius.circular(24),
+                      side: BorderSide(
+                        color: sel ? c.accent : c.fieldBorder,
+                        width: sel ? 2 : 1,
+                      ),
                     ),
                   ),
                   child: Center(
@@ -469,30 +516,32 @@ class _ScorecardScreenState extends State<ScorecardScreen>
             }).toList(),
           ),
           SizedBox(height: _sh * 0.026),
-          // Score stepper
+          // Score tiles
           _rowLabel(c, 'Score'),
           SizedBox(height: _sh * 0.010),
-          _buildStepper(
+          _numberTiles(
+            context: context,
+            values: List.generate(12, (i) => i + 1),
+            selected: _score,
+            par: _par,
+            onSelect: (v) => setState(() => _score = v),
             c: c,
-            value: _score,
-            min: 1,
-            max: 12,
-            big: true,
-            color: _scoreColor(_score - _par),
-            onChanged: (v) => setState(() => _score = v),
-            label: _scoreLabel(_score - _par),
+            sw: _sw,
+            label: _label,
           ),
           SizedBox(height: _sh * 0.022),
-          // Putts stepper
+          // Putts tiles
           _rowLabel(c, 'Putts'),
           SizedBox(height: _sh * 0.010),
-          _buildStepper(
+          _numberTiles(
+            context: context,
+            values: List.generate(9, (i) => i),
+            selected: _putts,
+            par: null,
+            onSelect: (v) => setState(() => _putts = v),
             c: c,
-            value: _putts,
-            min: 0,
-            max: 8,
-            big: false,
-            onChanged: (v) => setState(() => _putts = v),
+            sw: _sw,
+            label: _label,
           ),
           SizedBox(height: _sh * 0.026),
           // Toggles
@@ -533,15 +582,9 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                     duration: const Duration(milliseconds: 150),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: selected
-                          ? c.accent
-                          : c.fieldBg,
+                      color: selected ? c.accent : c.fieldBg,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: selected
-                            ? c.accent
-                            : c.fieldBorder,
-                      ),
+                      border: Border.all(color: selected ? c.accent : c.fieldBorder),
                     ),
                     child: Text(
                       club,
@@ -587,10 +630,12 @@ class _ScorecardScreenState extends State<ScorecardScreen>
             onTap: () => setState(() => _pinPos = _userPos),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
+              decoration: ShapeDecoration(
                 color: c.accentBg,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: c.accentBorder),
+                shape: SuperellipseShape(
+                  borderRadius: BorderRadius.circular(40),
+                  side: BorderSide(color: c.accentBorder),
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -610,11 +655,13 @@ class _ScorecardScreenState extends State<ScorecardScreen>
           // Pin set — show live distance
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
+            decoration: ShapeDecoration(
               color: _distanceColor(yards).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                  color: _distanceColor(yards).withValues(alpha: 0.4)),
+              shape: SuperellipseShape(
+                borderRadius: BorderRadius.circular(40),
+                side: BorderSide(
+                    color: _distanceColor(yards).withValues(alpha: 0.4)),
+              ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -663,75 +710,6 @@ class _ScorecardScreenState extends State<ScorecardScreen>
         ),
       );
 
-  Widget _buildStepper({
-    required AppColors c,
-    required int value,
-    required int min,
-    required int max,
-    required bool big,
-    required void Function(int) onChanged,
-    Color? color,
-    String? label,
-  }) {
-    final btnSize = big ? (_sw * 0.13).clamp(44.0, 54.0) : (_sw * 0.11).clamp(38.0, 46.0);
-    final valSize = big ? (_sw * 0.14).clamp(46.0, 58.0) : (_sw * 0.09).clamp(30.0, 40.0);
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _stepperBtn(c, Icons.remove_rounded, btnSize,
-            value > min ? () => onChanged(value - 1) : null),
-        SizedBox(width: (_sw * 0.06).clamp(18.0, 28.0)),
-        Column(
-          children: [
-            Text(
-              '$value',
-              style: TextStyle(fontFamily: 'Nunito',
-                color: color ?? c.primaryText,
-                fontSize: valSize,
-                fontWeight: FontWeight.w800,
-                height: 1.0,
-              ),
-            ),
-            if (label != null)
-              Text(
-                label,
-                style: TextStyle(
-                    color: color ?? c.secondaryText,
-                    fontSize: _label,
-                    fontWeight: FontWeight.w600),
-              ),
-          ],
-        ),
-        SizedBox(width: (_sw * 0.06).clamp(18.0, 28.0)),
-        _stepperBtn(c, Icons.add_rounded, btnSize,
-            value < max ? () => onChanged(value + 1) : null),
-      ],
-    );
-  }
-
-  Widget _stepperBtn(
-      AppColors c, IconData icon, double size, VoidCallback? onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: onTap != null ? c.accentBg : c.divider.withValues(alpha: 0.3),
-          border: Border.all(
-            color: onTap != null ? c.accentBorder : Colors.transparent,
-          ),
-        ),
-        child: Icon(icon,
-            color: onTap != null ? c.accent : c.tertiaryText,
-            size: size * 0.42),
-      ),
-    );
-  }
-
   Widget _buildToggle(AppColors c, String label, bool value, IconData icon,
       void Function(bool) onChanged) {
     return GestureDetector(
@@ -741,11 +719,13 @@ class _ScorecardScreenState extends State<ScorecardScreen>
         padding: EdgeInsets.symmetric(
             horizontal: (_sw * 0.032).clamp(10.0, 16.0),
             vertical: (_sh * 0.014).clamp(10.0, 14.0)),
-        decoration: BoxDecoration(
+        decoration: ShapeDecoration(
           color: value ? c.accentBg : c.fieldBg,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-              color: value ? c.accentBorder : c.fieldBorder),
+          shape: SuperellipseShape(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(
+                color: value ? c.accentBorder : c.fieldBorder),
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -772,6 +752,306 @@ class _ScorecardScreenState extends State<ScorecardScreen>
     );
   }
 
+  // ── Number tile grid (score / putts picker) ────────────────────────────────
+  Widget _numberTiles({
+    required BuildContext context,
+    required List<int> values,
+    required int selected,
+    required int? par,           // if set, tiles get score-relative colour
+    required void Function(int) onSelect,
+    required AppColors c,
+    required double sw,
+    required double label,
+  }) {
+    Color tileColor(int v) {
+      if (par == null) return c.accent; // putts — always accent
+      final d = v - par;
+      if (d <= -2) return const Color(0xFFFFD700);       // eagle+
+      if (d == -1) return const Color(0xFF4CAF50);       // birdie
+      if (d == 0)  return const Color(0xFF5A9E1F);       // par
+      if (d == 1)  return const Color(0xFFFFB74D);       // bogey
+      return const Color(0xFFE53935);                    // double+
+    }
+
+    final tileSize = (sw * 0.135).clamp(44.0, 56.0);
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: values.map((v) {
+        final isSel = v == selected;
+        final col   = tileColor(v);
+        return GestureDetector(
+          onTap: () => onSelect(v),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 130),
+            width: tileSize,
+            height: tileSize,
+            decoration: ShapeDecoration(
+              color: isSel ? col : c.fieldBg,
+              shape: SuperellipseShape(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(
+                  color: isSel ? col : c.fieldBorder,
+                  width: isSel ? 0 : 1,
+                ),
+              ),
+            ),
+            child: Center(
+              child: Text(
+                '$v',
+                style: TextStyle(
+                  fontFamily: 'Nunito',
+                  color: isSel ? Colors.white : c.secondaryText,
+                  fontSize: (sw * 0.048).clamp(16.0, 22.0),
+                  fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // ── Edit hole bottom sheet ─────────────────────────────────────────────────
+  Future<void> _showEditHoleSheet(HoleScore original) async {
+    final c = AppColors.of(context);
+    int par        = original.par;
+    int score      = original.score;
+    int putts      = original.putts;
+    bool fairway   = original.fairwayHit;
+    bool gir       = original.gir;
+    String? club   = original.club;
+    bool saving    = false;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) => StatefulBuilder(
+        builder: (ctx, setSheet) {
+          final sw = MediaQuery.of(ctx).size.width;
+          final sh = MediaQuery.of(ctx).size.height;
+          final body  = (sw * 0.036).clamp(13.0, 16.0);
+          final label = (sw * 0.030).clamp(11.0, 13.0);
+          final hPad  = (sw * 0.055).clamp(18.0, 28.0);
+
+          Widget sectionLabel(String t) => Align(
+                alignment: Alignment.centerLeft,
+                child: Text(t,
+                    style: TextStyle(
+                        color: c.secondaryText,
+                        fontSize: label,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5)),
+              );
+
+          Widget toggle(String t, bool val, IconData icon, void Function(bool) onChanged) =>
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setSheet(() => onChanged(!val)),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: EdgeInsets.symmetric(
+                        horizontal: (sw * 0.032).clamp(10.0, 16.0),
+                        vertical: (sh * 0.014).clamp(10.0, 14.0)),
+                    decoration: BoxDecoration(
+                      color: val ? c.accentBg : c.fieldBg,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: val ? c.accentBorder : c.fieldBorder),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(icon, color: val ? c.accent : c.tertiaryText, size: body * 1.1),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(t,
+                              style: TextStyle(
+                                  color: val ? c.accent : c.secondaryText,
+                                  fontSize: label,
+                                  fontWeight: val ? FontWeight.w600 : FontWeight.w400),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+
+
+          return Container(
+            decoration: BoxDecoration(
+              color: c.sheetBg,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              border: Border(top: BorderSide(color: c.cardBorder)),
+            ),
+            padding: EdgeInsets.fromLTRB(
+                hPad, 20, hPad,
+                MediaQuery.of(ctx).viewInsets.bottom + hPad),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle
+                Container(
+                  width: 36, height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: c.divider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                // Title
+                Row(
+                  children: [
+                    Container(
+                      width: 34, height: 34,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: c.accentBg,
+                        border: Border.all(color: c.accentBorder),
+                      ),
+                      child: Center(
+                        child: Text('${original.hole}',
+                            style: TextStyle(
+                                fontFamily: 'Nunito',
+                                color: c.accent,
+                                fontSize: body,
+                                fontWeight: FontWeight.w700)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text('Edit Hole ${original.hole}',
+                        style: TextStyle(
+                            fontFamily: 'Nunito',
+                            color: c.primaryText,
+                            fontSize: body * 1.1,
+                            fontWeight: FontWeight.w700)),
+                  ],
+                ),
+                SizedBox(height: sh * 0.022),
+                // Par
+                sectionLabel('Par'),
+                SizedBox(height: sh * 0.010),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [3, 4, 5].map((p) {
+                    final sel = par == p;
+                    return GestureDetector(
+                      onTap: () => setSheet(() { par = p; }),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        margin: const EdgeInsets.symmetric(horizontal: 6),
+                        width: (sw * 0.18).clamp(58.0, 72.0),
+                        height: (sw * 0.13).clamp(42.0, 54.0),
+                        decoration: BoxDecoration(
+                          color: sel ? c.accent : c.fieldBg,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: sel ? c.accent : c.fieldBorder),
+                        ),
+                        child: Center(
+                          child: Text('$p',
+                              style: TextStyle(
+                                  fontFamily: 'Nunito',
+                                  color: sel ? Colors.white : c.secondaryText,
+                                  fontSize: body * 1.2,
+                                  fontWeight: FontWeight.w700)),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                SizedBox(height: sh * 0.022),
+                // Score
+                sectionLabel('Score'),
+                SizedBox(height: sh * 0.010),
+                _numberTiles(
+                  context: ctx,
+                  values: List.generate(12, (i) => i + 1),
+                  selected: score,
+                  par: par,
+                  onSelect: (v) => setSheet(() => score = v),
+                  c: c, sw: sw, label: label,
+                ),
+                SizedBox(height: sh * 0.022),
+                // Putts
+                sectionLabel('Putts'),
+                SizedBox(height: sh * 0.010),
+                _numberTiles(
+                  context: ctx,
+                  values: List.generate(7, (i) => i),
+                  selected: putts,
+                  par: null,
+                  onSelect: (v) => setSheet(() => putts = v),
+                  c: c, sw: sw, label: label,
+                ),
+                SizedBox(height: sh * 0.022),
+                // Fairway + GIR toggles
+                Row(
+                  children: [
+                    toggle('Fairway Hit', fairway, Icons.grass_rounded,
+                        (v) => fairway = v),
+                    const SizedBox(width: 10),
+                    toggle('GIR', gir, Icons.sports_golf_rounded, (v) => gir = v),
+                  ],
+                ),
+                SizedBox(height: sh * 0.026),
+                // Save button
+                SizedBox(
+                  width: double.infinity,
+                  height: (sh * 0.068).clamp(48.0, 60.0),
+                  child: ElevatedButton(
+                    onPressed: saving
+                        ? null
+                        : () async {
+                            setSheet(() => saving = true);
+                            final updated = HoleScore(
+                              hole:       original.hole,
+                              par:        par,
+                              score:      score,
+                              putts:      putts,
+                              fairwayHit: fairway,
+                              gir:        gir,
+                              club:       club,
+                            );
+                            await RoundService.saveHoleScore(widget.roundId, updated);
+                            if (!mounted) return;
+                            setState(() {
+                            final idx = _saved.indexWhere((h) => h.hole == original.hole);
+                            if (idx >= 0) _saved[idx] = updated;
+                          });
+                          if (ctx.mounted) Navigator.pop(ctx);
+                        },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF5A9E1F),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: saving
+                        ? const SizedBox(
+                            width: 18, height: 18,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                valueColor: AlwaysStoppedAnimation(Colors.white)),
+                          )
+                        : Text('Save Changes',
+                            style: TextStyle(
+                                fontFamily: 'Nunito',
+                                fontSize: (sw * 0.046).clamp(16.0, 20.0),
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.3)),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   // ── Previous holes strip ───────────────────────────────────────────────────
   Widget _buildPreviousHoles(AppColors c) {
     return Column(
@@ -786,11 +1066,13 @@ class _ScorecardScreenState extends State<ScorecardScreen>
         ),
         SizedBox(height: _sh * 0.010),
         Container(
-          decoration: BoxDecoration(
+          decoration: ShapeDecoration(
             color: c.cardBg,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: c.cardBorder),
-            boxShadow: c.cardShadow,
+            shape: SuperellipseShape(
+              borderRadius: BorderRadius.circular(32),
+              side: BorderSide(color: c.cardBorder),
+            ),
+            shadows: c.cardShadow,
           ),
           child: Column(
             children: _saved.map((h) {
@@ -860,8 +1142,20 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                         ),
                       ),
                       const SizedBox(width: 4),
-                      Icon(Icons.edit_rounded,
-                          color: c.tertiaryText, size: _label),
+                      GestureDetector(
+                        onTap: () => _showEditHoleSheet(h),
+                        child: Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: c.accentBg,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: c.accentBorder),
+                          ),
+                          child: Icon(Icons.edit_rounded,
+                              color: c.accent, size: _label),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -878,47 +1172,50 @@ class _ScorecardScreenState extends State<ScorecardScreen>
     return Padding(
       padding: EdgeInsets.fromLTRB(
           _hPad, _sh * 0.012, _hPad, _sh * 0.030),
-      child: SizedBox(
-        width: double.infinity,
-        height: (_sh * 0.072).clamp(52.0, 64.0),
-        child: ElevatedButton(
-          onPressed: _isSaving ? null : _saveAndAdvance,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: c.accent,
-            foregroundColor: Colors.white,
-            disabledBackgroundColor:
-                c.accent.withValues(alpha: 0.5),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16)),
-            elevation: 0,
-          ),
-          child: _isSaving
-              ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation(Colors.white)),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      _isLastHole ? 'Complete Round' : 'Next Hole',
-                      style: TextStyle(fontFamily: 'Nunito',
-                        fontSize: (_sw * 0.046).clamp(16.0, 20.0),
-                        fontWeight: FontWeight.w700,
+      child: GestureDetector(
+        onTap: _isSaving ? null : _saveAndAdvance,
+        child: Opacity(
+          opacity: _isSaving ? 0.5 : 1.0,
+          child: Container(
+            width: double.infinity,
+            height: (_sh * 0.072).clamp(52.0, 64.0),
+            alignment: Alignment.center,
+            decoration: ShapeDecoration(
+              color: c.accent,
+              shape: SuperellipseShape(
+                borderRadius: BorderRadius.circular(32),
+              ),
+            ),
+            child: _isSaving
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        valueColor: AlwaysStoppedAnimation(Colors.white)),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _isLastHole ? 'Complete Round' : 'Next Hole',
+                        style: TextStyle(fontFamily: 'Nunito',
+                          fontSize: (_sw * 0.046).clamp(16.0, 20.0),
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      _isLastHole
-                          ? Icons.flag_rounded
-                          : Icons.arrow_forward_rounded,
-                      size: _body * 1.2,
-                    ),
-                  ],
-                ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        _isLastHole
+                            ? Icons.flag_rounded
+                            : Icons.arrow_forward_rounded,
+                        color: Colors.white,
+                        size: _body * 1.2,
+                      ),
+                    ],
+                  ),
+          ),
         ),
       ),
     );
@@ -989,14 +1286,16 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                 child: Container(
                   width: double.infinity,
                   height: 50,
-                  decoration: BoxDecoration(
+                  decoration: ShapeDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFF7BC344), Color(0xFF5A9E1F)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
+                    shape: SuperellipseShape(
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                    shadows: [
                       BoxShadow(
                         color: const Color(0xFF5A9E1F).withValues(alpha: 0.35),
                         blurRadius: 10,
@@ -1031,10 +1330,12 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                       onTap: () => Navigator.pop(context),
                       child: Container(
                         height: 46,
-                        decoration: BoxDecoration(
+                        decoration: ShapeDecoration(
                           color: c.cardBg,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: c.cardBorder),
+                          shape: SuperellipseShape(
+                            borderRadius: BorderRadius.circular(28),
+                            side: BorderSide(color: c.cardBorder),
+                          ),
                         ),
                         alignment: Alignment.center,
                         child: Text('Keep Playing',
@@ -1060,11 +1361,13 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                       },
                       child: Container(
                         height: 46,
-                        decoration: BoxDecoration(
+                        decoration: ShapeDecoration(
                           color: const Color(0xFFE53935).withValues(alpha: 0.10),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: const Color(0xFFE53935).withValues(alpha: 0.30),
+                          shape: SuperellipseShape(
+                            borderRadius: BorderRadius.circular(28),
+                            side: BorderSide(
+                              color: const Color(0xFFE53935).withValues(alpha: 0.30),
+                            ),
                           ),
                         ),
                         alignment: Alignment.center,
@@ -1107,7 +1410,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
 }
 
 class _WeatherChip extends StatelessWidget {
-  final WeatherData weather;
+  final WeatherNow weather;
   final double label;
   const _WeatherChip({required this.weather, required this.label});
 
@@ -1116,22 +1419,24 @@ class _WeatherChip extends StatelessWidget {
     final c = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
+      decoration: ShapeDecoration(
         color: c.iconContainerBg,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: c.cardBorder),
+        shape: SuperellipseShape(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: c.cardBorder),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.thermostat_rounded, color: c.secondaryText, size: label),
           const SizedBox(width: 2),
-          Text('${weather.tempF.round()}°F',
+          Text(weather.tempLabel,
               style: TextStyle(color: c.secondaryText, fontSize: label * 0.88)),
           const SizedBox(width: 6),
           Icon(Icons.air_rounded, color: c.secondaryText, size: label),
           const SizedBox(width: 2),
-          Text('${weather.windMph.round()} mph ${weather.windDir}',
+          Text(weather.windLabel,
               style: TextStyle(color: c.secondaryText, fontSize: label * 0.88)),
         ],
       ),

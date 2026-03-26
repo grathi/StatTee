@@ -29,7 +29,7 @@
 		};
 		AA1B97B3C2D14E9B8F3E5A6C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = D41D8CD98F00B204E9800998ECF8427E /* Pods/Pods.xcodeproj */;
+			containerPortal = D41D8CD98F00B204E9800998ECF8427E /* Pods.xcodeproj */;
 			proxyType = 1;
 			remoteGlobalIDString = 8B74B458B450D74B75744B87BD747314;
 			remoteInfo = "Pods-Runner";
@@ -240,7 +240,6 @@
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				067CF16476B86D7A59DB8FA9 /* Strip Simulator Platform Tags */,
-				C5EF831181E9D8D6A3D39E4A /* [CP] Embed Pods Frameworks */,
 				AEB65C81722F857E5217BFB9 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
@@ -274,6 +273,11 @@
 					97C146ED1CF9000F007C117D = {
 						CreatedOnToolsVersion = 7.3.1;
 						LastSwiftMigration = 1100;
+						SystemCapabilities = {
+							"com.apple.Sign-in-with-Apple" = {
+								enabled = 1;
+							};
+						};
 					};
 				};
 			};
@@ -390,23 +394,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		C5EF831181E9D8D6A3D39E4A /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		CF305CAEC5F176684D31D046 /* [CP] Check Pods Manifest.lock */ = {

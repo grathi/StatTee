@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:superellipse_shape/superellipse_shape.dart';
 import '../models/practice_session.dart';
 import '../models/round.dart';
 import '../services/practice_service.dart';
@@ -147,11 +148,13 @@ class PracticeScreen extends StatelessWidget {
       ),
       child: Container(
         margin: EdgeInsets.only(bottom: sh * 0.012),
-        decoration: BoxDecoration(
+        decoration: ShapeDecoration(
           color: c.cardBg,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: c.cardBorder),
-          boxShadow: c.cardShadow,
+          shape: SuperellipseShape(
+            borderRadius: BorderRadius.circular(36),
+            side: BorderSide(color: c.cardBorder),
+          ),
+          shadows: c.cardShadow,
         ),
         padding: EdgeInsets.all((sw * 0.045).clamp(14.0, 20.0)),
         child: Row(
@@ -159,10 +162,12 @@ class PracticeScreen extends StatelessWidget {
             Container(
               width: (sw * 0.12).clamp(40.0, 52.0),
               height: (sw * 0.12).clamp(40.0, 52.0),
-              decoration: BoxDecoration(
+              decoration: ShapeDecoration(
                 color: diffColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: diffColor.withValues(alpha: 0.3)),
+                shape: SuperellipseShape(
+                  borderRadius: BorderRadius.circular(24),
+                  side: BorderSide(color: diffColor.withValues(alpha: 0.3)),
+                ),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -263,20 +268,24 @@ class PracticeScreen extends StatelessWidget {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
-        decoration: BoxDecoration(
+        decoration: ShapeDecoration(
           color: const Color(0xFFE53935).withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(18),
+          shape: SuperellipseShape(
+            borderRadius: BorderRadius.circular(36),
+          ),
         ),
         child: const Icon(Icons.delete_outline_rounded,
             color: Color(0xFFE53935), size: 24),
       ),
       child: Container(
         margin: EdgeInsets.only(bottom: sh * 0.012),
-        decoration: BoxDecoration(
+        decoration: ShapeDecoration(
           color: c.cardBg,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: c.cardBorder),
-          boxShadow: c.cardShadow,
+          shape: SuperellipseShape(
+            borderRadius: BorderRadius.circular(36),
+            side: BorderSide(color: c.cardBorder),
+          ),
+          shadows: c.cardShadow,
         ),
         padding: EdgeInsets.all((sw * 0.045).clamp(14.0, 20.0)),
         child: Row(
@@ -284,9 +293,11 @@ class PracticeScreen extends StatelessWidget {
             Container(
               width: (sw * 0.12).clamp(40.0, 52.0),
               height: (sw * 0.12).clamp(40.0, 52.0),
-              decoration: BoxDecoration(
+              decoration: ShapeDecoration(
                 color: _typeColor(session.type).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
+                shape: SuperellipseShape(
+                  borderRadius: BorderRadius.circular(24),
+                ),
               ),
               child: Icon(_typeIcon(session.type),
                   color: _typeColor(session.type),
@@ -461,11 +472,13 @@ class _LogSessionSheetState extends State<_LogSessionSheet> {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
+                  decoration: ShapeDecoration(
                     color: sel ? const Color(0xFF5A9E1F) : c.fieldBg,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                        color: sel ? const Color(0xFF5A9E1F) : c.fieldBorder),
+                    shape: SuperellipseShape(
+                      borderRadius: BorderRadius.circular(40),
+                      side: BorderSide(
+                          color: sel ? const Color(0xFF5A9E1F) : c.fieldBorder),
+                    ),
                   ),
                   child: Text(t.label,
                       style: TextStyle(
@@ -493,10 +506,12 @@ class _LogSessionSheetState extends State<_LogSessionSheet> {
               color: c.secondaryText, fontSize: label, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           Container(
-            decoration: BoxDecoration(
+            decoration: ShapeDecoration(
               color: c.fieldBg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: c.fieldBorder),
+              shape: SuperellipseShape(
+                borderRadius: BorderRadius.circular(24),
+                side: BorderSide(color: c.fieldBorder),
+              ),
             ),
             child: TextField(
               controller: _notesCtrl,
@@ -512,28 +527,32 @@ class _LogSessionSheetState extends State<_LogSessionSheet> {
           ),
           SizedBox(height: sh * 0.028),
 
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _saving ? null : _save,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF5A9E1F),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
+          GestureDetector(
+            onTap: _saving ? null : _save,
+            child: Opacity(
+              opacity: _saving ? 0.5 : 1.0,
+              child: Container(
+                alignment: Alignment.center,
+                width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                elevation: 0,
+                decoration: ShapeDecoration(
+                  color: const Color(0xFF5A9E1F),
+                  shape: SuperellipseShape(
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                ),
+                child: _saving
+                    ? const SizedBox(
+                        width: 20, height: 20,
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2))
+                    : Text('Save Session',
+                        style: TextStyle(
+                            fontFamily: 'Nunito',
+                            fontSize: body,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white)),
               ),
-              child: _saving
-                  ? const SizedBox(
-                      width: 20, height: 20,
-                      child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2))
-                  : Text('Save Session',
-                      style: TextStyle(
-                          fontFamily: 'Nunito',
-                          fontSize: body,
-                          fontWeight: FontWeight.w700)),
             ),
           ),
         ],
@@ -551,10 +570,12 @@ class _LogSessionSheetState extends State<_LogSessionSheet> {
             color: c.secondaryText, fontSize: label, fontWeight: FontWeight.w600)),
         const SizedBox(height: 6),
         Container(
-          decoration: BoxDecoration(
+          decoration: ShapeDecoration(
             color: c.fieldBg,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: c.fieldBorder),
+            shape: SuperellipseShape(
+              borderRadius: BorderRadius.circular(24),
+              side: BorderSide(color: c.fieldBorder),
+            ),
           ),
           child: Row(
             children: [
@@ -635,11 +656,13 @@ class _FabWithLabel extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
+            decoration: ShapeDecoration(
               color: c.cardBg,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: c.cardBorder),
-              boxShadow: c.cardShadow,
+              shape: SuperellipseShape(
+                borderRadius: BorderRadius.circular(40),
+                side: BorderSide(color: c.cardBorder),
+              ),
+              shadows: c.cardShadow,
             ),
             child: Text(
               label,

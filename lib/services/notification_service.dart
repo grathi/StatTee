@@ -16,8 +16,8 @@ class NotificationService {
   static final _plugin = FlutterLocalNotificationsPlugin();
   static final _fcm    = FirebaseMessaging.instance;
 
-  static const _channelId   = 'stattee_main';
-  static const _channelName = 'TeeTime Notifications';
+  static const _channelId   = 'teestats_main';
+  static const _channelName = 'TeeStats Notifications';
   static const _tipCount    = 2;
 
   // Callback set by the app so taps can trigger navigation

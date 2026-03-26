@@ -573,7 +573,7 @@ class _AITextGenerator {
       SmartNotification notif, SmartNotificationContext ctx) {
     final perf = ctx.performance;
     final act  = ctx.activity;
-    return '''You are a personal golf coach assistant for the StatTee app.
+    return '''You are a personal golf coach assistant for the TeeStats app.
 Generate a short, engaging push notification for the following scenario.
 
 Type: ${notif.type.label}

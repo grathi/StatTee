@@ -18,8 +18,11 @@ import 'rounds_screen.dart';
 import 'stats_screen.dart';
 import 'profile_screen.dart';
 import '../widgets/resume_round_card.dart';
+// import 'swing_analyzer_screen.dart';
 import '../widgets/shimmer_widgets.dart';
 import '../widgets/weather_widgets.dart';
+import '../widgets/tour_overlay.dart';
+import '../services/onboarding_service.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
 
 // ---------------------------------------------------------------------------
@@ -35,46 +38,131 @@ class _HomeScreenState extends State<HomeScreen> {
   int _navIndex = 0;
   final _homeTabKey = GlobalKey<_HomeTabState>();
 
+  // Tour GlobalKeys
+  final _fabKey        = GlobalKey();
+  final _roundsTabKey  = GlobalKey();
+  final _statsTabKey   = GlobalKey();
+  final _profileTabKey = GlobalKey();
+  bool _showTour = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final seen = await OnboardingService.hasSeenTour();
+      if (!seen && mounted) setState(() => _showTour = true);
+    });
+  }
+
+  List<TourStep> _buildTourSteps() {
+    final homeState = _homeTabKey.currentState;
+    return [
+      if (homeState?._greetingKey != null)
+        TourStep(
+          targetKey: homeState!._greetingKey,
+          title: 'Welcome to TeeStats',
+          body: 'This is your home — see recent rounds, performance and nearby courses at a glance.',
+          anchor: TourAnchor.below,
+        ),
+      TourStep(
+        targetKey: _fabKey,
+        title: 'Start a Round',
+        body: 'Tap the green button anytime to start scoring a new round at any course.',
+        anchor: TourAnchor.above,
+      ),
+      if (homeState?._heroCardKey != null)
+        TourStep(
+          targetKey: homeState!._heroCardKey,
+          title: 'Your Active Round',
+          body: 'If you leave mid-round, it\'s saved here. Tap Resume to pick up where you left off.',
+          anchor: TourAnchor.below,
+        ),
+      TourStep(
+        targetKey: _roundsTabKey,
+        title: 'Round History',
+        body: 'All your completed rounds live here. Tap any round for a full hole-by-hole breakdown.',
+        anchor: TourAnchor.above,
+      ),
+      TourStep(
+        targetKey: _statsTabKey,
+        title: 'Your Stats',
+        body: 'Track your handicap trend, scoring patterns, GIR, fairways and strokes gained over time.',
+        anchor: TourAnchor.above,
+      ),
+      TourStep(
+        targetKey: _profileTabKey,
+        title: 'Your Profile',
+        body: 'Set your handicap goal, pick an avatar, and view your Golf DNA and Play Style identity.',
+        anchor: TourAnchor.above,
+      ),
+      if (homeState?._quickStatsKey != null)
+        TourStep(
+          targetKey: homeState!._quickStatsKey,
+          title: 'Quick Stats',
+          body: 'Live averages across all your rounds — fairways, GIR, putts and birdies per round.',
+          anchor: TourAnchor.above,
+          beforeShow: () async => homeState.scrollToQuickStats(),
+        ),
+      if (homeState?._nearbyCourseKey != null)
+        TourStep(
+          targetKey: homeState!._nearbyCourseKey,
+          title: 'Nearby Courses',
+          body: 'Golf courses near your location. Tap any course to start a round there instantly.',
+          anchor: TourAnchor.above,
+          beforeShow: () async => homeState.scrollToQuickStats(),
+        ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    return Scaffold(
-      extendBody: true,
-      backgroundColor: c.scaffoldBg,
-      body: Stack(
-        children: [
-          IndexedStack(
-            index: _navIndex,
+    return Stack(
+      children: [
+        Scaffold(
+          extendBody: true,
+          backgroundColor: c.scaffoldBg,
+          body: Stack(
             children: [
-              _HomeTab(key: _homeTabKey, onViewAllRounds: () => setState(() => _navIndex = 1)),
-              const RoundsScreen(),
-              const StatsScreen(),
-              const ProfileScreen(),
-            ],
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: -4,
-            child: IgnorePointer(
-              child: ShaderMask(
-                shaderCallback: (rect) => LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.white],
-                  stops: const [0.0, 0.35],
-                ).createShader(rect),
-                blendMode: BlendMode.dstIn,
-                child: Image.asset(
-                  'assets/bg_image.png',
-                  fit: BoxFit.fitWidth,
+              IndexedStack(
+                index: _navIndex,
+                children: [
+                  _HomeTab(key: _homeTabKey, onViewAllRounds: () => setState(() => _navIndex = 1)),
+                  const RoundsScreen(),
+                  const StatsScreen(),
+                  const ProfileScreen(),
+                ],
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: -4,
+                child: IgnorePointer(
+                  child: ShaderMask(
+                    shaderCallback: (rect) => LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.transparent, Colors.white],
+                      stops: const [0.0, 0.35],
+                    ).createShader(rect),
+                    blendMode: BlendMode.dstIn,
+                    child: Image.asset(
+                      'assets/bg_image.png',
+                      fit: BoxFit.fitWidth,
+                    ),
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
-      bottomNavigationBar: _buildBottomNav(c),
+          bottomNavigationBar: _buildBottomNav(c),
+        ),
+        if (_showTour)
+          TourOverlay(
+            steps: _buildTourSteps(),
+            onComplete: () => setState(() => _showTour = false),
+          ),
+      ],
     );
   }
 
@@ -114,23 +202,26 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     // iOS 18-style expanding chip: active = icon + label in tinted capsule
-    Widget tabChip(IconData fillIcon, IconData lineIcon, String label, int idx) {
+    Widget tabChip(IconData fillIcon, IconData lineIcon, String label, int idx, {GlobalKey? chipKey}) {
       final active = _navIndex == idx;
       return GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => setState(() => _navIndex = idx),
         child: AnimatedContainer(
+          key: chipKey,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOutCubic,
           padding: EdgeInsets.symmetric(
             horizontal: active ? 14.0 : 11.0,
             vertical: 9.0,
           ),
-          decoration: BoxDecoration(
+          decoration: ShapeDecoration(
             color: active
                 ? c.accent.withValues(alpha: 0.10)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(24),
+            shape: SuperellipseShape(
+              borderRadius: BorderRadius.circular(48),
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -209,12 +300,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     const Spacer(),
                     tabChip(navItems[0].$1, navItems[0].$2, navItems[0].$3, navItems[0].$4),
                     const Spacer(),
-                    tabChip(navItems[1].$1, navItems[1].$2, navItems[1].$3, navItems[1].$4),
+                    tabChip(navItems[1].$1, navItems[1].$2, navItems[1].$3, navItems[1].$4, chipKey: _roundsTabKey),
                     const Spacer(),
                     // Centre play button — always a gradient circle
                     GestureDetector(
                       onTap: () => _showStartSheet(context, c, sw, sh),
                       child: Container(
+                        key: _fabKey,
                         width: playDia,
                         height: playDia,
                         decoration: BoxDecoration(
@@ -238,9 +330,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const Spacer(),
-                    tabChip(navItems[2].$1, navItems[2].$2, navItems[2].$3, navItems[2].$4),
+                    tabChip(navItems[2].$1, navItems[2].$2, navItems[2].$3, navItems[2].$4, chipKey: _statsTabKey),
                     const Spacer(),
-                    tabChip(navItems[3].$1, navItems[3].$2, navItems[3].$3, navItems[3].$4),
+                    tabChip(navItems[3].$1, navItems[3].$2, navItems[3].$3, navItems[3].$4, chipKey: _profileTabKey),
                     const Spacer(),
                   ],
                 ),
@@ -273,6 +365,12 @@ class _HomeTabState extends State<_HomeTab>
   int _carouselPage = 0;
   bool? _prevHasActive;
 
+  // Tour target keys
+  final _greetingKey     = GlobalKey();
+  final _heroCardKey     = GlobalKey();
+  final _quickStatsKey   = GlobalKey();
+  final _nearbyCourseKey = GlobalKey();
+
   Position? _userPosition;
   String?   _locationName;
   double?   _customLat;
@@ -281,11 +379,31 @@ class _HomeTabState extends State<_HomeTab>
   bool _loadingNearby = false;
   int  _loadGeneration = 0; // incremented each time a new load starts
 
+  // Cached streams — created once so StreamBuilder doesn't re-subscribe on rebuild
+  late final Stream<Round?> _activeRoundStream =
+      RoundService.activeRoundStream().asBroadcastStream();
+  late final Stream<List<Round>> _recentRoundsStream =
+      RoundService.recentRoundsStream(limit: 10).asBroadcastStream();
+  late final Stream<List<Round>> _allRoundsStream =
+      RoundService.allCompletedRoundsStream().asBroadcastStream();
+
+  final _scrollCtrl = ScrollController();
+
   double get _sw => MediaQuery.of(context).size.width;
   double get _sh => MediaQuery.of(context).size.height;
   double get _hPad => (_sw * 0.055).clamp(18.0, 28.0);
   double get _bodySize => (_sw * 0.036).clamp(13.0, 16.0);
   double get _labelSize => (_sw * 0.030).clamp(11.0, 13.0);
+
+  /// Scrolls the home feed down so the Quick Stats section is visible.
+  Future<void> scrollToQuickStats() async {
+    if (!_scrollCtrl.hasClients) return;
+    await _scrollCtrl.animateTo(
+      _scrollCtrl.position.maxScrollExtent,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+    );
+  }
 
   @override
   void initState() {
@@ -426,10 +544,12 @@ class _HomeTabState extends State<_HomeTab>
                 SizedBox(height: sh * 0.024),
                 // Search field
                 Container(
-                  decoration: BoxDecoration(
+                  decoration: ShapeDecoration(
                     color: c.fieldBg,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: c.fieldBorder),
+                    shape: SuperellipseShape(
+                      borderRadius: BorderRadius.circular(28),
+                      side: BorderSide(color: c.fieldBorder),
+                    ),
                   ),
                   child: TextField(
                     controller: searchCtrl,
@@ -468,11 +588,13 @@ class _HomeTabState extends State<_HomeTab>
                 if (suggestions.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Container(
-                    decoration: BoxDecoration(
+                    decoration: ShapeDecoration(
                       color: c.cardBg,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: c.cardBorder),
-                      boxShadow: c.cardShadow,
+                      shape: SuperellipseShape(
+                        borderRadius: BorderRadius.circular(28),
+                        side: BorderSide(color: c.cardBorder),
+                      ),
+                      shadows: c.cardShadow,
                     ),
                     child: Column(
                       children: suggestions.asMap().entries.map((entry) {
@@ -544,10 +666,12 @@ class _HomeTabState extends State<_HomeTab>
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
+                    decoration: ShapeDecoration(
                       color: c.accentBg,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: c.accentBorder),
+                      shape: SuperellipseShape(
+                        borderRadius: BorderRadius.circular(24),
+                        side: BorderSide(color: c.accentBorder),
+                      ),
                     ),
                     child: Row(children: [
                       Icon(Icons.my_location_rounded, color: c.accent, size: 18),
@@ -558,20 +682,23 @@ class _HomeTabState extends State<_HomeTab>
                 ),
                 SizedBox(height: sh * 0.016),
                 // Search button
-                SizedBox(
-                  height: (_sh * 0.065).clamp(48.0, 58.0),
-                  child: ElevatedButton(
-                    onPressed: searching ? null : () => doSearch(searchCtrl.text.trim(), setSheet),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF5A9E1F),
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: const Color(0xFF5A9E1F).withValues(alpha: 0.5),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      elevation: 0,
+                GestureDetector(
+                  onTap: searching ? null : () => doSearch(searchCtrl.text.trim(), setSheet),
+                  child: Opacity(
+                    opacity: searching ? 0.5 : 1.0,
+                    child: Container(
+                      alignment: Alignment.center,
+                      height: (_sh * 0.065).clamp(48.0, 58.0),
+                      decoration: ShapeDecoration(
+                        color: const Color(0xFF5A9E1F),
+                        shape: SuperellipseShape(
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                      ),
+                      child: searching
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.5, valueColor: AlwaysStoppedAnimation(Colors.white)))
+                          : Text('Search Location', style: TextStyle(color: Colors.white, fontSize: _bodySize, fontWeight: FontWeight.w600)),
                     ),
-                    child: searching
-                        ? SizedBox(width: 18, height: 18, child: const CircularProgressIndicator(strokeWidth: 2.5, valueColor: AlwaysStoppedAnimation(Colors.white)))
-                        : Text('Search Location', style: TextStyle(fontSize: _bodySize, fontWeight: FontWeight.w600)),
                   ),
                 ),
               ],
@@ -589,6 +716,7 @@ class _HomeTabState extends State<_HomeTab>
     _animController.dispose();
     _carouselCtrl.dispose();
     _carouselPageNotifier.dispose();
+    _scrollCtrl.dispose();
     super.dispose();
   }
 
@@ -663,17 +791,17 @@ class _HomeTabState extends State<_HomeTab>
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     return StreamBuilder<Round?>(
-      stream: RoundService.activeRoundStream(),
+      stream: _activeRoundStream,
       builder: (context, activeSnap) {
         final activeRound = activeSnap.data;
         final loading = activeSnap.connectionState == ConnectionState.waiting;
         return StreamBuilder<List<Round>>(
-          stream: RoundService.recentRoundsStream(limit: 10),
+          stream: _recentRoundsStream,
           builder: (context, recentSnap) {
             final recentRounds = recentSnap.data ?? [];
             final recentLoading = recentSnap.connectionState == ConnectionState.waiting;
             return StreamBuilder<List<Round>>(
-              stream: RoundService.allCompletedRoundsStream(),
+              stream: _allRoundsStream,
               builder: (context, allSnap) {
                 final allLoading = allSnap.connectionState == ConnectionState.waiting;
                 final stats = StatsService.calculate(allSnap.data ?? []);
@@ -700,6 +828,7 @@ class _HomeTabState extends State<_HomeTab>
                               backgroundColor: Colors.white,
                               displacement: 20,
                               child: SingleChildScrollView(
+                              controller: _scrollCtrl,
                               physics: const AlwaysScrollableScrollPhysics(
                                   parent: BouncingScrollPhysics()),
                               child: Column(
@@ -726,11 +855,19 @@ class _HomeTabState extends State<_HomeTab>
                                         )
                                       : _buildPerformanceSummary(stats),
                                   SizedBox(height: _sh * 0.024),
-                                  allLoading
-                                      ? _buildQuickStatsShimmer()
-                                      : _buildQuickStats(stats),
+                                  Container(
+                                    key: _quickStatsKey,
+                                    child: allLoading
+                                        ? _buildQuickStatsShimmer()
+                                        : _buildQuickStats(stats),
+                                  ),
                                   SizedBox(height: _sh * 0.024),
-                                  _buildNearbyCourses(),
+                                  Container(
+                                    key: _nearbyCourseKey,
+                                    child: _buildNearbyCourses(),
+                                  ),
+                                  SizedBox(height: _sh * 0.024),
+                                  // _buildSwingAnalyzerCard(),
                                   SizedBox(height: _sh * 0.14),
                                 ],
                               ),
@@ -755,6 +892,7 @@ class _HomeTabState extends State<_HomeTab>
     return Padding(
       padding: EdgeInsets.fromLTRB(_hPad, _sh * 0.018, _hPad, _sh * 0.012),
       child: Row(
+        key: _greetingKey,
         children: [
           StreamBuilder<String?>(
             stream: UserProfileService.avatarUrlStream(),
@@ -808,17 +946,6 @@ class _HomeTabState extends State<_HomeTab>
                     height: 1.1,
                   ),
                 ),
-                const SizedBox(height: 3),
-                Builder(builder: (_) {
-                  final now = DateTime.now();
-                  const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-                  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-                  final dateLabel = '${days[now.weekday - 1]}, ${now.day} ${months[now.month - 1]}';
-                  return Text(
-                    dateLabel,
-                    style: TextStyle(color: c.tertiaryText, fontSize: _labelSize * 0.95),
-                  );
-                }),
               ],
             ),
           ),
@@ -900,6 +1027,7 @@ class _HomeTabState extends State<_HomeTab>
     return Column(
       children: [
         SizedBox(
+          key: _heroCardKey,
           height: cardHeight,
           child: PageView.builder(
             controller: _carouselCtrl,
@@ -1030,9 +1158,11 @@ class _HomeTabState extends State<_HomeTab>
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
+                      decoration: ShapeDecoration(
                         color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(20),
+                        shape: SuperellipseShape(
+                          borderRadius: BorderRadius.circular(40),
+                        ),
                       ),
                       child: Text(
                         '⛳  Ready to play?',
@@ -1229,10 +1359,12 @@ class _HomeTabState extends State<_HomeTab>
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
+                  decoration: ShapeDecoration(
                     color: c.accentBg,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: c.accentBorder),
+                    shape: SuperellipseShape(
+                      borderRadius: BorderRadius.circular(40),
+                      side: BorderSide(color: c.accentBorder),
+                    ),
                   ),
                   child: Text(
                     'Active',
@@ -1315,9 +1447,11 @@ class _HomeTabState extends State<_HomeTab>
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
+                  decoration: ShapeDecoration(
                     color: diffColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
+                    shape: SuperellipseShape(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                   child: Text(
                     round.diffLabel,
@@ -1575,15 +1709,22 @@ class _HomeTabState extends State<_HomeTab>
 
   Widget _buildStatTile(_StatTileData stat) {
     final c = AppColors.of(context);
+    final hasValue = stat.value != '-';
     double progress = 0.0;
-    final raw = double.tryParse(stat.value.replaceAll('%', '')) ?? 0;
-    if (stat.label == 'Fairways Hit' || stat.label == 'Greens in Reg.') {
-      progress = (raw / 100).clamp(0.0, 1.0);
-    } else if (stat.label == 'Avg Putts') {
-      progress = (1.0 - ((raw - 1.5) / 1.5)).clamp(0.0, 1.0);
-    } else if (stat.label == 'Birdies') {
-      progress = (raw / 18).clamp(0.0, 1.0);
+    if (hasValue) {
+      final raw = double.tryParse(stat.value.replaceAll('%', '')) ?? 0;
+      if (stat.label == 'Fairways Hit' || stat.label == 'Greens in Reg.') {
+        progress = (raw / 100).clamp(0.0, 1.0);
+      } else if (stat.label == 'Avg Putts') {
+        progress = (1.0 - ((raw - 1.5) / 1.5)).clamp(0.0, 1.0);
+      } else if (stat.label == 'Birdies') {
+        progress = (raw / 18).clamp(0.0, 1.0);
+      }
     }
+    final iconColor = hasValue ? stat.color : stat.color.withValues(alpha: 0.22);
+    final iconBgColor = hasValue
+        ? stat.color.withValues(alpha: 0.15)
+        : stat.color.withValues(alpha: 0.07);
 
     return Container(
       decoration: ShapeDecoration(
@@ -1603,7 +1744,7 @@ class _HomeTabState extends State<_HomeTab>
                 width: 4,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: stat.color,
+                  color: iconColor,
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(48),
                     bottomRight: Radius.circular(4),
@@ -1617,11 +1758,13 @@ class _HomeTabState extends State<_HomeTab>
                 Container(
                   width: (_sw * 0.092).clamp(32.0, 40.0),
                   height: (_sw * 0.092).clamp(32.0, 40.0),
-                  decoration: BoxDecoration(
-                    color: stat.color.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
+                  decoration: ShapeDecoration(
+                    color: iconBgColor,
+                    shape: SuperellipseShape(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                   ),
-                  child: Icon(stat.icon, color: stat.color, size: (_sw * 0.050).clamp(17.0, 22.0)),
+                  child: Icon(stat.icon, color: iconColor, size: (_sw * 0.050).clamp(17.0, 22.0)),
                 ),
                 const Spacer(),
                 Text(stat.value,
@@ -1638,7 +1781,7 @@ class _HomeTabState extends State<_HomeTab>
               top: 0, right: 0,
               child: SizedBox(
                 width: 46, height: 46,
-                child: CustomPaint(painter: _ProgressArcPainter(progress: progress, color: stat.color)),
+                child: CustomPaint(painter: _ProgressArcPainter(progress: progress, color: iconColor)),
               ),
             ),
           ],
@@ -1711,10 +1854,12 @@ class _HomeTabState extends State<_HomeTab>
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
+                        decoration: ShapeDecoration(
                           color: c.accentBg,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: c.accentBorder),
+                          shape: SuperellipseShape(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(color: c.accentBorder),
+                          ),
                         ),
                         child: Text('Allow',
                             style: TextStyle(
@@ -1781,10 +1926,12 @@ class _HomeTabState extends State<_HomeTab>
                 Container(
                   width: (_sw * 0.10).clamp(34.0, 42.0),
                   height: (_sw * 0.10).clamp(34.0, 42.0),
-                  decoration: BoxDecoration(
+                  decoration: ShapeDecoration(
                     color: c.accentBg,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: c.accentBorder),
+                    shape: SuperellipseShape(
+                      borderRadius: BorderRadius.circular(20),
+                      side: BorderSide(color: c.accentBorder),
+                    ),
                   ),
                   child: Icon(Icons.golf_course_rounded,
                       color: c.accent,
@@ -1794,11 +1941,13 @@ class _HomeTabState extends State<_HomeTab>
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
+                  decoration: ShapeDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFF5A9E1F), Color(0xFF7BC344)],
                     ),
-                    borderRadius: BorderRadius.circular(20),
+                    shape: SuperellipseShape(
+                      borderRadius: BorderRadius.circular(40),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -1865,6 +2014,102 @@ class _HomeTabState extends State<_HomeTab>
         fontWeight: FontWeight.w700,
       ),
     );
+  }
+
+  // ignore: unused_element
+  Widget _buildSwingAnalyzerCard() {
+    // ignore: dead_code
+    return const SizedBox.shrink(); // re-enable below when swing analyzer is ready
+    // return GestureDetector(
+    //   onTap: () => Navigator.push(
+    //     context,
+    //     MaterialPageRoute(builder: (_) => const SwingAnalyzerScreen()),
+    //   ),
+    //   child: Container(
+    //     width: double.infinity,
+    //     decoration: BoxDecoration(
+    //       gradient: const LinearGradient(
+    //         begin: Alignment.topLeft,
+    //         end: Alignment.bottomRight,
+    //         colors: [Color(0xFF1A3A08), Color(0xFF2E6B12)],
+    //       ),
+    //       borderRadius: BorderRadius.circular(20),
+    //       border: Border.all(
+    //           color: const Color(0xFF7BC344).withValues(alpha: 0.35)),
+    //       boxShadow: [
+    //         BoxShadow(
+    //           color: const Color(0xFF5A9E1F).withValues(alpha: 0.18),
+    //           blurRadius: 16,
+    //           offset: const Offset(0, 6),
+    //         ),
+    //       ],
+    //     ),
+    //     padding: EdgeInsets.symmetric(
+    //       horizontal: (_sw * 0.05).clamp(16.0, 24.0),
+    //       vertical: (_sh * 0.022).clamp(16.0, 22.0),
+    //     ),
+    //     child: Row(
+    //       children: [
+    //         Container(
+    //           width: 52,
+    //           height: 52,
+    //           decoration: BoxDecoration(
+    //             color: const Color(0xFF7BC344).withValues(alpha: 0.15),
+    //             borderRadius: BorderRadius.circular(14),
+    //             border: Border.all(
+    //                 color: const Color(0xFF7BC344).withValues(alpha: 0.3)),
+    //           ),
+    //           child: const Icon(Icons.sports_golf_rounded,
+    //               color: Color(0xFF8FD44E), size: 26),
+    //         ),
+    //         SizedBox(width: (_sw * 0.04).clamp(12.0, 18.0)),
+    //         Expanded(
+    //           child: Column(
+    //             crossAxisAlignment: CrossAxisAlignment.start,
+    //             children: [
+    //               const Text(
+    //                 'AI Swing Tracer',
+    //                 style: TextStyle(
+    //                   fontFamily: 'Nunito',
+    //                   color: Colors.white,
+    //                   fontSize: 16,
+    //                   fontWeight: FontWeight.w800,
+    //                 ),
+    //               ),
+    //               const SizedBox(height: 3),
+    //               Text(
+    //                 'Record or upload a swing — Gemini tracks the ball path',
+    //                 style: TextStyle(
+    //                   color: Colors.white.withValues(alpha: 0.6),
+    //                   fontSize: 12,
+    //                   height: 1.4,
+    //                 ),
+    //               ),
+    //             ],
+    //           ),
+    //         ),
+    //         const SizedBox(width: 8),
+    //         Container(
+    //           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    //           decoration: BoxDecoration(
+    //             color: const Color(0xFF7BC344).withValues(alpha: 0.2),
+    //             borderRadius: BorderRadius.circular(20),
+    //             border: Border.all(
+    //                 color: const Color(0xFF7BC344).withValues(alpha: 0.4)),
+    //           ),
+    //           child: const Text(
+    //             'Try it',
+    //             style: TextStyle(
+    //               color: Color(0xFF8FD44E),
+    //               fontSize: 12,
+    //               fontWeight: FontWeight.w700,
+    //             ),
+    //           ),
+    //         ),
+    //       ],
+    //     ),
+    //   ),
+    // );
   }
 }
 
@@ -2147,9 +2392,11 @@ class _ModeOption extends StatelessWidget {
             Container(
               width: 46,
               height: 46,
-              decoration: BoxDecoration(
+              decoration: ShapeDecoration(
                 color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(13),
+                shape: SuperellipseShape(
+                  borderRadius: BorderRadius.circular(26),
+                ),
               ),
               child: Icon(icon, color: color, size: 22),
             ),
@@ -2230,9 +2477,11 @@ class _TournamentModeOption extends StatelessWidget {
                 Container(
                   width: 46,
                   height: 46,
-                  decoration: BoxDecoration(
+                  decoration: ShapeDecoration(
                     color: color.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(13),
+                    shape: SuperellipseShape(
+                      borderRadius: BorderRadius.circular(26),
+                    ),
                   ),
                   child: Icon(Icons.emoji_events_rounded, color: color, size: 22),
                 ),
@@ -2383,11 +2632,13 @@ class _TournamentPickerInlineState extends State<_TournamentPickerInline> {
                     duration: const Duration(milliseconds: 150),
                     padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 12),
-                    decoration: BoxDecoration(
+                    decoration: ShapeDecoration(
                       color: sel ? c.accentBg : c.fieldBg,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                          color: sel ? c.accentBorder : c.fieldBorder),
+                      shape: SuperellipseShape(
+                        borderRadius: BorderRadius.circular(24),
+                        side: BorderSide(
+                            color: sel ? c.accentBorder : c.fieldBorder),
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -2421,24 +2672,27 @@ class _TournamentPickerInlineState extends State<_TournamentPickerInline> {
             ),
           ),
           SizedBox(height: sh * 0.024),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _selectedId == null ? null : _proceed,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFFB74D),
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: c.fieldBg,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
+          GestureDetector(
+            onTap: _selectedId == null ? null : _proceed,
+            child: Opacity(
+              opacity: _selectedId == null ? 0.5 : 1.0,
+              child: Container(
+                alignment: Alignment.center,
+                width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                elevation: 0,
+                decoration: ShapeDecoration(
+                  color: _selectedId == null ? c.fieldBg : const Color(0xFFFFB74D),
+                  shape: SuperellipseShape(
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                ),
+                child: Text('Continue to Round Setup',
+                    style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: body,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white)),
               ),
-              child: Text('Continue to Round Setup',
-                  style: TextStyle(
-                      fontFamily: 'Nunito',
-                      fontSize: body,
-                      fontWeight: FontWeight.w700)),
             ),
           ),
         ],

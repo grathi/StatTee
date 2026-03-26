@@ -254,7 +254,7 @@ class WeatherService {
   // ── Live OWM fetch (used when API key is present) ─────────────────────────
 
   static Future<WeatherData?> fetchWeather(double lat, double lng) async {
-    if (_owmKey == 'c04d38a81b386da779acf2f012625abb') {
+    if (_owmKey == 'YOUR_OWM_API_KEY') {
       // Return mock data so all UI shows something useful during development
       await Future.delayed(const Duration(milliseconds: 180));
       return _mockWeatherData();

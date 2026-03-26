@@ -1,10 +1,11 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
 import '../models/round.dart';
 import '../services/round_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shimmer_widgets.dart';
+import '../widgets/tip_banner.dart';
+import '../services/onboarding_service.dart';
 import 'scorecard_screen.dart';
 import 'round_detail_screen.dart';
 import 'practice_screen.dart';
@@ -18,29 +19,15 @@ class RoundsScreen extends StatefulWidget {
 }
 
 class _RoundsScreenState extends State<RoundsScreen> {
-  int _tab = 0;
-  late final PageController _pageCtrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageCtrl = PageController();
-  }
-
-  @override
-  void dispose() {
-    _pageCtrl.dispose();
-    super.dispose();
-  }
+  int _tab     = 0;
+  int _prevTab = 0;
 
   void _selectTab(int idx) {
     if (idx == _tab) return;
-    setState(() => _tab = idx);
-    _pageCtrl.animateToPage(
-      idx,
-      duration: const Duration(milliseconds: 320),
-      curve: Curves.easeInOut,
-    );
+    setState(() {
+      _prevTab = _tab;
+      _tab     = idx;
+    });
   }
 
   @override
@@ -82,6 +69,12 @@ class _RoundsScreenState extends State<RoundsScreen> {
               hasScrollBody: true,
               child: Column(
                 children: [
+                  TipBanner(
+                    title: 'Your Round History',
+                    body: 'All completed rounds are here. Tap any round for a full hole-by-hole breakdown and stats.',
+                    hasSeenFn: OnboardingService.hasSeenRoundsTip,
+                    markSeenFn: OnboardingService.markRoundsTipSeen,
+                  ),
                   // Active round banner (only in Rounds tab)
                   AnimatedSize(
                     duration: const Duration(milliseconds: 280),
@@ -187,17 +180,39 @@ class _RoundsScreenState extends State<RoundsScreen> {
                           )
                         : const SizedBox.shrink(),
                   ),
-                  // PageView — smooth slide between tabs
+                  // AnimatedSwitcher — direct slide to any tab with no intermediate pages
                   Expanded(
-                    child: PageView(
-                      controller: _pageCtrl,
-                      physics: const BouncingScrollPhysics(),
-                      onPageChanged: (i) => setState(() => _tab = i),
-                      children: [
-                        _buildRoundsList(context, c, sw, sh, hPad, body, label),
-                        const PracticeScreen(),
-                        const TournamentScreen(),
-                      ],
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 320),
+                      switchInCurve:  Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      transitionBuilder: (child, animation) {
+                        final goingRight = _tab > _prevTab;
+                        final isIncoming = (child.key as ValueKey?)?.value == _tab;
+                        final inBegin  = goingRight ? const Offset(1, 0) : const Offset(-1, 0);
+                        final outBegin = goingRight ? const Offset(-1, 0) : const Offset(1, 0);
+                        final begin = isIncoming ? inBegin : outBegin;
+                        return SlideTransition(
+                          position: Tween<Offset>(begin: begin, end: Offset.zero)
+                              .animate(CurvedAnimation(
+                                  parent: animation, curve: Curves.easeOutCubic)),
+                          child: FadeTransition(
+                            opacity: Tween<double>(begin: 0.0, end: 1.0)
+                                .animate(CurvedAnimation(
+                                    parent: animation,
+                                    curve: const Interval(0.0, 0.6))),
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: KeyedSubtree(
+                        key: ValueKey(_tab),
+                        child: [
+                          _buildRoundsList(context, c, sw, sh, hPad, body, label),
+                          const PracticeScreen(),
+                          const TournamentScreen(),
+                        ][_tab],
+                      ),
                     ),
                   ),
                 ],
@@ -248,8 +263,8 @@ class _RoundsScreenState extends State<RoundsScreen> {
                   context: ctx,
                   builder: (_) => AlertDialog(
                     backgroundColor: c.sheetBg,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20)),
+                    shape: SuperellipseShape(
+                        borderRadius: BorderRadius.circular(40)),
                     title: Text('Delete Round?',
                         style: TextStyle(
                             fontFamily: 'Nunito',
@@ -276,9 +291,11 @@ class _RoundsScreenState extends State<RoundsScreen> {
               background: Container(
                 alignment: Alignment.centerRight,
                 padding: const EdgeInsets.only(right: 20),
-                decoration: BoxDecoration(
+                decoration: ShapeDecoration(
                   color: const Color(0xFFFF6B6B).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(18),
+                  shape: SuperellipseShape(
+                    borderRadius: BorderRadius.circular(36),
+                  ),
                 ),
                 child: const Icon(Icons.delete_outline_rounded,
                     color: Color(0xFFFF6B6B), size: 26),
@@ -302,33 +319,26 @@ class _RoundsScreenState extends State<RoundsScreen> {
   Widget _buildEmpty(AppColors c, double sw, double sh, double body, double label) {
     return Center(
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: (sw * 0.22).clamp(72.0, 88.0),
-            height: (sw * 0.22).clamp(72.0, 88.0),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: c.iconContainerBg,
-              border: Border.all(color: c.iconContainerBorder),
-            ),
-            child: Icon(Icons.golf_course_rounded,
-                color: c.tertiaryText,
-                size: (sw * 0.10).clamp(34.0, 42.0)),
-          ),
-          SizedBox(height: sh * 0.022),
+          Icon(Icons.golf_course_rounded,
+              color: c.tertiaryText,
+              size: (sw * 0.16).clamp(54.0, 72.0)),
+          SizedBox(height: sh * 0.016),
           Text(
             'No rounds yet',
-            style: TextStyle(fontFamily: 'Nunito',
-              color: c.primaryText,
-              fontSize: body * 1.15,
-              fontWeight: FontWeight.w700,
-            ),
+            style: TextStyle(
+                color: c.secondaryText,
+                fontSize: (sw * 0.042).clamp(15.0, 18.0),
+                fontWeight: FontWeight.w600),
           ),
-          SizedBox(height: sh * 0.006),
+          SizedBox(height: sh * 0.008),
           Text(
             'Start your first round from the Home tab',
-            style: TextStyle(color: c.tertiaryText, fontSize: label),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                color: c.tertiaryText,
+                fontSize: (sw * 0.034).clamp(12.0, 15.0)),
           ),
         ],
       ),
@@ -367,14 +377,16 @@ class _RoundCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final body = (sw * 0.036).clamp(13.0, 16.0);
+    final body  = (sw * 0.036).clamp(13.0, 16.0);
     final label = (sw * 0.030).clamp(11.0, 13.0);
+    final diff  = round.scoreDiff;
+    final diffLabel = diff == 0 ? 'E' : diff > 0 ? '+$diff' : '$diff';
 
     return Container(
       decoration: ShapeDecoration(
-        gradient: LinearGradient(colors: c.cardGradient, begin: Alignment.topCenter, end: Alignment.bottomCenter),
+        color: c.cardBg,
         shape: SuperellipseShape(
-          borderRadius: BorderRadius.circular(48),
+          borderRadius: BorderRadius.circular(36),
           side: BorderSide(color: c.cardBorder),
         ),
         shadows: c.cardShadow,
@@ -384,109 +396,83 @@ class _RoundCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              // Score circle
-              CustomPaint(
-                painter: _ScoreCircleArcPainter(
-                  scoreDiff: round.scoreDiff,
-                  arcColor: _diffColor,
-                  trackColor: c.cardBorder,
+              // Score badge — matches Practice card icon badge style
+              Container(
+                width: (sw * 0.12).clamp(40.0, 52.0),
+                height: (sw * 0.12).clamp(40.0, 52.0),
+                decoration: ShapeDecoration(
+                  color: _diffColor.withValues(alpha: 0.12),
+                  shape: SuperellipseShape(
+                    borderRadius: BorderRadius.circular(24),
+                    side: BorderSide(color: _diffColor.withValues(alpha: 0.3)),
+                  ),
                 ),
-                child: Container(
-                  width: (sw * 0.13).clamp(46.0, 56.0),
-                  height: (sw * 0.13).clamp(46.0, 56.0),
-                  decoration: BoxDecoration(
-                    color: _diffColor.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        '${round.totalScore}',
-                        style: TextStyle(fontFamily: 'Nunito',
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '${round.totalScore}',
+                      style: TextStyle(fontFamily: 'Nunito',
                           color: _diffColor,
-                          fontSize: (sw * 0.046).clamp(15.0, 20.0),
+                          fontSize: (sw * 0.04).clamp(13.0, 17.0),
                           fontWeight: FontWeight.w800,
-                          height: 1.0,
-                        ),
-                      ),
-                      Text(
-                        round.scoreDiffLabel,
-                        style: TextStyle(
-                          color: _diffColor.withValues(alpha: 0.8),
-                          fontSize: label * 0.85,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
+                          height: 1.0),
+                    ),
+                    Text(diffLabel,
+                        style: TextStyle(color: _diffColor.withValues(alpha: 0.8),
+                            fontSize: label * 0.85,
+                            fontWeight: FontWeight.w600)),
+                  ],
                 ),
               ),
-              const SizedBox(width: 14),
+              SizedBox(width: (sw * 0.035).clamp(10.0, 16.0)),
               // Course info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF8FD44E).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text('${round.totalHoles}H',
+                              style: TextStyle(
+                                  color: const Color(0xFF8FD44E),
+                                  fontSize: label * 0.85,
+                                  fontWeight: FontWeight.w600)),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(_timeAgo(round.startedAt),
+                            style: TextStyle(color: c.tertiaryText, fontSize: label * 0.9)),
+                      ],
+                    ),
+                    const SizedBox(height: 3),
                     Text(
                       round.courseName,
                       style: TextStyle(fontFamily: 'Nunito',
-                        color: c.primaryText,
-                        fontSize: body,
-                        fontWeight: FontWeight.w700,
-                      ),
+                          color: c.primaryText,
+                          fontSize: body,
+                          fontWeight: FontWeight.w700),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
-                    if (round.courseLocation.isNotEmpty)
-                      Row(
-                        children: [
-                          Icon(Icons.location_on_rounded,
-                              color: c.tertiaryText, size: label),
-                          const SizedBox(width: 2),
-                          Expanded(
-                            child: Text(
-                              round.courseLocation,
-                              style: TextStyle(
-                                  color: c.tertiaryText, fontSize: label),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
+                    if (round.courseLocation.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        round.courseLocation,
+                        style: TextStyle(color: c.secondaryText, fontSize: label),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
+                    ],
                   ],
                 ),
               ),
-              // Date + holes
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    _timeAgo(round.startedAt),
-                    style: TextStyle(
-                        color: c.tertiaryText, fontSize: label),
-                  ),
-                  const SizedBox(height: 2),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: c.iconContainerBg,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      '${round.totalHoles}H',
-                      style: TextStyle(
-                        color: c.secondaryText,
-                        fontSize: label,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              Icon(Icons.chevron_right_rounded, color: c.tertiaryText, size: 20),
             ],
           ),
           // Mini stats row
@@ -496,22 +482,15 @@ class _RoundCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _miniStat(c, '${round.birdies}', 'Birdies', label,
-                  const Color(0xFF8FD44E)),
-              _miniStat(c, '${round.pars}', 'Pars', label,
-                  const Color(0xFF64B5F6)),
-              _miniStat(c, '${round.bogeys}', 'Bogeys', label,
-                  const Color(0xFFFFB74D)),
-              _miniStat(c, '${round.totalPutts}', 'Putts', label,
-                  c.secondaryText),
-              _miniStat(
-                  c,
+              _miniStat(c, '${round.birdies}',   'Birdies', label, const Color(0xFF8FD44E)),
+              _miniStat(c, '${round.pars}',       'Pars',    label, const Color(0xFF64B5F6)),
+              _miniStat(c, '${round.bogeys}',     'Bogeys',  label, const Color(0xFFFFB74D)),
+              _miniStat(c, '${round.totalPutts}', 'Putts',   label, c.secondaryText),
+              _miniStat(c,
                   round.fairwaysHitPct > 0
                       ? '${round.fairwaysHitPct.toStringAsFixed(0)}%'
                       : '-',
-                  'FIR',
-                  label,
-                  c.secondaryText),
+                  'FIR', label, c.secondaryText),
             ],
           ),
         ],
@@ -519,75 +498,19 @@ class _RoundCard extends StatelessWidget {
     );
   }
 
-  Widget _miniStat(AppColors c, String value, String label, double fontSize,
-      Color color) {
+  Widget _miniStat(AppColors c, String value, String label, double fontSize, Color color) {
     return Column(
       children: [
-        Text(
-          value,
-          style: TextStyle(fontFamily: 'Nunito',
-            color: color,
-            fontSize: fontSize * 1.05,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+        Text(value,
+            style: TextStyle(fontFamily: 'Nunito',
+                color: color,
+                fontSize: fontSize * 1.05,
+                fontWeight: FontWeight.w700)),
         Text(label,
             style: TextStyle(color: c.tertiaryText, fontSize: fontSize * 0.88)),
       ],
     );
   }
-}
-
-class _ScoreCircleArcPainter extends CustomPainter {
-  final int scoreDiff;
-  final Color arcColor;
-  final Color trackColor;
-  const _ScoreCircleArcPainter({
-    required this.scoreDiff,
-    required this.arcColor,
-    required this.trackColor,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width * 0.46;
-    final rect = Rect.fromCircle(center: center, radius: radius);
-    const startAngle = 2.45;
-    const sweepAngle = 5.38; // ~308°
-
-    // Track
-    canvas.drawArc(rect, startAngle, sweepAngle, false,
-        Paint()
-          ..color = trackColor
-          ..strokeWidth = 2.5
-          ..style = PaintingStyle.stroke
-          ..strokeCap = StrokeCap.round);
-
-    // Fill based on diff: neutral=50%, better=more, worse=less
-    final fillFrac = scoreDiff <= 0
-        ? (0.5 + (-scoreDiff * 0.12)).clamp(0.0, 1.0)
-        : (0.5 - (scoreDiff * 0.10)).clamp(0.05, 0.5);
-
-    canvas.drawArc(rect, startAngle, sweepAngle * fillFrac, false,
-        Paint()
-          ..color = arcColor
-          ..strokeWidth = 2.5
-          ..style = PaintingStyle.stroke
-          ..strokeCap = StrokeCap.round);
-
-    // Bloom dot at end
-    final endAngle = startAngle + sweepAngle * fillFrac;
-    final dotX = center.dx + radius * math.cos(endAngle);
-    final dotY = center.dy + radius * math.sin(endAngle);
-    canvas.drawCircle(Offset(dotX, dotY), 3.5,
-        Paint()..color = arcColor.withValues(alpha: 0.35));
-    canvas.drawCircle(Offset(dotX, dotY), 2.0, Paint()..color = arcColor);
-  }
-
-  @override
-  bool shouldRepaint(covariant _ScoreCircleArcPainter old) =>
-      old.scoreDiff != scoreDiff || old.arcColor != arcColor;
 }
 
 class _PulsingPlayIcon extends StatefulWidget {
@@ -695,7 +618,7 @@ class _RoundsHeaderDelegate extends SliverPersistentHeaderDelegate {
   @override
   double get maxExtent => _titleRowH + _tabRowH;
 
-  Widget _tabBtn(String title, int idx) {
+  Widget _tabBtn(String title, IconData icon, int idx) {
     final sel = tab == idx;
     return Expanded(
       child: GestureDetector(
@@ -715,13 +638,24 @@ class _RoundsHeaderDelegate extends SliverPersistentHeaderDelegate {
             shadows: sel ? c.cardShadow : null,
           ),
           child: Center(
-            child: Text(
-              title,
-              style: TextStyle(
-                color: sel ? c.primaryText : c.tertiaryText,
-                fontSize: body * 0.88,
-                fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: body * 0.88,
+                  color: sel ? c.primaryText : c.tertiaryText,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: sel ? c.primaryText : c.tertiaryText,
+                    fontSize: body * 0.88,
+                    fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -749,17 +683,19 @@ class _RoundsHeaderDelegate extends SliverPersistentHeaderDelegate {
         Padding(
           padding: EdgeInsets.fromLTRB(hPad, 0, hPad, sh * 0.016),
           child: Container(
-            decoration: BoxDecoration(
+            decoration: ShapeDecoration(
               color: c.fieldBg,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: c.fieldBorder),
+              shape: SuperellipseShape(
+                borderRadius: BorderRadius.circular(28),
+                side: BorderSide(color: c.fieldBorder),
+              ),
             ),
             padding: const EdgeInsets.all(3),
             child: Row(
               children: [
-                _tabBtn('Rounds',      0),
-                _tabBtn('Practice',    1),
-                _tabBtn('Tournaments', 2),
+                _tabBtn('Rounds',      Icons.golf_course_rounded,  0),
+                _tabBtn('Practice',    Icons.sports_golf_rounded,  1),
+                _tabBtn('Tournaments', Icons.emoji_events_rounded,  2),
               ],
             ),
           ),

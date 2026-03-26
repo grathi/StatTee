@@ -10,6 +10,12 @@ import '../theme/app_theme.dart';
 import '../services/notification_service.dart';
 import '../screens/notification_preferences_screen.dart';
 import '../widgets/shimmer_widgets.dart';
+import '../widgets/tip_banner.dart';
+import '../services/onboarding_service.dart';
+import '../widgets/golf_dna_widgets.dart';
+import '../services/golf_dna_service.dart';
+import '../widgets/play_style_widgets.dart';
+import '../services/play_style_service.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
 
 const List<String> _kAvatarUrls = [
@@ -66,6 +72,14 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             SliverToBoxAdapter(
+              child: TipBanner(
+                title: 'Make It Yours',
+                body: 'Set your handicap goal, pick an avatar, and explore your Golf DNA and Play Style.',
+                hasSeenFn: OnboardingService.hasSeenProfileTip,
+                markSeenFn: OnboardingService.markProfileTipSeen,
+              ),
+            ),
+            SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(hPad, sh * 0.028, hPad, sh * 0.14),
                 child: Column(
@@ -92,11 +106,17 @@ class ProfileScreen extends StatelessWidget {
                         final rounds = snap.data ?? [];
                         final stats = StatsService.calculate(rounds);
                         final unlocked = AchievementService.evaluate(stats, rounds);
+                        final dna = GolfDNAService.compute(rounds);
+                        final playStyle = PlayStyleService.compute(rounds);
                         return Column(
                           children: [
+                            PlayStyleSection(identity: playStyle),
+                            SizedBox(height: sh * 0.022),
                             _buildStatsRow(c, sw, sh, body, label, stats),
                             SizedBox(height: sh * 0.022),
                             _buildAchievementsSection(context, c, sw, sh, body, label, unlocked),
+                            SizedBox(height: sh * 0.022),
+                            GolfDNASection(dna: dna),
                           ],
                         );
                       },
@@ -129,13 +149,18 @@ class ProfileScreen extends StatelessWidget {
                     // Sign out
                     _buildSignOutButton(context, c, sw, sh, body),
 
+                    SizedBox(height: sh * 0.012),
+
+                    // Delete account
+                    _buildDeleteAccountButton(context, c, sw, sh, body),
+
                     SizedBox(height: sh * 0.028),
 
                     // Version + copyright
                     Center(
                       child: Column(
                         children: [
-                          Text('StatTee v1.0.0',
+                          Text('TeeStats v1.0.0',
                             style: TextStyle(
                               color: c.tertiaryText,
                               fontSize: label * 0.95,
@@ -143,7 +168,7 @@ class ProfileScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text('© ${DateTime.now().year} StatTee. All rights reserved.',
+                          Text('© ${DateTime.now().year} TeeStats. All rights reserved.',
                             style: TextStyle(
                               color: c.tertiaryText.withValues(alpha: 0.6),
                               fontSize: label * 0.85,
@@ -224,10 +249,12 @@ class ProfileScreen extends StatelessWidget {
                     const SizedBox(height: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                      decoration: BoxDecoration(
+                      decoration: ShapeDecoration(
                         color: c.accentBg,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: c.accentBorder),
+                        shape: SuperellipseShape(
+                          borderRadius: BorderRadius.circular(40),
+                          side: BorderSide(color: c.accentBorder),
+                        ),
                       ),
                       child: Text(
                         'Golfer',
@@ -282,9 +309,11 @@ class ProfileScreen extends StatelessWidget {
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
+                decoration: ShapeDecoration(
                   color: const Color(0xFF8FD44E).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
+                  shape: SuperellipseShape(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                 ),
                 child: Text(
                   '${unlockedIds.length}/${all.length}',
@@ -342,8 +371,8 @@ class ProfileScreen extends StatelessWidget {
                 context: context,
                 builder: (_) => AlertDialog(
                   backgroundColor: c.sheetBg,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20)),
+                  shape: SuperellipseShape(
+                      borderRadius: BorderRadius.circular(40)),
                   title: Text(
                     '${a.emoji} ${a.name}',
                     style: TextStyle(
@@ -530,9 +559,11 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 Container(
                   width: iconSize, height: iconSize,
-                  decoration: BoxDecoration(
+                  decoration: ShapeDecoration(
                     color: const Color(0xFF6DBD35).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
+                    shape: SuperellipseShape(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                   ),
                   child: Icon(Icons.track_changes_rounded,
                       color: const Color(0xFF6DBD35),
@@ -643,13 +674,12 @@ class ProfileScreen extends StatelessWidget {
                           if (context.mounted) Navigator.pop(context);
                         },
                         style: OutlinedButton.styleFrom(
+                          foregroundColor: c.secondaryText,
                           side: BorderSide(color: c.fieldBorder),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
-                        child: Text('Clear',
-                            style: TextStyle(color: c.secondaryText, fontSize: body)),
+                        child: Text('Clear', style: TextStyle(fontSize: body)),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -665,8 +695,7 @@ class ProfileScreen extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF6DBD35),
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         elevation: 0,
                       ),
@@ -740,9 +769,11 @@ class ProfileScreen extends StatelessWidget {
                           Container(
                             width: (sw * 0.088).clamp(30.0, 38.0),
                             height: (sw * 0.088).clamp(30.0, 38.0),
-                            decoration: BoxDecoration(
+                            decoration: ShapeDecoration(
                               color: item.color.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(10),
+                              shape: SuperellipseShape(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
                             ),
                             child: Icon(item.icon, color: item.color,
                                 size: (sw * 0.044).clamp(15.0, 20.0)),
@@ -822,10 +853,12 @@ class ProfileScreen extends StatelessWidget {
                 Row(children: [
                   Container(
                     width: 44, height: 44,
-                    decoration: BoxDecoration(
+                    decoration: ShapeDecoration(
                       color: c.accentBg,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: c.accentBorder),
+                      shape: SuperellipseShape(
+                        borderRadius: BorderRadius.circular(28),
+                        side: BorderSide(color: c.accentBorder),
+                      ),
                     ),
                     child: Icon(Icons.person_rounded, color: c.accent, size: 22),
                   ),
@@ -909,13 +942,6 @@ class ProfileScreen extends StatelessWidget {
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: c.accent,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16)),
-                      elevation: 0,
-                    ),
                     onPressed: saving
                         ? null
                         : () async {
@@ -928,6 +954,12 @@ class ProfileScreen extends StatelessWidget {
                               setState(() => saving = false);
                             }
                           },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: c.accent,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      elevation: 0,
+                    ),
                     child: saving
                         ? const SizedBox(
                             width: 20, height: 20,
@@ -936,6 +968,7 @@ class ProfileScreen extends StatelessWidget {
                           )
                         : Text('Save Changes',
                             style: TextStyle(
+                              color: Colors.white,
                               fontFamily: 'Nunito',
                               fontSize: body,
                               fontWeight: FontWeight.w700,
@@ -988,10 +1021,12 @@ class ProfileScreen extends StatelessWidget {
               // Icon
               Container(
                 width: 60, height: 60,
-                decoration: BoxDecoration(
+                decoration: ShapeDecoration(
                   color: c.accentBg,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: c.accentBorder),
+                  shape: SuperellipseShape(
+                    borderRadius: BorderRadius.circular(36),
+                    side: BorderSide(color: c.accentBorder),
+                  ),
                 ),
                 child: Icon(Icons.logout_rounded, color: c.accent, size: 26),
               ),
@@ -1017,12 +1052,10 @@ class ProfileScreen extends StatelessWidget {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: c.primaryText,
                           side: BorderSide(color: c.cardBorder),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         ),
                         child: Text('Cancel',
-                            style: TextStyle(
-                                fontSize: body, fontWeight: FontWeight.w600)),
+                            style: TextStyle(fontSize: body, fontWeight: FontWeight.w600)),
                       ),
                     ),
                   ),
@@ -1036,8 +1069,7 @@ class ProfileScreen extends StatelessWidget {
                           backgroundColor: c.accent,
                           foregroundColor: Colors.white,
                           elevation: 0,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         ),
                         child: Text('Sign Out',
                             style: TextStyle(
@@ -1084,9 +1116,11 @@ class ProfileScreen extends StatelessWidget {
                     Container(
                       width: (sw * 0.088).clamp(30.0, 38.0),
                       height: (sw * 0.088).clamp(30.0, 38.0),
-                      decoration: BoxDecoration(
+                      decoration: ShapeDecoration(
                         color: red.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(10),
+                        shape: SuperellipseShape(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
                       ),
                       child: Icon(Icons.logout_rounded, color: red,
                           size: (sw * 0.044).clamp(15.0, 20.0)),
@@ -1112,6 +1146,267 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+
+  Widget _buildDeleteAccountButton(BuildContext context, AppColors c, double sw,
+      double sh, double body) {
+    const red = Color(0xFFFF3B30);
+
+    Future<void> doDelete() async {
+      // Step 1 — first confirmation sheet
+      final confirm1 = await showModalBottomSheet<bool>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (sheetCtx) => Container(
+          decoration: BoxDecoration(
+            color: c.sheetBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border(top: BorderSide(color: c.cardBorder)),
+          ),
+          padding: EdgeInsets.fromLTRB(
+            (sw * 0.065).clamp(22.0, 32.0),
+            20,
+            (sw * 0.065).clamp(22.0, 32.0),
+            (sh * 0.05).clamp(24.0, 40.0),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(color: c.divider, borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+              SizedBox(height: sh * 0.032),
+              Container(
+                width: 64, height: 64,
+                decoration: ShapeDecoration(
+                  color: red.withValues(alpha: 0.10),
+                  shape: SuperellipseShape(
+                    borderRadius: BorderRadius.circular(40),
+                    side: BorderSide(color: red.withValues(alpha: 0.25)),
+                  ),
+                ),
+                child: const Icon(Icons.delete_forever_rounded, color: red, size: 30),
+              ),
+              SizedBox(height: sh * 0.020),
+              Text('Delete Account?',
+                style: TextStyle(fontFamily: 'Nunito', color: c.primaryText,
+                  fontSize: (sw * 0.052).clamp(18.0, 22.0), fontWeight: FontWeight.w700),
+              ),
+              SizedBox(height: sh * 0.010),
+              Text(
+                'This will permanently delete your account and all your golf data including rounds, stats, and achievements.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: c.secondaryText, fontSize: body * 0.9, height: 1.5),
+              ),
+              SizedBox(height: sh * 0.036),
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: (sh * 0.065).clamp(48.0, 58.0),
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(sheetCtx, false),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: c.primaryText,
+                          side: BorderSide(color: c.cardBorder),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                        child: Text('Cancel', style: TextStyle(fontSize: body, fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: SizedBox(
+                      height: (sh * 0.065).clamp(48.0, 58.0),
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(sheetCtx, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: red,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                        child: Text('Continue', style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: body, fontWeight: FontWeight.w700)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+      if (confirm1 != true || !context.mounted) return;
+
+      // Step 2 — second confirmation (irreversible warning)
+      final confirm2 = await showModalBottomSheet<bool>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (sheetCtx) => Container(
+          decoration: BoxDecoration(
+            color: c.sheetBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border(top: BorderSide(color: red.withValues(alpha: 0.4))),
+          ),
+          padding: EdgeInsets.fromLTRB(
+            (sw * 0.065).clamp(22.0, 32.0),
+            20,
+            (sw * 0.065).clamp(22.0, 32.0),
+            (sh * 0.05).clamp(24.0, 40.0),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(color: c.divider, borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+              SizedBox(height: sh * 0.028),
+              Text('Are you absolutely sure?',
+                style: TextStyle(fontFamily: 'Nunito', color: red,
+                  fontSize: (sw * 0.048).clamp(16.0, 20.0), fontWeight: FontWeight.w800),
+              ),
+              SizedBox(height: sh * 0.012),
+              _deleteBullet(c, body, 'All your rounds and scorecards'),
+              _deleteBullet(c, body, 'Stats, handicap history and achievements'),
+              _deleteBullet(c, body, 'Your profile and preferences'),
+              _deleteBullet(c, body, 'Smart notifications and tee times'),
+              SizedBox(height: sh * 0.010),
+              Text('This action cannot be undone.',
+                style: TextStyle(color: red, fontSize: body * 0.9, fontWeight: FontWeight.w600)),
+              SizedBox(height: sh * 0.032),
+              SizedBox(
+                width: double.infinity,
+                height: (sh * 0.065).clamp(48.0, 58.0),
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(sheetCtx, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: red,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: Text('Delete My Account', style: TextStyle(fontFamily: 'Nunito', fontSize: body, fontWeight: FontWeight.w800)),
+                ),
+              ),
+              SizedBox(height: sh * 0.010),
+              SizedBox(
+                width: double.infinity,
+                height: (sh * 0.055).clamp(42.0, 50.0),
+                child: TextButton(
+                  onPressed: () => Navigator.pop(sheetCtx, false),
+                  child: Text('Keep My Account', style: TextStyle(color: c.secondaryText, fontSize: body * 0.9)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+      if (confirm2 != true || !context.mounted) return;
+
+      // Show loading indicator and delete
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => Center(
+          child: Container(
+            padding: const EdgeInsets.all(28),
+            decoration: ShapeDecoration(
+              color: c.sheetBg,
+              shape: SuperellipseShape(borderRadius: BorderRadius.circular(40)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(color: c.accent, strokeWidth: 3),
+                const SizedBox(height: 16),
+                Text('Deleting account…', style: TextStyle(color: c.primaryText, fontSize: body)),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      try {
+        await AuthService().deleteAccount();
+      } on FirebaseAuthException catch (e) {
+        if (!context.mounted) return;
+        Navigator.pop(context); // close loading dialog
+        if (e.code == 'requires-recent-login') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Please sign out and sign back in before deleting your account.'),
+              backgroundColor: red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${e.message}'),
+              backgroundColor: red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } catch (e) {
+        if (!context.mounted) return;
+        Navigator.pop(context); // close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Something went wrong. Please try again.'),
+            backgroundColor: red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      // Auth state listener in main.dart will redirect to login automatically
+    }
+
+    return GestureDetector(
+      onTap: doDelete,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: (sw * 0.045).clamp(14.0, 20.0),
+          vertical: (sh * 0.014).clamp(10.0, 14.0),
+        ),
+        child: Center(
+          child: Text(
+            'Delete Account',
+            style: TextStyle(
+              color: red.withValues(alpha: 0.7),
+              fontSize: body * 0.88,
+              fontWeight: FontWeight.w500,
+              decoration: TextDecoration.underline,
+              decorationColor: red.withValues(alpha: 0.4),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _deleteBullet(AppColors c, double body, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('• ', style: TextStyle(color: Color(0xFFFF3B30), fontWeight: FontWeight.w700)),
+          Expanded(child: Text(text, style: TextStyle(color: c.secondaryText, fontSize: body * 0.9))),
+        ],
+      ),
+    );
+  }
 
   String _initials(String name) {
     final parts = name.trim().split(' ');
@@ -1189,10 +1484,12 @@ class _AvatarPickerSheetState extends State<_AvatarPickerSheet> {
             children: [
               Container(
                 width: 44, height: 44,
-                decoration: BoxDecoration(
+                decoration: ShapeDecoration(
                   color: c.accentBg,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: c.accentBorder),
+                  shape: SuperellipseShape(
+                    borderRadius: BorderRadius.circular(28),
+                    side: BorderSide(color: c.accentBorder),
+                  ),
                 ),
                 child: Icon(Icons.face_rounded, color: c.accent, size: 22),
               ),
@@ -1306,13 +1603,6 @@ class _AvatarPickerSheetState extends State<_AvatarPickerSheet> {
             width: double.infinity,
             height: 52,
             child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: c.accent,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
-                elevation: 0,
-              ),
               onPressed: _saving
                   ? null
                   : () async {
@@ -1328,6 +1618,12 @@ class _AvatarPickerSheetState extends State<_AvatarPickerSheet> {
                         if (mounted) setState(() => _saving = false);
                       }
                     },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: c.accent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 0,
+              ),
               child: _saving
                   ? const SizedBox(
                       width: 20, height: 20,
@@ -1336,6 +1632,7 @@ class _AvatarPickerSheetState extends State<_AvatarPickerSheet> {
                     )
                   : Text('Save Avatar',
                       style: TextStyle(
+                        color: Colors.white,
                         fontFamily: 'Nunito',
                         fontSize: body,
                         fontWeight: FontWeight.w700,
@@ -1603,9 +1900,11 @@ class _NotificationsSectionState extends State<_NotificationsSection> {
                                 Container(
                                   width: (sw * 0.088).clamp(30.0, 38.0),
                                   height: (sw * 0.088).clamp(30.0, 38.0),
-                                  decoration: BoxDecoration(
+                                  decoration: ShapeDecoration(
                                     color: item.color.withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(10),
+                                    shape: SuperellipseShape(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
                                   ),
                                   child: Icon(item.icon, color: item.color,
                                       size: (sw * 0.044).clamp(15.0, 20.0)),
@@ -1672,14 +1971,7 @@ class _StickyTitleDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: c.bgGradient.take(2).toList(),
-          stops: const [0.0, 1.0],
-        ),
-      ),
+      color: c.bgGradient[0],
       alignment: Alignment.bottomLeft,
       padding: EdgeInsets.fromLTRB(hPad, topPad, hPad, 14),
       child: Text(

@@ -64,7 +64,7 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: c.sheetBg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: SuperellipseShape(borderRadius: BorderRadius.circular(40)),
         title: Text('Delete Round?',
             style: TextStyle(fontFamily: 'Nunito',
                 color: c.primaryText, fontWeight: FontWeight.w700)),
@@ -356,11 +356,13 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
         children: [
           // Header row
           Container(
-            decoration: BoxDecoration(
+            decoration: ShapeDecoration(
               color: const Color(0xFF1A3A08),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
+              shape: SuperellipseShape(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(40),
+                  topRight: Radius.circular(40),
+                ),
               ),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -457,11 +459,13 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
           }),
           // Totals row
           Container(
-            decoration: BoxDecoration(
+            decoration: ShapeDecoration(
               color: c.cardBorder.withValues(alpha: 0.3),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(16),
-                bottomRight: Radius.circular(16),
+              shape: SuperellipseShape(
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(32),
+                  bottomRight: Radius.circular(32),
+                ),
               ),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),

@@ -4,9 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
 import '../services/places_service.dart';
 import '../services/round_service.dart';
-import '../services/weather_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/weather_widgets.dart';
 import 'scorecard_screen.dart';
 
 class StartRoundScreen extends StatefulWidget {
@@ -51,6 +49,8 @@ class _StartRoundScreenState extends State<StartRoundScreen>
 
   // autocomplete state
   String?  _selectedPlaceId;
+  double?  _selectedLat;   // lat/lng of the user-selected course from Places API
+  double?  _selectedLng;
   List<GolfCourseSuggestion> _suggestions = [];
   bool     _loadingSuggestions = false;
   Timer?   _debounce;
@@ -61,7 +61,6 @@ class _StartRoundScreenState extends State<StartRoundScreen>
 
   late AnimationController _animCtrl;
   late Animation<double>   _fadeAnim;
-  late Animation<Offset>   _slideAnim;
 
   double get _sw  => MediaQuery.of(context).size.width;
   double get _sh  => MediaQuery.of(context).size.height;
@@ -76,8 +75,6 @@ class _StartRoundScreenState extends State<StartRoundScreen>
     _animCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 600));
     _fadeAnim  = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
-    _slideAnim = Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut));
     _animCtrl.forward();
 
     // Use position from home tab if available; otherwise fall back to GPS
@@ -178,10 +175,24 @@ class _StartRoundScreenState extends State<StartRoundScreen>
     if (_overlayController.isShowing) _overlayController.hide();
     // Set selectedPlaceId BEFORE updating text so listener ignores the change
     _selectedPlaceId = s.placeId;
+    _selectedLat = null;
+    _selectedLng = null;
     _courseNameCtrl.text = s.name;
     _locationCtrl.text   = s.address;
     setState(() => _suggestions = []);
     FocusScope.of(context).unfocus();
+
+    // Fetch course coordinates in the background for accurate weather during scoring
+    if (s.placeId.isNotEmpty && s.placeId != 'prefilled') {
+      PlacesService.getPlaceDetail(s.placeId).then((detail) {
+        if (mounted && detail?.lat != null && detail?.lng != null) {
+          setState(() {
+            _selectedLat = detail!.lat;
+            _selectedLng = detail.lng;
+          });
+        }
+      });
+    }
   }
 
   // ── Submit ────────────────────────────────────────────────────────────────
@@ -190,14 +201,6 @@ class _StartRoundScreenState extends State<StartRoundScreen>
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      // Fetch weather silently in parallel, don't block round creation
-      final weatherFuture = _userPosition != null
-          ? WeatherService.fetchWeather(_userPosition!.latitude, _userPosition!.longitude)
-          : (_customLat != null && _customLng != null)
-              ? WeatherService.fetchWeather(_customLat!, _customLng!)
-              : Future<WeatherData?>.value(null);
-
-      final weather = await weatherFuture;
       final roundId = await RoundService.startRound(
         courseName:     _courseNameCtrl.text.trim(),
         courseLocation: _locationCtrl.text.trim().isNotEmpty
@@ -206,7 +209,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
         totalHoles:     _holes,
         courseRating:   double.tryParse(_courseRatingCtrl.text.trim()),
         slopeRating:    int.tryParse(_slopeRatingCtrl.text.trim()),
-        weather:        weather,
+        weather:        null,
         isPractice:     widget.isPractice,
         tournamentId:   widget.tournamentId,
       );
@@ -218,7 +221,9 @@ class _StartRoundScreenState extends State<StartRoundScreen>
             roundId:    roundId,
             courseName: _courseNameCtrl.text.trim(),
             totalHoles: _holes,
-            weather:    weather,
+            // Selected course coords take priority over home-page GPS/custom location
+            lat: _selectedLat ?? _userPosition?.latitude ?? _customLat,
+            lng: _selectedLng ?? _userPosition?.longitude ?? _customLng,
             onComplete: widget.onComplete,
           ),
         ),
@@ -257,85 +262,49 @@ class _StartRoundScreenState extends State<StartRoundScreen>
         ),
         child: Stack(
           children: [
-            // ── Background image at bottom ─────────────────────────────────
-            Positioned(
-              left: 0, right: 0, bottom: -4,
-              child: IgnorePointer(
-                child: ShaderMask(
-                  shaderCallback: (rect) => const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.white],
-                    stops: [0.0, 0.40],
-                  ).createShader(rect),
-                  blendMode: BlendMode.dstIn,
-                  child: Image.asset(
-                    'assets/round_bg.png',
-                    fit: BoxFit.fitWidth,
+            // ── Content ───────────────────────────────────────────────────
+            SafeArea(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: EdgeInsets.symmetric(horizontal: _hPad),
+                child: FadeTransition(
+                  opacity: _fadeAnim,
+                  child: Column(
+                    children: [
+                      SizedBox(height: _sh * 0.068),
+                      _buildHeader(c),
+                      SizedBox(height: _sh * 0.020),
+                      _buildForm(c),
+                      SizedBox(height: _sh * 0.024),
+                      _buildTeeOffButton(c),
+                      SizedBox(height: _sh * 0.028),
+                    ],
                   ),
                 ),
               ),
             ),
-            // ── Content ───────────────────────────────────────────────────
+            // ── Floating back arrow ───────────────────────────────────────
             SafeArea(
-              child: Column(
-                children: [
-                  _buildTopBar(c),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      padding: EdgeInsets.symmetric(horizontal: _hPad),
-                      child: FadeTransition(
-                        opacity: _fadeAnim,
-                        child: Column(
-                          children: [
-                            SizedBox(height: _sh * 0.004),
-                            _buildHeader(c),
-                            SizedBox(height: _sh * 0.020),
-                            _buildForm(c),
-                            SizedBox(height: _sh * 0.024),
-                            _buildTeeOffButton(c),
-                            SizedBox(height: _sh * 0.028),
-                          ],
-                        ),
-                      ),
+              child: Padding(
+                padding: EdgeInsets.only(left: _hPad * 0.5, top: 4),
+                child: IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: Container(
+                    width: (_sw * 0.095).clamp(34.0, 44.0),
+                    height: (_sw * 0.095).clamp(34.0, 44.0),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: c.iconContainerBg,
+                      border: Border.all(color: c.iconContainerBorder),
                     ),
+                    child: Icon(Icons.arrow_back_ios_new_rounded,
+                        color: c.iconColor, size: _body),
                   ),
-                ],
+                ),
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildTopBar(AppColors c) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: _hPad * 0.5, vertical: 2),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: Container(
-              width: (_sw * 0.095).clamp(34.0, 44.0),
-              height: (_sw * 0.095).clamp(34.0, 44.0),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: c.iconContainerBg,
-                border: Border.all(color: c.iconContainerBorder),
-              ),
-              child: Icon(Icons.arrow_back_ios_new_rounded,
-                  color: c.iconColor, size: _body),
-            ),
-          ),
-          const Spacer(),
-          RoundWeatherTopBar(
-            lat: _userPosition?.latitude ?? _customLat,
-            lng: _userPosition?.longitude ?? _customLng,
-          ),
-          SizedBox(width: _hPad * 0.5),
-        ],
       ),
     );
   }
@@ -384,9 +353,11 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                    decoration: BoxDecoration(
+                    decoration: ShapeDecoration(
                       color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(20),
+                      shape: SuperellipseShape(
+                        borderRadius: BorderRadius.circular(40),
+                      ),
                     ),
                     child: Text('📍  Pick your course',
                       style: TextStyle(
@@ -442,11 +413,13 @@ class _StartRoundScreenState extends State<StartRoundScreen>
 
   Widget _buildForm(AppColors c) {
     return Container(
-      decoration: BoxDecoration(
+      decoration: ShapeDecoration(
         color: c.cardBg,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: c.cardBorder),
-        boxShadow: c.cardShadow,
+        shape: SuperellipseShape(
+          borderRadius: BorderRadius.circular(48),
+          side: BorderSide(color: c.cardBorder),
+        ),
+        shadows: c.cardShadow,
       ),
       padding: EdgeInsets.all((_sw * 0.048).clamp(16.0, 22.0)),
       child: Form(
@@ -505,6 +478,8 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                                   _courseNameCtrl.clear();
                                   _locationCtrl.clear();
                                   _selectedPlaceId = null;
+                                  _selectedLat = null;
+                                  _selectedLng = null;
                                   _overlayController.hide();
                                   setState(() => _suggestions = []);
                                 },
@@ -654,11 +629,13 @@ class _StartRoundScreenState extends State<StartRoundScreen>
             constraints: BoxConstraints(
               maxHeight: (_sh * 0.35).clamp(180.0, 280.0),
             ),
-            decoration: BoxDecoration(
+            decoration: ShapeDecoration(
               color: c.sheetBg,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: c.cardBorder),
-              boxShadow: [
+              shape: SuperellipseShape(
+                borderRadius: BorderRadius.circular(32),
+                side: BorderSide(color: c.cardBorder),
+              ),
+              shadows: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.18),
                   blurRadius: 24,
@@ -702,9 +679,11 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                                   Container(
                                     width: 34,
                                     height: 34,
-                                    decoration: BoxDecoration(
+                                    decoration: ShapeDecoration(
                                       color: c.accentBg,
-                                      borderRadius: BorderRadius.circular(8),
+                                      shape: SuperellipseShape(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
                                     ),
                                     child: Icon(Icons.golf_course_rounded,
                                         color: c.accent, size: 18),
@@ -776,12 +755,14 @@ class _StartRoundScreenState extends State<StartRoundScreen>
               duration: const Duration(milliseconds: 200),
               margin: EdgeInsets.only(right: h == 9 ? 8 : 0),
               height: (_sh * 0.068).clamp(52.0, 64.0),
-              decoration: BoxDecoration(
+              decoration: ShapeDecoration(
                 color: selected ? const Color(0xFF5A9E1F) : c.fieldBg,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: selected ? const Color(0xFF5A9E1F) : c.fieldBorder,
-                  width: selected ? 2 : 1,
+                shape: SuperellipseShape(
+                  borderRadius: BorderRadius.circular(28),
+                  side: BorderSide(
+                    color: selected ? const Color(0xFF5A9E1F) : c.fieldBorder,
+                    width: selected ? 2 : 1,
+                  ),
                 ),
               ),
               child: Column(
@@ -814,43 +795,55 @@ class _StartRoundScreenState extends State<StartRoundScreen>
   }
 
   Widget _buildTeeOffButton(AppColors c) {
-    return SizedBox(
-      width: double.infinity,
-      height: (_sh * 0.075).clamp(54.0, 66.0),
-      child: ElevatedButton(
-        onPressed: _isLoading ? null : _teeOff,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF5A9E1F),
-          foregroundColor: Colors.white,
-          disabledBackgroundColor:
-              const Color(0xFF5A9E1F).withValues(alpha: 0.5),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          elevation: 0,
-        ),
-        child: _isLoading
-            ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation(Colors.white)),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.sports_golf_rounded, size: 22),
-                  const SizedBox(width: 10),
-                  Text(
-                    'Tee Off!',
-                    style: TextStyle(fontFamily: 'Nunito',
-                      fontSize: (_sw * 0.048).clamp(16.0, 20.0),
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ],
+    return GestureDetector(
+      onTap: _isLoading ? null : _teeOff,
+      child: Opacity(
+        opacity: _isLoading ? 0.6 : 1.0,
+        child: Container(
+          width: double.infinity,
+          height: (_sh * 0.075).clamp(54.0, 66.0),
+          alignment: Alignment.center,
+          decoration: ShapeDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF7BC344), Color(0xFF5A9E1F)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            shape: SuperellipseShape(
+              borderRadius: BorderRadius.circular(48),
+            ),
+            shadows: [
+              BoxShadow(
+                color: const Color(0xFF5A9E1F).withValues(alpha: 0.40),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
+            ],
+          ),
+          child: _isLoading
+              ? const SizedBox(
+                  width: 22, height: 22,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation(Colors.white)),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.sports_golf_rounded, size: 22, color: Colors.white),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Tee Off!',
+                      style: TextStyle(fontFamily: 'Nunito',
+                        fontSize: (_sw * 0.048).clamp(16.0, 20.0),
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
       ),
     );
   }

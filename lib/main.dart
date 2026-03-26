@@ -38,7 +38,7 @@ void main() async {
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.light,
   ));
-  runApp(const StatTeeApp());
+  runApp(const TeeStatsApp());
 }
 
 Future<void> _initNotificationsInBackground() async {
@@ -74,14 +74,14 @@ void _scheduleStreakReminderIfNeeded() async {
 // ---------------------------------------------------------------------------
 // App root
 // ---------------------------------------------------------------------------
-class StatTeeApp extends StatefulWidget {
-  const StatTeeApp({super.key});
+class TeeStatsApp extends StatefulWidget {
+  const TeeStatsApp({super.key});
 
   @override
-  State<StatTeeApp> createState() => _StatTeeAppState();
+  State<TeeStatsApp> createState() => _TeeStatsAppState();
 }
 
-class _StatTeeAppState extends State<StatTeeApp> {
+class _TeeStatsAppState extends State<TeeStatsApp> {
   late final AppLifecycleListener _lifecycleListener;
 
   /// Timestamp when the app was last sent to background.
@@ -130,7 +130,7 @@ class _StatTeeAppState extends State<StatTeeApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'StatTee',
+      title: 'TeeStats',
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
       theme: AppTheme.light,

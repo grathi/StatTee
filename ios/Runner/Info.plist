@@ -29,7 +29,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.340096103166-mr9aa7aonb7g9adcnd3ievids77685f6</string>
+				<string>com.googleusercontent.apps.340096103166-30eg7djcfv2g4e3r5fqd9mvt77d2p0ff</string>
 			</array>
 		</dict>
 	</array>
@@ -41,6 +41,14 @@
 	<string>TeeStats uses your location to find nearby golf courses.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>TeeStats uses your location to find nearby golf courses.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>TeeStats needs camera access to record your golf swing.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Required for swing video recording.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>TeeStats needs access to pick a swing video from your library.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>TeeStats saves your analyzed swing video to your photo library.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

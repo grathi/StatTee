@@ -4,7 +4,7 @@ import '../models/round_summary_ai.dart';
 
 class AIRoundSummaryService {
   // Paste your free Gemini API key from https://aistudio.google.com/app/apikey
-  static const String _apiKey = 'AIzaSyDLasMtQkyPMhc2UmVGohtpSk8a_rgAY5Q';
+  static const String _apiKey = 'AIzaSyB6S8HpcnyuaOD-giUnDHHdxb2Eg9-TKpU';
   static const String _endpoint =
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 

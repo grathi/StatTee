@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:superellipse_shape/superellipse_shape.dart';
 import '../models/tournament.dart';
 import '../models/round.dart';
 import '../services/tournament_service.dart';
@@ -66,10 +67,12 @@ class TournamentScreen extends StatelessWidget {
   Widget _buildWorkflowBanner(AppColors c, double sw, double sh) {
     final label = (sw * 0.030).clamp(11.0, 13.0);
     return Container(
-      decoration: BoxDecoration(
+      decoration: ShapeDecoration(
         color: const Color(0xFFFFB74D).withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFFFB74D).withValues(alpha: 0.3)),
+        shape: SuperellipseShape(
+          borderRadius: BorderRadius.circular(28),
+          side: BorderSide(color: const Color(0xFFFFB74D).withValues(alpha: 0.3)),
+        ),
       ),
       padding: EdgeInsets.symmetric(
           horizontal: (sw * 0.04).clamp(12.0, 18.0),
@@ -169,9 +172,11 @@ class _TournamentCard extends StatelessWidget {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
-        decoration: BoxDecoration(
+        decoration: ShapeDecoration(
           color: const Color(0xFFE53935).withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(18),
+          shape: SuperellipseShape(
+            borderRadius: BorderRadius.circular(36),
+          ),
         ),
         child: const Icon(Icons.delete_outline_rounded,
             color: Color(0xFFE53935), size: 24),
@@ -184,11 +189,13 @@ class _TournamentCard extends StatelessWidget {
                   tournament: tournament, c: c, sw: sw, sh: sh)),
         ),
         child: Container(
-          decoration: BoxDecoration(
+          decoration: ShapeDecoration(
             color: c.cardBg,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: c.cardBorder),
-            boxShadow: c.cardShadow,
+            shape: SuperellipseShape(
+              borderRadius: BorderRadius.circular(36),
+              side: BorderSide(color: c.cardBorder),
+            ),
+            shadows: c.cardShadow,
           ),
           padding: EdgeInsets.all((sw * 0.045).clamp(14.0, 20.0)),
           child: Row(
@@ -196,9 +203,11 @@ class _TournamentCard extends StatelessWidget {
               Container(
                 width: (sw * 0.12).clamp(40.0, 52.0),
                 height: (sw * 0.12).clamp(40.0, 52.0),
-                decoration: BoxDecoration(
+                decoration: ShapeDecoration(
                   color: const Color(0xFFFFB74D).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
+                  shape: SuperellipseShape(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
                 ),
                 child: Icon(Icons.emoji_events_rounded,
                     color: const Color(0xFFFFB74D),
@@ -338,10 +347,12 @@ class _TournamentDetailScreen extends StatelessWidget {
                           padding: EdgeInsets.fromLTRB(hPad, 0, hPad,
                               isLast ? sh * 0.1 : sh * 0.010),
                           child: Container(
-                            decoration: BoxDecoration(
+                            decoration: ShapeDecoration(
                               color: c.cardBg,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: c.cardBorder),
+                              shape: SuperellipseShape(
+                                borderRadius: BorderRadius.circular(32),
+                                side: BorderSide(color: c.cardBorder),
+                              ),
                             ),
                             padding: EdgeInsets.symmetric(
                                 horizontal: (sw * 0.045).clamp(14.0, 20.0),
@@ -446,10 +457,12 @@ class _TournamentDetailScreen extends StatelessWidget {
       String label, double body, double labelSz, {Color? color}) {
     return Expanded(
       child: Container(
-        decoration: BoxDecoration(
+        decoration: ShapeDecoration(
           color: c.cardBg,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: c.cardBorder),
+          shape: SuperellipseShape(
+            borderRadius: BorderRadius.circular(28),
+            side: BorderSide(color: c.cardBorder),
+          ),
         ),
         padding: EdgeInsets.symmetric(vertical: sh * 0.016),
         child: Column(
@@ -539,10 +552,12 @@ class _CreateTournamentSheetState extends State<_CreateTournamentSheet> {
               color: c.secondaryText, fontSize: label, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           Container(
-            decoration: BoxDecoration(
+            decoration: ShapeDecoration(
               color: c.fieldBg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: c.fieldBorder),
+              shape: SuperellipseShape(
+                borderRadius: BorderRadius.circular(24),
+                side: BorderSide(color: c.fieldBorder),
+              ),
             ),
             child: TextField(
               controller: _nameCtrl,
@@ -558,31 +573,36 @@ class _CreateTournamentSheetState extends State<_CreateTournamentSheet> {
           ),
           SizedBox(height: sh * 0.028),
 
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: (_saving || _nameCtrl.text.trim().isEmpty)
-                  ? null
-                  : _create,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4F46E5),
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: c.fieldBg,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
+          GestureDetector(
+            onTap: (_saving || _nameCtrl.text.trim().isEmpty)
+                ? null
+                : _create,
+            child: Opacity(
+              opacity: (_saving || _nameCtrl.text.trim().isEmpty) ? 0.5 : 1.0,
+              child: Container(
+                alignment: Alignment.center,
+                width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                elevation: 0,
+                decoration: ShapeDecoration(
+                  color: (_saving || _nameCtrl.text.trim().isEmpty)
+                      ? c.fieldBg
+                      : const Color(0xFF4F46E5),
+                  shape: SuperellipseShape(
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                ),
+                child: _saving
+                    ? const SizedBox(
+                        width: 20, height: 20,
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2))
+                    : Text('Create Tournament',
+                        style: TextStyle(
+                            fontFamily: 'Nunito',
+                            fontSize: body,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white)),
               ),
-              child: _saving
-                  ? const SizedBox(
-                      width: 20, height: 20,
-                      child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2))
-                  : Text('Create Tournament',
-                      style: TextStyle(
-                          fontFamily: 'Nunito',
-                          fontSize: body,
-                          fontWeight: FontWeight.w700)),
             ),
           ),
         ],
@@ -629,11 +649,13 @@ class _TournFab extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
+            decoration: ShapeDecoration(
               color: c.cardBg,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: c.cardBorder),
-              boxShadow: c.cardShadow,
+              shape: SuperellipseShape(
+                borderRadius: BorderRadius.circular(40),
+                side: BorderSide(color: c.cardBorder),
+              ),
+              shadows: c.cardShadow,
             ),
             child: Text(
               label,

@@ -176,11 +176,13 @@ class _CompactCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        decoration: BoxDecoration(
+        decoration: ShapeDecoration(
           color: c.cardBg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: c.cardBorder),
-          boxShadow: c.cardShadow,
+          shape: SuperellipseShape(
+            borderRadius: BorderRadius.circular(32),
+            side: BorderSide(color: c.cardBorder),
+          ),
+          shadows: c.cardShadow,
         ),
         padding: EdgeInsets.symmetric(
           horizontal: (sw * 0.042).clamp(13.0, 18.0),
@@ -192,13 +194,15 @@ class _CompactCard extends StatelessWidget {
             Container(
               width: (sw * 0.11).clamp(38.0, 46.0),
               height: (sw * 0.11).clamp(38.0, 46.0),
-              decoration: BoxDecoration(
+              decoration: ShapeDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: config.gradient,
                 ),
-                borderRadius: BorderRadius.circular(12),
+                shape: SuperellipseShape(
+                  borderRadius: BorderRadius.circular(24),
+                ),
               ),
               child: Icon(type.icon,
                   color: Colors.white,
@@ -297,10 +301,12 @@ class _MetadataRow extends StatelessWidget {
   Widget _chip(String label, double sw) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
+      decoration: ShapeDecoration(
         color: Colors.white.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+        shape: SuperellipseShape(
+          borderRadius: BorderRadius.circular(40),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+        ),
       ),
       child: Text(label,
           style: TextStyle(
@@ -334,10 +340,12 @@ class _PriorityBadge extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
+      decoration: ShapeDecoration(
         color: entry.$2.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: entry.$2.withValues(alpha: 0.4)),
+        shape: SuperellipseShape(
+          borderRadius: BorderRadius.circular(40),
+          side: BorderSide(color: entry.$2.withValues(alpha: 0.4)),
+        ),
       ),
       child: Text(entry.$1,
           style: TextStyle(

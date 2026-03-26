@@ -73,7 +73,7 @@ class _NotificationPreferencesScreenState
           content: const Text('Preferences saved'),
           backgroundColor: AppColors.of(context).accent,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: SuperellipseShape(borderRadius: BorderRadius.circular(24)),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -193,11 +193,13 @@ class _NotificationPreferencesScreenState
 
           // Preference rows
           Container(
-            decoration: BoxDecoration(
+            decoration: ShapeDecoration(
               color: c.cardBg,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: c.cardBorder),
-              boxShadow: c.cardShadow,
+              shape: SuperellipseShape(
+                borderRadius: BorderRadius.circular(48),
+                side: BorderSide(color: c.cardBorder),
+              ),
+              shadows: c.cardShadow,
             ),
             child: Column(
               children: _prefMeta.asMap().entries.map((entry) {
@@ -276,7 +278,7 @@ class _NotificationPreferencesScreenState
                     )),
                 const SizedBox(height: 10),
                 Text(
-                  'StatTee analyses your rounds, practice habits, and '
+                  'TeeStats analyses your rounds, practice habits, and '
                   'performance trends to send notifications that actually help your game.',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.75),
@@ -325,7 +327,7 @@ class _NotificationPreferencesScreenState
             Container(
               width: (sw * 0.11).clamp(38.0, 48.0),
               height: (sw * 0.11).clamp(38.0, 48.0),
-              decoration: BoxDecoration(
+              decoration: ShapeDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -333,7 +335,9 @@ class _NotificationPreferencesScreenState
                       ? meta.gradient
                       : [c.divider, c.divider],
                 ),
-                borderRadius: BorderRadius.circular(12),
+                shape: SuperellipseShape(
+                  borderRadius: BorderRadius.circular(24),
+                ),
               ),
               child: Icon(meta.icon,
                   color: value
@@ -369,9 +373,11 @@ class _NotificationPreferencesScreenState
               duration: const Duration(milliseconds: 200),
               width: 48,
               height: 28,
-              decoration: BoxDecoration(
+              decoration: ShapeDecoration(
                 color: value ? c.accent : c.divider,
-                borderRadius: BorderRadius.circular(14),
+                shape: SuperellipseShape(
+                  borderRadius: BorderRadius.circular(28),
+                ),
               ),
               child: AnimatedAlign(
                 duration: const Duration(milliseconds: 200),

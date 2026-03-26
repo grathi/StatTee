@@ -152,10 +152,12 @@ class AIRoundSummaryCard extends StatelessWidget {
     return Container(
       width: fullWidth ? double.infinity : null,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
+      decoration: ShapeDecoration(
         color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+        shape: SuperellipseShape(
+          borderRadius: BorderRadius.circular(28),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -197,10 +199,12 @@ class _CalorieBadge extends StatelessWidget {
     final formatted = _format(calories);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
+      decoration: ShapeDecoration(
         color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.20)),
+        shape: SuperellipseShape(
+          borderRadius: BorderRadius.circular(40),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.20)),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -232,10 +236,12 @@ class _GeminiPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
+      decoration: ShapeDecoration(
         color: Colors.white.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+        shape: SuperellipseShape(
+          borderRadius: BorderRadius.circular(40),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.25)),
+        ),
       ),
       child: const Text('Gemini',
           style: TextStyle(
