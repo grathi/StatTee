@@ -60,3 +60,5 @@ ios/build/
 ios/Flutter/Flutter.framework
 ios/Flutter/Flutter.podspec
 ios/.symlinks/
+functions/node_modules/
+functions/.env
