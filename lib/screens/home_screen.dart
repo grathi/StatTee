@@ -24,6 +24,9 @@ import '../widgets/weather_widgets.dart';
 import '../widgets/tour_overlay.dart';
 import '../services/onboarding_service.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
+import '../models/group_round.dart';
+import '../services/group_round_service.dart';
+import 'group_round_invite_screen.dart';
 
 // ---------------------------------------------------------------------------
 // Shell — owns the bottom nav and tab switching
@@ -386,6 +389,8 @@ class _HomeTabState extends State<_HomeTab>
       RoundService.recentRoundsStream(limit: 10).asBroadcastStream();
   late final Stream<List<Round>> _allRoundsStream =
       RoundService.allCompletedRoundsStream().asBroadcastStream();
+  late final Stream<List<GroupRound>> _pendingInvitesStream =
+      GroupRoundService.pendingInvitesStream().asBroadcastStream();
 
   final _scrollCtrl = ScrollController();
 
@@ -722,10 +727,13 @@ class _HomeTabState extends State<_HomeTab>
 
   String get _greeting {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    if (hour < 21) return 'Good evening';
-    return 'Good night';
+    if (hour < 6)  return 'Early tee time';
+    if (hour < 10) return 'Morning round';
+    if (hour < 12) return 'Perfect morning';
+    if (hour < 14) return 'Midday fairways';
+    if (hour < 17) return 'Afternoon links';
+    if (hour < 20) return 'Evening round';
+    return 'Clubhouse time';
   }
 
   String get _firstName {
@@ -835,6 +843,7 @@ class _HomeTabState extends State<_HomeTab>
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   SizedBox(height: _sh * 0.022),
+                                  _buildPendingInvitesBanner(),
                                   loading
                                       ? ShimmerCarouselCard(height: (_sh * 0.215).clamp(160.0, 215.0))
                                       : _buildTopCarousel(activeRound),
@@ -882,6 +891,97 @@ class _HomeTabState extends State<_HomeTab>
               },
             );
           },
+        );
+      },
+    );
+  }
+
+  // ── Pending Group Round Invites Banner ─────────────────────────────────────
+  Widget _buildPendingInvitesBanner() {
+    return StreamBuilder<List<GroupRound>>(
+      stream: _pendingInvitesStream,
+      builder: (context, snap) {
+        final invites = snap.data ?? [];
+        if (invites.isEmpty) return const SizedBox.shrink();
+        final c = AppColors.of(context);
+        return Column(
+          children: invites.map((session) {
+            return GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      GroupRoundInviteScreen(sessionId: session.id),
+                ),
+              ),
+              child: Container(
+                margin: EdgeInsets.fromLTRB(_hPad, 0, _hPad, _sh * 0.014),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: ShapeDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF3D6B14), Color(0xFF5A9E1F)],
+                  ),
+                  shape: SuperellipseShape(
+                      borderRadius: BorderRadius.circular(18)),
+                  shadows: const [
+                    BoxShadow(
+                      color: Color(0x405A9E1F),
+                      blurRadius: 12,
+                      offset: Offset(0, 4),
+                    )
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    const Text('⛳', style: TextStyle(fontSize: 22)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${session.hostName} invited you to play',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            session.courseName,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'View',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
         );
       },
     );

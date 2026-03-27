@@ -309,7 +309,6 @@ class _LoginScreenState extends State<LoginScreen>
         );
       },
     );
-    emailCtrl.dispose();
   }
 
   Future<void> _signIn() async {

@@ -4,6 +4,9 @@ import 'package:geolocator/geolocator.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
 import '../services/places_service.dart';
 import '../services/round_service.dart';
+import '../services/friends_service.dart';
+import '../services/group_round_service.dart';
+import '../models/friend_profile.dart';
 import '../theme/app_theme.dart';
 import 'scorecard_screen.dart';
 
@@ -46,6 +49,10 @@ class _StartRoundScreenState extends State<StartRoundScreen>
 
   int  _holes     = 18;
   bool _isLoading = false;
+
+  // Invite friends
+  List<FriendProfile> _acceptedFriends = [];
+  final Set<String> _invitedUids = {};
 
   // autocomplete state
   String?  _selectedPlaceId;
@@ -97,6 +104,18 @@ class _StartRoundScreenState extends State<StartRoundScreen>
     }
 
     _courseNameCtrl.addListener(_onCourseNameChanged);
+
+    // Load accepted friends for invite section
+    if (!widget.isPractice && widget.tournamentId == null) {
+      FriendsService.friendsStream().first.then((all) {
+        if (mounted) {
+          setState(() {
+            _acceptedFriends =
+                all.where((f) => f.status == 'accepted').toList();
+          });
+        }
+      });
+    }
 
     // Pre-fill if launched from a nearby course card
     if (widget.initialCourseName != null) {
@@ -201,30 +220,54 @@ class _StartRoundScreenState extends State<StartRoundScreen>
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
+      final courseName     = _courseNameCtrl.text.trim();
+      final courseLocation = _locationCtrl.text.trim().isNotEmpty
+          ? _locationCtrl.text.trim()
+          : (_locationName ?? '');
+      final courseRating   = double.tryParse(_courseRatingCtrl.text.trim());
+      final slopeRating    = int.tryParse(_slopeRatingCtrl.text.trim());
+
       final roundId = await RoundService.startRound(
-        courseName:     _courseNameCtrl.text.trim(),
-        courseLocation: _locationCtrl.text.trim().isNotEmpty
-            ? _locationCtrl.text.trim()
-            : (_locationName ?? ''),
+        courseName:     courseName,
+        courseLocation: courseLocation,
         totalHoles:     _holes,
-        courseRating:   double.tryParse(_courseRatingCtrl.text.trim()),
-        slopeRating:    int.tryParse(_slopeRatingCtrl.text.trim()),
+        courseRating:   courseRating,
+        slopeRating:    slopeRating,
         weather:        null,
         isPractice:     widget.isPractice,
         tournamentId:   widget.tournamentId,
       );
+
+      // Create group session if friends were invited
+      String? sessionId;
+      final invitees = _acceptedFriends
+          .where((f) => _invitedUids.contains(f.uid))
+          .toList();
+      if (invitees.isNotEmpty) {
+        sessionId = await GroupRoundService.createSession(
+          courseName:     courseName,
+          courseLocation: courseLocation,
+          totalHoles:     _holes,
+          courseRating:   courseRating,
+          slopeRating:    slopeRating,
+          invitees:       invitees,
+        );
+        // Link host's roundId to the session
+        await GroupRoundService.joinSession(sessionId, roundId);
+      }
+
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (_) => ScorecardScreen(
             roundId:    roundId,
-            courseName: _courseNameCtrl.text.trim(),
+            courseName: courseName,
             totalHoles: _holes,
-            // Selected course coords take priority over home-page GPS/custom location
             lat: _selectedLat ?? _userPosition?.latitude ?? _customLat,
             lng: _selectedLng ?? _userPosition?.longitude ?? _customLng,
             onComplete: widget.onComplete,
+            sessionId:  sessionId,
           ),
         ),
       );
@@ -275,6 +318,11 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                       _buildHeader(c),
                       SizedBox(height: _sh * 0.020),
                       _buildForm(c),
+                      if (_acceptedFriends.isNotEmpty && !widget.isPractice &&
+                          widget.tournamentId == null) ...[
+                        SizedBox(height: _sh * 0.018),
+                        _buildInviteSection(c),
+                      ],
                       SizedBox(height: _sh * 0.024),
                       _buildTeeOffButton(c),
                       SizedBox(height: _sh * 0.028),
@@ -791,6 +839,93 @@ class _StartRoundScreenState extends State<StartRoundScreen>
           ),
         );
       }).toList(),
+    );
+  }
+
+  Widget _buildInviteSection(AppColors c) {
+    return Container(
+      decoration: ShapeDecoration(
+        color: c.cardBg,
+        shape: SuperellipseShape(
+          borderRadius: BorderRadius.circular(32),
+          side: BorderSide(color: c.cardBorder),
+        ),
+        shadows: c.cardShadow,
+      ),
+      padding: EdgeInsets.all((_sw * 0.048).clamp(16.0, 22.0)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionLabel(c, 'INVITE FRIENDS (MAX 3)'),
+          SizedBox(height: _sh * 0.010),
+          Text(
+            'Select friends to play along — they\'ll get a notification to join.',
+            style: TextStyle(color: c.tertiaryText, fontSize: _label),
+          ),
+          SizedBox(height: _sh * 0.012),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _acceptedFriends.map((f) {
+              final sel = _invitedUids.contains(f.uid);
+              final atMax = _invitedUids.length >= 3;
+              return GestureDetector(
+                onTap: () {
+                  if (!sel && atMax) return; // can't add more than 3
+                  setState(() {
+                    if (sel) {
+                      _invitedUids.remove(f.uid);
+                    } else {
+                      _invitedUids.add(f.uid);
+                    }
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: ShapeDecoration(
+                    color: sel ? const Color(0xFF5A9E1F) : c.fieldBg,
+                    shape: SuperellipseShape(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(
+                        color: sel
+                            ? const Color(0xFF5A9E1F)
+                            : (!sel && atMax ? c.fieldBorder.withOpacity(0.4) : c.fieldBorder),
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        sel ? Icons.check_circle_rounded : Icons.person_outline_rounded,
+                        size: _label * 1.1,
+                        color: sel ? Colors.white : (atMax && !sel ? c.tertiaryText.withOpacity(0.4) : c.tertiaryText),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        f.displayName,
+                        style: TextStyle(
+                          color: sel ? Colors.white : (atMax && !sel ? c.tertiaryText.withOpacity(0.4) : c.primaryText),
+                          fontSize: _label,
+                          fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          if (_invitedUids.isNotEmpty) ...[
+            SizedBox(height: _sh * 0.010),
+            Text(
+              '${_invitedUids.length} friend${_invitedUids.length > 1 ? 's' : ''} will be invited',
+              style: TextStyle(color: c.accent, fontSize: _label, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ],
+      ),
     );
   }
 

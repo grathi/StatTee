@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -21,8 +22,9 @@ class NotificationService {
   static const _channelName = 'TeeStats Notifications';
   static const _tipCount    = 2;
 
-  // Callback set by the app so taps can trigger navigation
-  static void Function(String? payload)? onNotificationTap;
+  // Callback set by the app so taps can trigger navigation.
+  // Receives the full data map so routes like 'groupRound' can pass extra params.
+  static void Function(Map<String, dynamic> data)? onNotificationTap;
 
   // ── Init ─────────────────────────────────────────────────────────────────
 
@@ -42,7 +44,15 @@ class NotificationService {
     await _plugin.initialize(
       const InitializationSettings(android: android, iOS: ios),
       onDidReceiveNotificationResponse: (details) {
-        onNotificationTap?.call(details.payload);
+        final raw = details.payload;
+        if (raw == null) return;
+        try {
+          final data = jsonDecode(raw) as Map<String, dynamic>;
+          onNotificationTap?.call(data);
+        } catch (_) {
+          // Legacy plain-string payloads (tips, reminders)
+          onNotificationTap?.call({'route': raw});
+        }
       },
     );
 
@@ -96,7 +106,7 @@ class NotificationService {
 
     // Notification tap when app is in background (not terminated)
     FirebaseMessaging.onMessageOpenedApp.listen((msg) {
-      onNotificationTap?.call(msg.data['route'] as String?);
+      onNotificationTap?.call(msg.data);
     });
 
     // Notification tap when app was terminated
@@ -104,7 +114,7 @@ class NotificationService {
     if (initial != null) {
       // Delay so the widget tree is ready
       Future.delayed(const Duration(milliseconds: 800), () {
-        onNotificationTap?.call(initial.data['route'] as String?);
+        onNotificationTap?.call(initial.data);
       });
     }
   }
@@ -122,11 +132,14 @@ class NotificationService {
   static Future<void> _showForegroundNotification(RemoteMessage msg) async {
     final notification = msg.notification;
     if (notification == null) return;
+    // Encode the full data map as JSON so sessionId (and other fields) survive
+    // the local notification payload round-trip.
+    final payload = jsonEncode(msg.data);
     await _plugin.show(
       msg.hashCode,
       notification.title,
       notification.body,
-      _details(payload: msg.data['route'] as String?),
+      _details(payload: payload),
     );
   }
 

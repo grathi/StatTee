@@ -18,6 +18,7 @@ import '../widgets/play_style_widgets.dart';
 import '../services/play_style_service.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import '../screens/friends_screen.dart';
 
 const List<String> _kAvatarUrls = [
   'https://cdn.jsdelivr.net/gh/grathi/stattee_profile_pic@v1/avt/1.jpg',
@@ -132,6 +133,13 @@ class ProfileScreen extends StatelessWidget {
                         label: 'Edit Profile',
                         color: const Color(0xFF8FD44E),
                         onTap: () => _showEditProfileSheet(context, c, sw, sh, body, label),
+                      ),
+                      _MenuItem(
+                        icon: Icons.people_rounded,
+                        label: 'Friends & Leaderboard',
+                        color: const Color(0xFF4A90D9),
+                        onTap: () => Navigator.push(context,
+                            MaterialPageRoute(builder: (_) => const FriendsScreen())),
                       ),
                       _MenuItem(
                         icon: Icons.notifications_active_rounded,
@@ -259,7 +267,7 @@ class ProfileScreen extends StatelessWidget {
                       decoration: ShapeDecoration(
                         color: c.accentBg,
                         shape: SuperellipseShape(
-                          borderRadius: BorderRadius.circular(40),
+                          borderRadius: BorderRadius.circular(16),
                           side: BorderSide(color: c.accentBorder),
                         ),
                       ),

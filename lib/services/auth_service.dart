@@ -15,6 +15,12 @@ class AuthService {
     final cred = await _auth.createUserWithEmailAndPassword(
         email: email, password: password);
     await cred.user?.updateDisplayName(name);
+    // Write profile to Firestore so user is discoverable by email
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(cred.user!.uid)
+        .set({'displayName': name, 'email': email.toLowerCase()},
+            SetOptions(merge: true));
     return cred;
   }
 
@@ -36,7 +42,7 @@ class AuthService {
     final db = FirebaseFirestore.instance;
 
     // 1. Delete subcollections under users/{uid}
-    for (final sub in ['smartNotifications', 'teeTimes']) {
+    for (final sub in ['smartNotifications', 'teeTimes', 'friends']) {
       final snap = await db.collection('users').doc(uid).collection(sub).get();
       for (final doc in snap.docs) {
         await doc.reference.delete();

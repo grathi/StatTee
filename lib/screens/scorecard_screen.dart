@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
 import 'dart:async';
@@ -6,10 +7,12 @@ import '../models/hole_score.dart';
 import '../services/round_service.dart';
 import '../services/notification_service.dart';
 import '../services/weather_service.dart';
+import '../services/group_round_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/tip_banner.dart';
 import '../services/onboarding_service.dart';
 import 'round_summary_screen.dart';
+import 'group_round_results_screen.dart';
 
 class ScorecardScreen extends StatefulWidget {
   final String roundId;
@@ -23,6 +26,8 @@ class ScorecardScreen extends StatefulWidget {
   final int initialHole;
   /// Previously saved hole scores to pre-populate the scorecard.
   final List<HoleScore> savedScores;
+  /// Group session ID — set when playing with friends.
+  final String? sessionId;
 
   const ScorecardScreen({
     super.key,
@@ -34,6 +39,7 @@ class ScorecardScreen extends StatefulWidget {
     this.onComplete,
     this.initialHole = 1,
     this.savedScores = const [],
+    this.sessionId,
   });
 
   @override
@@ -233,9 +239,37 @@ class _ScorecardScreenState extends State<ScorecardScreen>
       await NotificationService.evaluateStreak(DateTime.now());
     } catch (_) {}
 
+    // Report to group session if playing with friends
+    if (widget.sessionId != null) {
+      try {
+        final totalScore = _saved.fold(0, (s, h) => s + h.score);
+        final totalPar   = _saved.fold(0, (s, h) => s + h.par);
+        await GroupRoundService.reportCompletion(
+          widget.sessionId!,
+          roundId:    widget.roundId,
+          totalScore: totalScore,
+          scoreDiff:  (totalScore - totalPar).toDouble(),
+        );
+      } catch (_) {}
+    }
+
     if (!mounted) return;
     widget.onComplete?.call(widget.roundId);
-    _showRoundSummary();
+
+    // Navigate to group results if part of a session, otherwise normal summary
+    if (widget.sessionId != null) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => GroupRoundResultsScreen(
+            sessionId:  widget.sessionId!,
+            myRoundId:  widget.roundId,
+            courseName: widget.courseName,
+          ),
+        ),
+      );
+    } else {
+      _showRoundSummary();
+    }
   }
 
   void _showRoundSummary() {
@@ -373,6 +407,18 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                   style: TextStyle(color: c.secondaryText, fontSize: _label),
                   textAlign: TextAlign.center,
                 ),
+                if (widget.sessionId != null) ...[
+                  const SizedBox(height: 2),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.people_rounded, size: _label, color: c.accent),
+                      const SizedBox(width: 3),
+                      Text('Playing with friends',
+                          style: TextStyle(color: c.accent, fontSize: _label * 0.9, fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                ],
                 if (_liveWeather != null) ...[
                   const SizedBox(height: 2),
                   _WeatherChip(weather: _liveWeather!, label: _label),
@@ -1288,12 +1334,27 @@ class _ScorecardScreenState extends State<ScorecardScreen>
               const SizedBox(height: 24),
               // Save & Exit
               GestureDetector(
-                onTap: () {
+                onTap: () async {
                   // currentHole is already persisted on every advance.
-                  // Just close the dialog and pop back to home.
-                  Navigator.of(context)
-                    ..pop() // dialog
-                    ..pop(); // scorecard screen
+                  // If this is a group round and the current user is the host,
+                  // cancel the session so invitees see it's no longer active.
+                  if (widget.sessionId != null) {
+                    try {
+                      final session = await GroupRoundService.fetchSession(
+                          widget.sessionId!);
+                      if (session != null &&
+                          session.hostUid ==
+                              FirebaseAuth.instance.currentUser?.uid) {
+                        await GroupRoundService.cancelSession(
+                            widget.sessionId!);
+                      }
+                    } catch (_) {}
+                  }
+                  if (context.mounted) {
+                    Navigator.of(context)
+                      ..pop() // dialog
+                      ..pop(); // scorecard screen
+                  }
                 },
                 child: Container(
                   width: double.infinity,
@@ -1365,6 +1426,19 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                     child: GestureDetector(
                       onTap: () async {
                         await RoundService.abandonRound(widget.roundId);
+                        // Cancel the group session if the host abandons
+                        if (widget.sessionId != null) {
+                          try {
+                            final session = await GroupRoundService
+                                .fetchSession(widget.sessionId!);
+                            if (session != null &&
+                                session.hostUid ==
+                                    FirebaseAuth.instance.currentUser?.uid) {
+                              await GroupRoundService.cancelSession(
+                                  widget.sessionId!);
+                            }
+                          } catch (_) {}
+                        }
                         if (mounted) {
                           Navigator.of(context)
                             ..pop()

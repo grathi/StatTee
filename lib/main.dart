@@ -12,6 +12,8 @@ import 'screens/home_screen.dart';
 import 'services/notification_service.dart';
 import 'services/round_service.dart';
 import 'services/smart_notification_service.dart';
+import 'services/friends_service.dart';
+import 'screens/group_round_invite_screen.dart';
 
 /// Global navigator key — lets NotificationService navigate without a context.
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -50,15 +52,27 @@ Future<void> _initNotificationsInBackground() async {
   } catch (_) {
     // Notification setup failed — app continues normally without it.
   }
+  // Ensure email is synced to Firestore so this user is discoverable by friends.
+  try {
+    await FriendsService.ensureProfileSynced();
+  } catch (_) {}
 }
 
-void _handleNotificationTap(String? route) {
+void _handleNotificationTap(Map<String, dynamic> data) {
+  final route = data['route'] as String?;
   if (route == null) return;
   final nav = navigatorKey.currentState;
   if (nav == null) return;
   switch (route) {
     case 'rounds':
       nav.push(MaterialPageRoute(builder: (_) => const RoundsScreen()));
+    case 'groupRound':
+      final sessionId = data['sessionId'] as String?;
+      if (sessionId != null) {
+        nav.push(MaterialPageRoute(
+          builder: (_) => GroupRoundInviteScreen(sessionId: sessionId),
+        ));
+      }
     default:
       nav.popUntil((r) => r.isFirst);
   }
