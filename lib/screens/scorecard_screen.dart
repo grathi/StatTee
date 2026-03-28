@@ -1281,6 +1281,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
 
   // ── Abandon dialog ─────────────────────────────────────────────────────────
   void _showAbandonDialog(AppColors c) {
+    final sw = _sw;
     showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.6),
@@ -1318,7 +1319,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                   style: TextStyle(
                     fontFamily: 'Nunito',
                     color: c.primaryText,
-                    fontSize: 20,
+                    fontSize: (sw * 0.052).clamp(18.0, 22.0),
                     fontWeight: FontWeight.w800,
                   )),
               const SizedBox(height: 8),
@@ -1327,7 +1328,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: c.secondaryText,
-                  fontSize: 14,
+                  fontSize: (sw * 0.036).clamp(13.0, 15.0),
                   height: 1.5,
                 ),
               ),
@@ -1387,7 +1388,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                           style: TextStyle(
                             fontFamily: 'Nunito',
                             color: Colors.white,
-                            fontSize: 15,
+                            fontSize: (sw * 0.040).clamp(14.0, 16.0),
                             fontWeight: FontWeight.w700,
                           )),
                     ],
@@ -1415,7 +1416,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                             style: TextStyle(
                               fontFamily: 'Nunito',
                               color: c.primaryText,
-                              fontSize: 14,
+                              fontSize: (sw * 0.036).clamp(13.0, 15.0),
                               fontWeight: FontWeight.w700,
                             )),
                       ),
@@ -1457,11 +1458,11 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                           ),
                         ),
                         alignment: Alignment.center,
-                        child: const Text('Abandon',
+                        child: Text('Abandon',
                             style: TextStyle(
                               fontFamily: 'Nunito',
-                              color: Color(0xFFE53935),
-                              fontSize: 14,
+                              color: const Color(0xFFE53935),
+                              fontSize: (sw * 0.036).clamp(13.0, 15.0),
                               fontWeight: FontWeight.w700,
                             )),
                       ),

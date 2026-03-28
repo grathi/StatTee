@@ -381,7 +381,7 @@ class _TourCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // ── Notch above card ──────────────────────────────────────────────
-        if (arrowUp) _Notch(offset: notchOffsetX, size: notchSize, up: true, color: c.cardBorder),
+        if (arrowUp) _Notch(offset: notchOffsetX, size: notchSize, up: true,  borderColor: c.cardBorder, fillColor: c.sheetBg),
 
         // ── Card body ─────────────────────────────────────────────────────
         Container(
@@ -525,7 +525,7 @@ class _TourCard extends StatelessWidget {
         ),
 
         // ── Notch below card ──────────────────────────────────────────────
-        if (!arrowUp) _Notch(offset: notchOffsetX, size: notchSize, up: false, color: c.cardBorder),
+        if (!arrowUp) _Notch(offset: notchOffsetX, size: notchSize, up: false, borderColor: c.cardBorder, fillColor: c.sheetBg),
       ],
     );
   }
@@ -534,16 +534,18 @@ class _TourCard extends StatelessWidget {
 // ── Triangle notch ────────────────────────────────────────────────────────────
 
 class _Notch extends StatelessWidget {
-  final double offset; // from left edge of card
+  final double offset;
   final double size;
-  final bool   up;     // true = points upward (card is below the spotlight)
-  final Color  color;
+  final bool   up;
+  final Color  borderColor;
+  final Color  fillColor;
 
   const _Notch({
     required this.offset,
     required this.size,
     required this.up,
-    required this.color,
+    required this.borderColor,
+    required this.fillColor,
   });
 
   @override
@@ -552,7 +554,7 @@ class _Notch extends StatelessWidget {
       padding: EdgeInsets.only(left: offset),
       child: CustomPaint(
         size: Size(size * 2, size),
-        painter: _NotchPainter(up: up, color: color),
+        painter: _NotchPainter(up: up, borderColor: borderColor, fillColor: fillColor),
       ),
     );
   }
@@ -560,35 +562,48 @@ class _Notch extends StatelessWidget {
 
 class _NotchPainter extends CustomPainter {
   final bool  up;
-  final Color color;
-  _NotchPainter({required this.up, required this.color});
+  final Color borderColor;
+  final Color fillColor;
+  _NotchPainter({required this.up, required this.borderColor, required this.fillColor});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final fill = Paint()..color = Colors.white;
+    final fill = Paint()..color = fillColor;
     final border = Paint()
-      ..color  = color
+      ..color  = borderColor
       ..style  = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
-    final path = Path();
+    // Closed path for fill
+    final fillPath = Path();
     if (up) {
-      // Triangle pointing up
-      path.moveTo(0, size.height);
-      path.lineTo(size.width / 2, 0);
-      path.lineTo(size.width, size.height);
-      path.close();
+      fillPath.moveTo(0, size.height);
+      fillPath.lineTo(size.width / 2, 0);
+      fillPath.lineTo(size.width, size.height);
+      fillPath.close();
     } else {
-      // Triangle pointing down
-      path.moveTo(0, 0);
-      path.lineTo(size.width / 2, size.height);
-      path.lineTo(size.width, 0);
-      path.close();
+      fillPath.moveTo(0, 0);
+      fillPath.lineTo(size.width / 2, size.height);
+      fillPath.lineTo(size.width, 0);
+      fillPath.close();
     }
-    canvas.drawPath(path, fill);
-    canvas.drawPath(path, border);
+    canvas.drawPath(fillPath, fill);
+
+    // Open path for border — only the 2 angled sides, not the base
+    final borderPath = Path();
+    if (up) {
+      borderPath.moveTo(0, size.height);
+      borderPath.lineTo(size.width / 2, 0);
+      borderPath.lineTo(size.width, size.height);
+    } else {
+      borderPath.moveTo(0, 0);
+      borderPath.lineTo(size.width / 2, size.height);
+      borderPath.lineTo(size.width, 0);
+    }
+    canvas.drawPath(borderPath, border);
   }
 
   @override
-  bool shouldRepaint(_NotchPainter old) => old.up != up || old.color != color;
+  bool shouldRepaint(_NotchPainter old) =>
+      old.up != up || old.borderColor != borderColor || old.fillColor != fillColor;
 }

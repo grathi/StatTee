@@ -176,42 +176,33 @@ class _SmallWeatherCardState extends State<SmallWeatherCard> {
         ),
         SizedBox(width: (sw * 0.030).clamp(8.0, 14.0)),
 
-        // ── Centre: temp + summary ──────────────────────────────────────────
+        // ── Centre: temp + condition + summary ──────────────────────────────
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    w.tempLabel,
-                    style: TextStyle(
-                      fontFamily: 'Nunito',
-                      color: Colors.white,
-                      fontSize: (sw * 0.060).clamp(20.0, 26.0),
-                      fontWeight: FontWeight.w800,
-                      height: 1.1,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      w.condition,
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.65),
-                        fontSize: label,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
+              Text(
+                w.tempLabel,
+                style: TextStyle(
+                  fontFamily: 'Nunito',
+                  color: Colors.white,
+                  fontSize: (sw * 0.060).clamp(20.0, 26.0),
+                  fontWeight: FontWeight.w800,
+                  height: 1.1,
+                ),
               ),
-              const SizedBox(height: 3),
+              Text(
+                w.condition,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.65),
+                  fontSize: label,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 2),
               Text(
                 w.conditionSummary,
                 maxLines: 1,

@@ -166,7 +166,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                         onClear: _clearSearch,
                         onSendRequest: (profile) async {
                           await FriendsService.sendRequest(profile);
-                          if (mounted) setState(() => _requestSent = true);
+                          if (mounted) _clearSearch();
                         },
                         onAccept: (uid) => FriendsService.acceptRequest(uid),
                         onDecline: (uid) => FriendsService.declineOrRemove(uid),
@@ -288,6 +288,27 @@ class _FriendsTab extends StatelessWidget {
         final pending  = all.where((f) => f.status == 'pending_received').toList();
         final hasSearch = emailCtrl.text.trim().isNotEmpty;
 
+        // Keep the search result card in sync with live stream data.
+        // If the searched user appears in the stream with a different status,
+        // use that live status so the card auto-updates (e.g. after acceptance).
+        FriendProfile? liveResult = searchResult;
+        if (searchResult != null) {
+          final live = all.cast<FriendProfile?>().firstWhere(
+            (f) => f?.uid == searchResult!.uid,
+            orElse: () => null,
+          );
+          if (live != null && live.status != searchResult!.status) {
+            liveResult = FriendProfile(
+              uid: searchResult!.uid,
+              displayName: searchResult!.displayName,
+              email: searchResult!.email,
+              avatarUrl: searchResult!.avatarUrl,
+              status: live.status,
+              addedAt: searchResult!.addedAt,
+            );
+          }
+        }
+
         return Column(
           children: [
             // Search bar
@@ -312,9 +333,9 @@ class _FriendsTab extends StatelessWidget {
                   c: c,
                   body: body,
                   label: label,
-                  result: searchResult,
+                  result: liveResult,
                   error: searchError,
-                  requestSent: requestSent,
+                  requestSent: requestSent && liveResult?.status != 'accepted',
                   onSend: onSendRequest,
                 ),
               ),
@@ -514,8 +535,12 @@ class _SearchResultCard extends StatelessWidget {
           children: [
             Icon(Icons.info_outline_rounded, color: c.tertiaryText, size: body),
             const SizedBox(width: 10),
-            Text(error!,
-                style: TextStyle(color: c.secondaryText, fontSize: body * 0.9)),
+            Expanded(
+              child: Text(error!,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: c.secondaryText, fontSize: body * 0.9)),
+            ),
           ],
         ),
       );
@@ -562,21 +587,26 @@ class _SearchResultCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(result!.displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                         color: c.primaryText,
                         fontSize: body,
                         fontWeight: FontWeight.w700)),
                 Text(result!.email,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style:
                         TextStyle(color: c.tertiaryText, fontSize: label)),
               ],
             ),
           ),
+          const SizedBox(width: 8),
           GestureDetector(
             onTap: canAct ? () => onSend(result!) : null,
             child: Container(
               padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
               decoration: ShapeDecoration(
                 gradient: canAct
                     ? LinearGradient(colors: [btnColor, btnColor])
@@ -586,6 +616,7 @@ class _SearchResultCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12)),
               ),
               child: Text(btnLabel,
+                  maxLines: 1,
                   style: TextStyle(
                       color: canAct ? Colors.white : c.tertiaryText,
                       fontSize: label,
@@ -638,6 +669,8 @@ class _PendingCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(profile.displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                         color: c.primaryText,
                         fontSize: body,
@@ -648,6 +681,7 @@ class _PendingCard extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(width: 8),
           GestureDetector(
             onTap: onDecline,
             child: Container(
@@ -727,6 +761,8 @@ class _FriendCard extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(profile.displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                       color: c.primaryText,
                       fontSize: body,
@@ -1003,6 +1039,8 @@ class _LeaderboardRow extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(isMe ? 'You' : profile.displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                       color: c.primaryText,
                       fontSize: body,

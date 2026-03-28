@@ -13,6 +13,7 @@ import 'services/notification_service.dart';
 import 'services/round_service.dart';
 import 'services/smart_notification_service.dart';
 import 'services/friends_service.dart';
+import 'screens/friends_screen.dart';
 import 'screens/group_round_invite_screen.dart';
 
 /// Global navigator key — lets NotificationService navigate without a context.
@@ -29,12 +30,15 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
+  // Register tap handler BEFORE starting background init so getInitialMessage()
+  // (cold-start tap) is guaranteed to find the callback already set.
+  NotificationService.onNotificationTap = _handleNotificationTap;
+
   // Run notification setup in background — never block app launch.
   // FCM.getToken() can hang indefinitely on physical devices without this.
   unawaited(_initNotificationsInBackground());
 
   _scheduleStreakReminderIfNeeded();
-  NotificationService.onNotificationTap = _handleNotificationTap;
 
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
@@ -73,6 +77,8 @@ void _handleNotificationTap(Map<String, dynamic> data) {
           builder: (_) => GroupRoundInviteScreen(sessionId: sessionId),
         ));
       }
+    case 'friendRequest':
+      nav.push(MaterialPageRoute(builder: (_) => const FriendsScreen()));
     default:
       nav.popUntil((r) => r.isFirst);
   }

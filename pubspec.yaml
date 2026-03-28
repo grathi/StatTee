@@ -2,7 +2,7 @@ name: tee_time
 description: "TeeStats — Golf round tracker and stats app."
 publish_to: 'none'
 
-version: 1.4.0+21
+version: 1.4.0+22
 
 environment:
   sdk: ^3.11.0

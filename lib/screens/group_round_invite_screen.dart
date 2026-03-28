@@ -185,11 +185,16 @@ class _GroupRoundInviteScreenState extends State<GroupRoundInviteScreen> {
                             Icon(Icons.cancel_outlined,
                                 color: c.tertiaryText, size: body * 1.2),
                             const SizedBox(width: 8),
-                            Text('This round has been cancelled',
-                                style: TextStyle(
-                                    color: c.tertiaryText,
-                                    fontSize: body,
-                                    fontWeight: FontWeight.w600)),
+                            Expanded(
+                              child: Text('This round has been cancelled',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                      color: c.tertiaryText,
+                                      fontSize: body,
+                                      fontWeight: FontWeight.w600)),
+                            ),
                           ],
                         ),
                       ),

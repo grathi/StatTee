@@ -1,4 +1,4 @@
-const { onDocumentWritten } = require('firebase-functions/v2/firestore');
+const { onDocumentWritten, onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { logger } = require('firebase-functions');
 const admin = require('firebase-admin');
 
@@ -74,3 +74,51 @@ async function sendInviteNotification(uid, session, sessionId) {
     logger.error(`[${sessionId}] FCM send failed for uid=${uid}: ${err.message}`);
   }
 }
+
+/**
+ * Watches users/{recipientUid}/friends/{senderUid} for a new 'pending_received'
+ * document and sends an FCM push notification to the recipient.
+ */
+exports.onFriendRequest = onDocumentCreated(
+  'users/{recipientUid}/friends/{senderUid}',
+  async (event) => {
+    const data = event.data?.data();
+    if (!data || data.status !== 'pending_received') return;
+
+    const recipientUid = event.params.recipientUid;
+    const senderName   = data.displayName ?? 'Someone';
+
+    logger.info(`[friendRequest] ${senderName} → uid=${recipientUid}`);
+
+    // Fetch recipient's FCM token
+    const recipientDoc = await admin.firestore().collection('users').doc(recipientUid).get();
+    const token = recipientDoc.data()?.fcmToken;
+
+    if (!token) {
+      logger.warn(`[friendRequest] No fcmToken for uid=${recipientUid} — skipping`);
+      return;
+    }
+
+    try {
+      await admin.messaging().send({
+        token,
+        notification: {
+          title: '🤝 Friend Request',
+          body: `${senderName} wants to be your golf buddy!`,
+        },
+        data: {
+          route: 'friendRequest',
+        },
+        apns: {
+          payload: { aps: { sound: 'default' } },
+        },
+        android: {
+          notification: { sound: 'default' },
+        },
+      });
+      logger.info(`[friendRequest] FCM sent to uid=${recipientUid}`);
+    } catch (err) {
+      logger.error(`[friendRequest] FCM failed for uid=${recipientUid}: ${err.message}`);
+    }
+  },
+);

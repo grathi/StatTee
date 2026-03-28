@@ -25,8 +25,11 @@ import '../widgets/tour_overlay.dart';
 import '../services/onboarding_service.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
 import '../models/group_round.dart';
+import '../models/friend_profile.dart';
 import '../services/group_round_service.dart';
+import '../services/friends_service.dart';
 import 'group_round_invite_screen.dart';
+import 'friends_screen.dart';
 
 // ---------------------------------------------------------------------------
 // Shell — owns the bottom nav and tab switching
@@ -65,6 +68,13 @@ class _HomeScreenState extends State<HomeScreen> {
           targetKey: homeState!._greetingKey,
           title: 'Welcome to TeeStats',
           body: 'This is your home — see recent rounds, performance and nearby courses at a glance.',
+          anchor: TourAnchor.below,
+        ),
+      if (homeState?._friendsKey != null)
+        TourStep(
+          targetKey: homeState!._friendsKey,
+          title: 'Friends & Leaderboard',
+          body: 'Add golf buddies, accept friend requests, and compare scores on the leaderboard. A green dot appears when you have a pending request.',
           anchor: TourAnchor.below,
         ),
       TourStep(
@@ -373,6 +383,7 @@ class _HomeTabState extends State<_HomeTab>
   final _heroCardKey     = GlobalKey();
   final _quickStatsKey   = GlobalKey();
   final _nearbyCourseKey = GlobalKey();
+  final _friendsKey      = GlobalKey();
 
   Position? _userPosition;
   String?   _locationName;
@@ -391,6 +402,10 @@ class _HomeTabState extends State<_HomeTab>
       RoundService.allCompletedRoundsStream().asBroadcastStream();
   late final Stream<List<GroupRound>> _pendingInvitesStream =
       GroupRoundService.pendingInvitesStream().asBroadcastStream();
+  late final Stream<List<FriendProfile>> _pendingFriendsStream =
+      FriendsService.friendsStream()
+          .map((all) => all.where((f) => f.status == 'pending_received').toList())
+          .asBroadcastStream();
 
   final _scrollCtrl = ScrollController();
 
@@ -942,17 +957,19 @@ class _HomeTabState extends State<_HomeTab>
                         children: [
                           Text(
                             '${session.hostName} invited you to play',
-                            style: const TextStyle(
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
                               color: Colors.white,
-                              fontSize: 13,
+                              fontSize: (_sw * 0.034).clamp(12.0, 14.0),
                               fontWeight: FontWeight.w700,
                             ),
                           ),
                           Text(
                             session.courseName,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.white70,
-                              fontSize: 12,
+                              fontSize: (_sw * 0.030).clamp(11.0, 13.0),
                               fontWeight: FontWeight.w500,
                             ),
                             maxLines: 1,
@@ -1048,6 +1065,65 @@ class _HomeTabState extends State<_HomeTab>
                 ),
               ],
             ),
+          ),
+          // Friends icon button with pending badge
+          StreamBuilder<List<FriendProfile>>(
+            stream: _pendingFriendsStream,
+            builder: (context, snap) {
+              final count   = (snap.data ?? []).length;
+              final btnSize = (_sw * 0.110).clamp(38.0, 48.0);
+              return GestureDetector(
+                key: _friendsKey,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const FriendsScreen()),
+                ),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: btnSize,
+                      height: btnSize,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: c.iconContainerBg,
+                        border: Border.all(color: c.iconContainerBorder),
+                      ),
+                      child: Icon(
+                        Icons.people_rounded,
+                        color: c.iconColor,
+                        size: btnSize * 0.46,
+                      ),
+                    ),
+                    if (count > 0)
+                      Positioned(
+                        top: 1,
+                        right: 1,
+                        child: Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF7BC344), Color(0xFF5A9E1F)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: c.scaffoldBg, width: 1.5),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF5A9E1F).withValues(alpha: 0.5),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
           ),
         ],
       ),
