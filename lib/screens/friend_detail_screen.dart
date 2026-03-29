@@ -385,9 +385,11 @@ class _HeadToHead extends StatelessWidget {
         stat: 'Handicap',
         mine: myStats.handicapLabel,
         theirs: friendStats.handicapLabel,
-        // lower wins
-        iWin: myStats.handicapIndex < friendStats.handicapIndex,
-        theyWin: friendStats.handicapIndex < myStats.handicapIndex,
+        // lower wins; treat null (not yet established) as losing
+        iWin: myStats.handicapIndex != null && friendStats.handicapIndex != null &&
+              myStats.handicapIndex! < friendStats.handicapIndex!,
+        theyWin: myStats.handicapIndex != null && friendStats.handicapIndex != null &&
+                 friendStats.handicapIndex! < myStats.handicapIndex!,
       ),
       _H2HRow(
         stat: 'Avg Score',

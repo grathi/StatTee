@@ -142,6 +142,16 @@ class RoundService {
     });
   }
 
+  /// Writes all hole scores in a single Firestore update — efficient for bulk import.
+  /// Use this instead of calling saveHoleScore() in a loop.
+  static Future<void> saveAllHoleScores(
+      String roundId, List<HoleScore> holes) async {
+    final sorted = [...holes]..sort((a, b) => a.hole.compareTo(b.hole));
+    await _col.doc(roundId).update({
+      'scores': sorted.map((h) => h.toMap()).toList(),
+    });
+  }
+
   /// Persists the hole the user is currently on so they can resume later.
   static Future<void> saveCurrentHole(String roundId, int hole) async {
     await _col.doc(roundId).update({'currentHole': hole});

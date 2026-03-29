@@ -286,6 +286,7 @@ class ShimmerCourseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pad = width * 0.06;
     return AppShimmer(
       child: _shimmerCard(
         context: context,
@@ -294,23 +295,32 @@ class ShimmerCourseCard extends StatelessWidget {
           width: width,
           height: height,
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(pad),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Top row: icon box (left) + "Play" pill (right)
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    ShimmerBox(width: 36, height: 36, radius: 10),
-                    ShimmerBox(width: 60, height: 28, radius: 10),
+                    ShimmerBox(width: 38, height: 38, radius: 12),
+                    const Spacer(),
+                    ShimmerBox(width: 52, height: 22, radius: 20),
                   ],
                 ),
                 const Spacer(),
-                ShimmerBox(width: width * 0.65, height: 13),
-                const SizedBox(height: 6),
-                ShimmerBox(width: width * 0.45, height: 10),
-                const SizedBox(height: 6),
-                ShimmerBox(width: width * 0.35, height: 10),
+                // Course name — two lines
+                ShimmerBox(width: width * 0.72, height: 13),
+                const SizedBox(height: 5),
+                ShimmerBox(width: width * 0.48, height: 13),
+                const SizedBox(height: 7),
+                // Address row: pin icon + text
+                Row(
+                  children: [
+                    ShimmerBox(width: 12, height: 12, radius: 6),
+                    const SizedBox(width: 4),
+                    ShimmerBox(width: width * 0.52, height: 10),
+                  ],
+                ),
               ],
             ),
           ),

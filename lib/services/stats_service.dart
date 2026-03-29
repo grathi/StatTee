@@ -1,7 +1,7 @@
 import '../models/round.dart';
 
 class AppStats {
-  final double handicapIndex;
+  final double? handicapIndex;  // null until 20 full rounds completed (WHS)
   final double avgScore;       // avg score diff vs par
   final int bestRoundScore;    // lowest total score
   final int totalRounds;
@@ -22,7 +22,7 @@ class AppStats {
   });
 
   static const empty = AppStats(
-    handicapIndex: 0,
+    handicapIndex: null,
     avgScore: 0,
     bestRoundScore: 0,
     totalRounds: 0,
@@ -35,7 +35,12 @@ class AppStats {
   String get avgScoreLabel =>
       avgScore == 0 ? 'E' : avgScore > 0 ? '+${avgScore.toStringAsFixed(1)}' : avgScore.toStringAsFixed(1);
 
-  String get handicapLabel => handicapIndex.toStringAsFixed(1);
+  String get handicapLabel {
+    if (handicapIndex == null) return '-';
+    return handicapIndex! <= 0
+        ? '+${(-handicapIndex!).toStringAsFixed(1)}'
+        : handicapIndex!.toStringAsFixed(1);
+  }
 }
 
 class StatsService {
@@ -77,13 +82,14 @@ class StatsService {
     // Total birdies
     final birdies = all.fold(0, (s, r) => s + r.birdies);
 
-    // Handicap Index — avg of score differentials from best 8 of last 20
+    // Handicap Index — requires 20 completed 18-hole rounds (WHS rule).
+    // Returns null until threshold is met so UI can show progress instead.
     final diffs = full.take(20).map((r) => r.scoreDifferential).toList()
       ..sort();
     final best8 = diffs.take(8).toList();
-    final handicap = best8.isEmpty
-        ? avgDiff.clamp(0.0, 54.0)
-        : (best8.fold(0.0, (s, d) => s + d) / best8.length).clamp(0.0, 54.0);
+    final handicap = full.length >= 20
+        ? (best8.fold(0.0, (s, d) => s + d) / best8.length)
+        : null;
 
     return AppStats(
       handicapIndex: handicap,

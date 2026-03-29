@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import '../models/friend_profile.dart';
 import '../services/friends_service.dart';
 import '../services/stats_service.dart';
@@ -889,13 +890,19 @@ class _LeaderboardTabState extends State<_LeaderboardTab> {
           child: FutureBuilder<List<FriendProfile>>(
             future: _future,
             builder: (context, snap) {
-              if (snap.connectionState == ConnectionState.waiting) {
-                return Center(
-                    child: CircularProgressIndicator(
-                        color: c.accent, strokeWidth: 2));
-              }
-              final list = _sorted(snap.data ?? []);
-              if (list.isEmpty) {
+              final loading = snap.connectionState == ConnectionState.waiting;
+              final list = loading
+                  ? List.generate(5, (i) => FriendProfile(
+                      uid: 'dummy_$i',
+                      displayName: 'Golfer Name Here',
+                      email: '',
+                      status: 'accepted',
+                      addedAt: DateTime.now(),
+                      stats: AppStats.empty,
+                      totalRounds: 12,
+                    ))
+                  : _sorted(snap.data ?? []);
+              if (!loading && list.isEmpty) {
                 return Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -916,7 +923,10 @@ class _LeaderboardTabState extends State<_LeaderboardTab> {
                   ),
                 );
               }
-              return ListView.builder(
+              return Skeletonizer(
+                enabled: loading,
+                child: ListView.builder(
+                physics: loading ? const NeverScrollableScrollPhysics() : null,
                 padding: EdgeInsets.fromLTRB(hPad, 0, hPad, sh * 0.12),
                 itemCount: list.length,
                 itemBuilder: (_, i) => _LeaderboardRow(
@@ -931,6 +941,7 @@ class _LeaderboardTabState extends State<_LeaderboardTab> {
                       ? null
                       : () => widget.onTapFriend(list[i]),
                 ),
+              ),
               );
             },
           ),

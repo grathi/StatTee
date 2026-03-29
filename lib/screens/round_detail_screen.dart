@@ -26,11 +26,11 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
 
   // ── Score colour coding ───────────────────────────────────────────────────
   Color _scoreColor(int diff) {
-    if (diff <= -2) return const Color(0xFFFFD700);
-    if (diff == -1) return const Color(0xFF4CAF82);
-    if (diff == 0)  return const Color(0xFFFFB74D);
-    if (diff == 1)  return const Color(0xFFFFB74D);
-    return const Color(0xFFE53935);
+    if (diff <= -2) return const Color(0xFFFFD700);   // eagle or better → gold
+    if (diff == -1) return const Color(0xFF4CAF50);   // birdie → green
+    if (diff == 0)  return const Color(0xFF5A9E1F);   // par → app green
+    if (diff == 1)  return const Color(0xFFFFB74D);   // bogey → orange
+    return const Color(0xFFE53935);                    // double bogey+ → red
   }
 
   String _formatDate(DateTime dt) {
@@ -374,7 +374,7 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
                   _statChip(c, '${round.birdies}', 'Birdies',
                       const Color(0xFF4CAF82), label),
                   _statChip(c, '${round.pars}', 'Pars',
-                      const Color(0xFFFFB74D), label),
+                      const Color(0xFF5A9E1F), label),
                   _statChip(c, '${round.bogeys}', 'Bogeys',
                       const Color(0xFFE53935), label),
                   _statChip(c, '${round.totalPutts}', 'Putts',

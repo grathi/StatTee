@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import '../models/round.dart';
 import '../services/round_service.dart';
 import '../theme/app_theme.dart';
+import 'scorecard_import_screen.dart';
 import '../widgets/shimmer_widgets.dart';
 import '../widgets/tip_banner.dart';
 import '../services/onboarding_service.dart';
@@ -229,20 +231,24 @@ class _RoundsScreenState extends State<RoundsScreen> {
     return StreamBuilder<List<Round>>(
       stream: RoundService.allCompletedRoundsStream(),
       builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting) {
-          return ListView.separated(
-            physics: const NeverScrollableScrollPhysics(),
-            padding: EdgeInsets.fromLTRB(hPad, 0, hPad, sh * 0.14),
-            itemCount: 5,
-            separatorBuilder: (_, __) => SizedBox(height: sh * 0.012),
-            itemBuilder: (_, __) => const ShimmerRoundListCard(),
-          );
-        }
+        final loading = snap.connectionState == ConnectionState.waiting;
         final rounds = snap.data ?? [];
-        if (rounds.isEmpty) {
+        if (!loading && rounds.isEmpty) {
           return _buildEmpty(c, sw, sh, body, label);
         }
-        return RefreshIndicator(
+        final displayRounds = loading
+            ? List.generate(5, (i) => Round(
+                userId: '',
+                courseName: 'Oak Hills Golf Club',
+                courseLocation: 'California, USA',
+                totalHoles: 18,
+                status: RoundStatus.completed,
+                startedAt: DateTime.now(),
+              ))
+            : rounds;
+        return Skeletonizer(
+          enabled: loading,
+          child: RefreshIndicator(
           onRefresh: () async => await Future.delayed(const Duration(milliseconds: 600)),
           color: const Color(0xFF5A9E1F),
           backgroundColor: Colors.white,
@@ -251,10 +257,10 @@ class _RoundsScreenState extends State<RoundsScreen> {
           physics: const AlwaysScrollableScrollPhysics(
               parent: BouncingScrollPhysics()),
           padding: EdgeInsets.fromLTRB(hPad, 0, hPad, sh * 0.14),
-          itemCount: rounds.length,
+          itemCount: displayRounds.length,
           separatorBuilder: (_, __) => SizedBox(height: sh * 0.012),
           itemBuilder: (ctx, i) {
-            final r = rounds[i];
+            final r = displayRounds[i];
             return Dismissible(
               key: ValueKey(r.id),
               direction: DismissDirection.endToStart,
@@ -311,7 +317,8 @@ class _RoundsScreenState extends State<RoundsScreen> {
             );
           },
         ),  // ListView.separated
-        );  // RefreshIndicator
+        ),  // RefreshIndicator
+        );  // Skeletonizer
       },
     );
   }
@@ -339,6 +346,18 @@ class _RoundsScreenState extends State<RoundsScreen> {
             style: TextStyle(
                 color: c.tertiaryText,
                 fontSize: (sw * 0.034).clamp(12.0, 15.0)),
+          ),
+          SizedBox(height: sh * 0.018),
+          TextButton.icon(
+            icon: Icon(Icons.document_scanner_rounded,
+                color: c.accent, size: 16),
+            label: Text(
+              'or scan a paper scorecard',
+              style: TextStyle(
+                  color: c.accent,
+                  fontSize: (sw * 0.034).clamp(12.0, 15.0)),
+            ),
+            onPressed: () => showScorecardImportFlow(context),
           ),
         ],
       ),

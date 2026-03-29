@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import '../services/auth_service.dart';
 import '../services/round_service.dart';
 import '../services/stats_service.dart';
@@ -96,30 +97,25 @@ class ProfileScreen extends StatelessWidget {
                     StreamBuilder(
                       stream: RoundService.allCompletedRoundsStream(),
                       builder: (context, snap) {
-                        if (snap.connectionState == ConnectionState.waiting) {
-                          return Column(
-                            children: [
-                              const ShimmerStatsRow(),
-                              SizedBox(height: sh * 0.022),
-                              ShimmerAchievementsGrid(count: 6),
-                            ],
-                          );
-                        }
+                        final loading = snap.connectionState == ConnectionState.waiting;
                         final rounds = snap.data ?? [];
-                        final stats = StatsService.calculate(rounds);
-                        final unlocked = AchievementService.evaluate(stats, rounds);
-                        final dna = GolfDNAService.compute(rounds);
-                        final playStyle = PlayStyleService.compute(rounds);
-                        return Column(
-                          children: [
-                            PlayStyleSection(identity: playStyle),
-                            SizedBox(height: sh * 0.022),
-                            _buildStatsRow(c, sw, sh, body, label, stats),
-                            SizedBox(height: sh * 0.022),
-                            _buildAchievementsSection(context, c, sw, sh, body, label, unlocked),
-                            SizedBox(height: sh * 0.022),
-                            GolfDNASection(dna: dna),
-                          ],
+                        final stats = loading ? AppStats.empty : StatsService.calculate(rounds);
+                        final unlocked = loading ? <Achievement>[] : AchievementService.evaluate(stats, rounds);
+                        final dna = loading ? GolfDNAService.compute([]) : GolfDNAService.compute(rounds);
+                        final playStyle = loading ? PlayStyleService.compute([]) : PlayStyleService.compute(rounds);
+                        return Skeletonizer(
+                          enabled: loading,
+                          child: Column(
+                            children: [
+                              PlayStyleSection(identity: playStyle),
+                              SizedBox(height: sh * 0.022),
+                              _buildStatsRow(c, sw, sh, body, label, stats),
+                              SizedBox(height: sh * 0.022),
+                              _buildAchievementsSection(context, c, sw, sh, body, label, unlocked),
+                              SizedBox(height: sh * 0.022),
+                              GolfDNASection(dna: dna),
+                            ],
+                          ),
                         );
                       },
                     ),

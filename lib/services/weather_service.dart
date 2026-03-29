@@ -1,6 +1,33 @@
 import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:http/http.dart' as http;
+
+// ---------------------------------------------------------------------------
+// Unit helpers
+// ---------------------------------------------------------------------------
+
+/// True when the device's country uses imperial units (°F / mph).
+/// Only the US, Liberia (LR), and Myanmar (MM) use imperial.
+bool get _useImperial {
+  final code = ui.PlatformDispatcher.instance.locale.countryCode?.toUpperCase() ?? '';
+  return const {'US', 'LR', 'MM'}.contains(code);
+}
+
+String _formatTemp(double tempF) {
+  if (_useImperial) return '${tempF.round()}°F';
+  return '${((tempF - 32) * 5 / 9).round()}°C';
+}
+
+String _formatWind(double mph, String direction) {
+  if (_useImperial) return '${mph.round()} mph $direction';
+  return '${(mph * 1.60934).round()} km/h $direction';
+}
+
+String _formatWindSpeed(double mph) {
+  if (_useImperial) return '${mph.round()} mph';
+  return '${(mph * 1.60934).round()} km/h';
+}
 
 // ---------------------------------------------------------------------------
 // Models
@@ -21,11 +48,11 @@ class WeatherNow {
     required this.iconCode,
   });
 
-  /// Human-readable wind string, e.g. "10 mph NW"
-  String get windLabel => '${windSpeed.round()} mph $windDirection';
+  /// Human-readable wind string, e.g. "10 mph NW" or "16 km/h NW"
+  String get windLabel => _formatWind(windSpeed, windDirection);
 
-  /// Rounded temperature, e.g. "68°F"
-  String get tempLabel => '${temperature.round()}°F';
+  /// Rounded temperature, e.g. "68°F" or "20°C"
+  String get tempLabel => _formatTemp(temperature);
 
   /// Golf-context summary line
   String get conditionSummary {
@@ -82,8 +109,8 @@ class WeatherForecast {
     required this.iconCode,
   });
 
-  String get tempLabel => '${temperature.round()}°F';
-  String get windLabel => '${windSpeed.round()} mph $windDirection';
+  String get tempLabel => _formatTemp(temperature);
+  String get windLabel => _formatWind(windSpeed, windDirection);
 }
 
 class RoundWeatherSummary {
@@ -99,24 +126,24 @@ class RoundWeatherSummary {
     required this.summaryText,
   });
 
-  String get tempLabel => '${averageTemperature.round()}°F';
-  String get windLabel => '${averageWindSpeed.round()} mph';
+  String get tempLabel => _formatTemp(averageTemperature);
+  String get windLabel => _formatWindSpeed(averageWindSpeed);
 
   static RoundWeatherSummary fromWeatherData(WeatherData d) {
     final ws = d.windMph;
     final windDesc = ws < 5
         ? 'calm'
         : ws < 12
-            ? 'light ${ws.round()} mph'
+            ? 'light ${_formatWindSpeed(ws)}'
             : ws < 20
-                ? 'moderate ${ws.round()} mph'
-                : 'strong ${ws.round()} mph';
+                ? 'moderate ${_formatWindSpeed(ws)}'
+                : 'strong ${_formatWindSpeed(ws)}';
     return RoundWeatherSummary(
       averageTemperature: d.tempF,
       averageWindSpeed: d.windMph,
       dominantCondition: d.condition,
       summaryText:
-          'Played in ${d.tempF.round()}°F, $windDesc wind, ${d.condition.toLowerCase()}',
+          'Played in ${_formatTemp(d.tempF)}, $windDesc wind, ${d.condition.toLowerCase()}',
     );
   }
 }

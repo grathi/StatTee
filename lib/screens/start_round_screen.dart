@@ -8,6 +8,8 @@ import '../services/friends_service.dart';
 import '../services/group_round_service.dart';
 import '../models/friend_profile.dart';
 import '../theme/app_theme.dart';
+import '../widgets/shimmer_widgets.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import 'scorecard_screen.dart';
 
 class StartRoundScreen extends StatefulWidget {
@@ -53,6 +55,9 @@ class _StartRoundScreenState extends State<StartRoundScreen>
   // Invite friends
   List<FriendProfile> _acceptedFriends = [];
   final Set<String> _invitedUids = {};
+  final _friendSearchCtrl = TextEditingController();
+  String _friendQuery = '';
+  bool _loadingFriends = false;
 
   // autocomplete state
   String?  _selectedPlaceId;
@@ -107,11 +112,13 @@ class _StartRoundScreenState extends State<StartRoundScreen>
 
     // Load accepted friends for invite section
     if (!widget.isPractice && widget.tournamentId == null) {
+      _loadingFriends = true;
       FriendsService.friendsStream().first.then((all) {
         if (mounted) {
           setState(() {
             _acceptedFriends =
                 all.where((f) => f.status == 'accepted').toList();
+            _loadingFriends = false;
           });
         }
       });
@@ -135,6 +142,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
     _courseRatingCtrl.dispose();
     _slopeRatingCtrl.dispose();
     _courseNameFocus.dispose();
+    _friendSearchCtrl.dispose();
     super.dispose();
   }
 
@@ -843,6 +851,22 @@ class _StartRoundScreenState extends State<StartRoundScreen>
   }
 
   Widget _buildInviteSection(AppColors c) {
+    // Selected friends always appear first, then alphabetical
+    final filtered = _acceptedFriends
+        .where((f) =>
+            _friendQuery.isEmpty ||
+            f.displayName.toLowerCase().contains(_friendQuery.toLowerCase()))
+        .toList()
+      ..sort((a, b) {
+        final asel = _invitedUids.contains(a.uid) ? 0 : 1;
+        final bsel = _invitedUids.contains(b.uid) ? 0 : 1;
+        if (asel != bsel) return asel - bsel;
+        return a.displayName.compareTo(b.displayName);
+      });
+
+    final atMax = _invitedUids.length >= 3;
+    final pad = (_sw * 0.048).clamp(16.0, 22.0);
+
     return Container(
       decoration: ShapeDecoration(
         color: c.cardBg,
@@ -852,79 +876,198 @@ class _StartRoundScreenState extends State<StartRoundScreen>
         ),
         shadows: c.cardShadow,
       ),
-      padding: EdgeInsets.all((_sw * 0.048).clamp(16.0, 22.0)),
+      padding: EdgeInsets.all(pad),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionLabel(c, 'INVITE FRIENDS (MAX 3)'),
           SizedBox(height: _sh * 0.010),
-          Text(
-            'Select friends to play along — they\'ll get a notification to join.',
-            style: TextStyle(color: c.tertiaryText, fontSize: _label),
-          ),
-          SizedBox(height: _sh * 0.012),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _acceptedFriends.map((f) {
-              final sel = _invitedUids.contains(f.uid);
-              final atMax = _invitedUids.length >= 3;
-              return GestureDetector(
-                onTap: () {
-                  if (!sel && atMax) return; // can't add more than 3
-                  setState(() {
-                    if (sel) {
-                      _invitedUids.remove(f.uid);
-                    } else {
-                      _invitedUids.add(f.uid);
-                    }
-                  });
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                  decoration: ShapeDecoration(
-                    color: sel ? const Color(0xFF5A9E1F) : c.fieldBg,
-                    shape: SuperellipseShape(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(
-                        color: sel
-                            ? const Color(0xFF5A9E1F)
-                            : (!sel && atMax ? c.fieldBorder.withOpacity(0.4) : c.fieldBorder),
-                      ),
+          // ── Search field ────────────────────────────────────────────────
+          Container(
+            height: 38,
+            decoration: BoxDecoration(
+              color: c.fieldBg,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: c.fieldBorder),
+            ),
+            child: Row(
+              children: [
+                const SizedBox(width: 10),
+                Icon(Icons.search_rounded, size: 16, color: c.tertiaryText),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: TextField(
+                    controller: _friendSearchCtrl,
+                    style: TextStyle(color: c.fieldText, fontSize: _label),
+                    decoration: InputDecoration(
+                      isDense: true,
+                      border: InputBorder.none,
+                      hintText: 'Search friends…',
+                      hintStyle: TextStyle(color: c.tertiaryText, fontSize: _label),
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        sel ? Icons.check_circle_rounded : Icons.person_outline_rounded,
-                        size: _label * 1.1,
-                        color: sel ? Colors.white : (atMax && !sel ? c.tertiaryText.withOpacity(0.4) : c.tertiaryText),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        f.displayName,
-                        style: TextStyle(
-                          color: sel ? Colors.white : (atMax && !sel ? c.tertiaryText.withOpacity(0.4) : c.primaryText),
-                          fontSize: _label,
-                          fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
-                        ),
-                      ),
-                    ],
+                    onChanged: (v) => setState(() => _friendQuery = v),
                   ),
                 ),
-              );
-            }).toList(),
+                if (_friendQuery.isNotEmpty)
+                  GestureDetector(
+                    onTap: () {
+                      _friendSearchCtrl.clear();
+                      setState(() => _friendQuery = '');
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Icon(Icons.close_rounded, size: 14, color: c.tertiaryText),
+                    ),
+                  ),
+              ],
+            ),
           ),
+          SizedBox(height: _sh * 0.012),
+          // ── Avatar scroll (Skeletonizer handles loading state) ───────────
+          if (!_loadingFriends && filtered.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Text(
+                _friendQuery.isEmpty ? 'No friends yet.' : 'No matches.',
+                style: TextStyle(color: c.tertiaryText, fontSize: _label),
+              ),
+            )
+          else
+            Skeletonizer(
+              enabled: _loadingFriends,
+              child: SizedBox(
+              height: 86,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                physics: _loadingFriends
+                    ? const NeverScrollableScrollPhysics()
+                    : const BouncingScrollPhysics(),
+                itemCount: _loadingFriends ? 5 : filtered.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 14),
+                itemBuilder: (_, i) {
+                  final f = _loadingFriends
+                      ? FriendProfile(
+                          uid: 'dummy_$i',
+                          displayName: 'Golfer Name',
+                          email: '',
+                          status: 'accepted',
+                          addedAt: DateTime.now(),
+                        )
+                      : filtered[i];
+                  final sel = _invitedUids.contains(f.uid);
+                  final disabled = !sel && atMax;
+                  return GestureDetector(
+                    onTap: () {
+                      if (disabled) return;
+                      setState(() {
+                        if (sel) {
+                          _invitedUids.remove(f.uid);
+                        } else {
+                          _invitedUids.add(f.uid);
+                        }
+                      });
+                    },
+                    child: SizedBox(
+                      width: 58,
+                      child: Column(
+                        children: [
+                          Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              // Avatar circle
+                              Container(
+                                width: 52,
+                                height: 52,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: sel
+                                        ? const Color(0xFF5A9E1F)
+                                        : (disabled
+                                            ? c.cardBorder.withValues(alpha: 0.3)
+                                            : c.cardBorder),
+                                    width: sel ? 2.5 : 1.5,
+                                  ),
+                                ),
+                                child: ClipOval(
+                                  child: f.avatarUrl != null
+                                      ? Image.network(
+                                          f.avatarUrl!,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) =>
+                                              _avatarFallback(c, f, disabled),
+                                        )
+                                      : _avatarFallback(c, f, disabled),
+                                ),
+                              ),
+                              // Green check badge
+                              if (sel)
+                                Positioned(
+                                  right: -2,
+                                  bottom: -2,
+                                  child: Container(
+                                    width: 18,
+                                    height: 18,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFF5A9E1F),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.check_rounded,
+                                      size: 12,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            f.displayName.split(' ').first,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: sel
+                                  ? c.primaryText
+                                  : (disabled ? c.tertiaryText.withValues(alpha: 0.4) : c.secondaryText),
+                              fontSize: _label * 0.9,
+                              fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            ),  // Skeletonizer
+          // ── Selected count pill ──────────────────────────────────────────
           if (_invitedUids.isNotEmpty) ...[
             SizedBox(height: _sh * 0.010),
             Text(
               '${_invitedUids.length} friend${_invitedUids.length > 1 ? 's' : ''} will be invited',
-              style: TextStyle(color: c.accent, fontSize: _label, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                  color: c.accent, fontSize: _label, fontWeight: FontWeight.w600),
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _avatarFallback(AppColors c, FriendProfile f, bool disabled) {
+    return Container(
+      color: disabled ? c.fieldBg : c.fieldBg,
+      alignment: Alignment.center,
+      child: Text(
+        f.displayName.isNotEmpty ? f.displayName[0].toUpperCase() : '?',
+        style: TextStyle(
+          color: disabled ? c.tertiaryText.withValues(alpha: 0.4) : c.secondaryText,
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

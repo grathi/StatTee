@@ -14,6 +14,7 @@ import '../services/user_profile_service.dart';
 import '../theme/app_theme.dart';
 import 'start_round_screen.dart';
 import 'scorecard_screen.dart';
+import 'scorecard_import_screen.dart';
 import 'rounds_screen.dart';
 import 'stats_screen.dart';
 import 'profile_screen.dart';
@@ -24,6 +25,7 @@ import '../widgets/weather_widgets.dart';
 import '../widgets/tour_overlay.dart';
 import '../services/onboarding_service.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import '../models/group_round.dart';
 import '../models/friend_profile.dart';
 import '../services/group_round_service.dart';
@@ -188,6 +190,7 @@ class _HomeScreenState extends State<HomeScreen> {
       isScrollControlled: true,
       builder: (_) => _StartModeSheet(
         c: c, sw: sw, sh: sh,
+        pageContext: context,
         userPosition: tab?._userPosition,
         customLat: tab?._customLat,
         customLng: tab?._customLng,
@@ -806,7 +809,7 @@ class _HomeTabState extends State<_HomeTab>
 
   Color _diffColor(int diff) {
     if (diff < 0) return const Color(0xFF8FD44E);
-    if (diff == 0) return const Color(0xFFFFB74D);
+    if (diff == 0) return const Color(0xFF5A9E1F);
     return const Color(0xFFFF6B6B);
   }
 
@@ -859,31 +862,58 @@ class _HomeTabState extends State<_HomeTab>
                                 children: [
                                   SizedBox(height: _sh * 0.022),
                                   _buildPendingInvitesBanner(),
-                                  loading
-                                      ? ShimmerCarouselCard(height: (_sh * 0.215).clamp(160.0, 215.0))
-                                      : _buildTopCarousel(activeRound),
+                                  Skeletonizer(
+                                    enabled: loading,
+                                    child: _buildTopCarousel(
+                                      loading ? Round(
+                                        userId: '',
+                                        courseName: 'Pebble Beach Golf Links',
+                                        courseLocation: 'Pebble Beach, CA',
+                                        totalHoles: 18,
+                                        status: RoundStatus.active,
+                                        startedAt: DateTime.now(),
+                                        currentHole: 9,
+                                      ) : activeRound,
+                                    ),
+                                  ),
                                   SizedBox(height: _sh * 0.024),
                                   SmallWeatherCard(
                                     lat: _userPosition?.latitude ?? _customLat,
                                     lng: _userPosition?.longitude ?? _customLng,
                                   ),
                                   SizedBox(height: _sh * 0.024),
-                                  recentLoading
-                                      ? _buildRecentRoundsShimmer()
-                                      : _buildRecentRounds(activeRound, recentRounds),
+                                  Skeletonizer(
+                                    enabled: recentLoading,
+                                    child: _buildRecentRounds(
+                                      null,
+                                      recentLoading
+                                          ? List.generate(3, (_) => Round(
+                                              userId: '',
+                                              courseName: 'Torrey Pines Golf Course',
+                                              courseLocation: 'La Jolla, CA',
+                                              totalHoles: 18,
+                                              status: RoundStatus.completed,
+                                              startedAt: DateTime.now(),
+                                            ))
+                                          : recentRounds,
+                                    ),
+                                  ),
                                   SizedBox(height: _sh * 0.024),
-                                  allLoading
-                                      ? Padding(
-                                          padding: EdgeInsets.symmetric(horizontal: (_sw * 0.055).clamp(18.0, 28.0)),
-                                          child: const ShimmerPerformanceCard(),
-                                        )
-                                      : _buildPerformanceSummary(stats),
+                                  Skeletonizer(
+                                    enabled: allLoading,
+                                    child: _buildPerformanceSummary(
+                                      allLoading ? AppStats.empty : stats,
+                                    ),
+                                  ),
                                   SizedBox(height: _sh * 0.024),
                                   Container(
                                     key: _quickStatsKey,
-                                    child: allLoading
-                                        ? _buildQuickStatsShimmer()
-                                        : _buildQuickStats(stats),
+                                    child: Skeletonizer(
+                                      enabled: allLoading,
+                                      child: _buildQuickStats(
+                                        allLoading ? AppStats.empty : stats,
+                                      ),
+                                    ),
                                   ),
                                   SizedBox(height: _sh * 0.024),
                                   Container(
@@ -1126,59 +1156,6 @@ class _HomeTabState extends State<_HomeTab>
             },
           ),
         ],
-      ),
-    );
-  }
-
-  // ── Shimmer helpers ────────────────────────────────────────────────────────
-  Widget _buildRecentRoundsShimmer() {
-    final cardW = (_sw * 0.52).clamp(175.0, 220.0);
-    final cardH = (_sh * 0.155).clamp(120.0, 145.0);
-    return SizedBox(
-      height: cardH,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(horizontal: _hPad),
-        itemCount: 3,
-        separatorBuilder: (_, __) => SizedBox(width: _sw * 0.03),
-        itemBuilder: (_, __) =>
-            ShimmerRoundCard(width: cardW, height: cardH),
-      ),
-    );
-  }
-
-  Widget _buildQuickStatsShimmer() {
-    final tileH = (_sh * 0.155).clamp(130.0, 155.0);
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: _hPad),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        padding: EdgeInsets.zero,
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: _sw * 0.03,
-          mainAxisSpacing: _sw * 0.03,
-          mainAxisExtent: tileH,
-        ),
-        itemCount: 4,
-        itemBuilder: (_, __) => ShimmerStatTile(height: tileH),
-      ),
-    );
-  }
-
-  Widget _buildNearbyShimmer() {
-    final cardW = (_sw * 0.60).clamp(200.0, 260.0);
-    final cardH = (_sh * 0.165).clamp(130.0, 160.0);
-    return SizedBox(
-      height: cardH,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(horizontal: _hPad),
-        itemCount: 3,
-        separatorBuilder: (_, __) => SizedBox(width: _sw * 0.03),
-        itemBuilder: (_, __) =>
-            ShimmerCourseCard(width: cardW, height: cardH),
       ),
     );
   }
@@ -1577,7 +1554,7 @@ class _HomeTabState extends State<_HomeTab>
                   Color hc(int d) {
                     if (d <= -2) return const Color(0xFFFFD700);
                     if (d == -1) return const Color(0xFF8FD44E);
-                    if (d == 0)  return const Color(0xFFFFB74D);
+                    if (d == 0)  return const Color(0xFF5A9E1F);
                     if (d == 1)  return const Color(0xFFFFB74D);
                     return const Color(0xFFFF6B6B);
                   }
@@ -1667,6 +1644,7 @@ class _HomeTabState extends State<_HomeTab>
   Widget _buildPerformanceSummary(AppStats stats) {
     final c = AppColors.of(context);
     final hasData = stats.totalRounds > 0;
+    final hasHandicap = stats.handicapIndex != null;
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: _hPad),
       child: Column(
@@ -1701,19 +1679,48 @@ class _HomeTabState extends State<_HomeTab>
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Text(
-                                  stats.handicapLabel,
-                                  style: TextStyle(fontFamily: 'Nunito',
-                                    color: c.primaryText,
-                                    fontSize: (_sw * 0.115).clamp(38.0, 52.0),
-                                    fontWeight: FontWeight.w800,
-                                    height: 1.0,
+                                if (hasHandicap)
+                                  Text(
+                                    stats.handicapLabel,
+                                    style: TextStyle(fontFamily: 'Nunito',
+                                      color: c.primaryText,
+                                      fontSize: (_sw * 0.115).clamp(38.0, 52.0),
+                                      fontWeight: FontWeight.w800,
+                                      height: 1.0,
+                                    ),
+                                  )
+                                else ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${stats.totalRounds}/20 rounds',
+                                    style: TextStyle(
+                                      fontFamily: 'Nunito',
+                                      color: c.primaryText,
+                                      fontSize: (_sw * 0.07).clamp(24.0, 32.0),
+                                      fontWeight: FontWeight.w800,
+                                      height: 1.0,
+                                    ),
                                   ),
-                                ),
+                                  const SizedBox(height: 8),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: LinearProgressIndicator(
+                                      value: (stats.totalRounds / 20).clamp(0.0, 1.0),
+                                      minHeight: 6,
+                                      backgroundColor: c.cardBorder,
+                                      valueColor: AlwaysStoppedAnimation<Color>(c.accent),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    '${20 - stats.totalRounds} more rounds to unlock your Handicap Index',
+                                    style: TextStyle(color: c.tertiaryText, fontSize: _labelSize * 0.9),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
-                          _buildHandicapRing(c, stats.handicapIndex),
+                          if (hasHandicap) _buildHandicapRing(c, stats.handicapIndex!),
                         ],
                       ),
                       SizedBox(height: _sh * 0.022),
@@ -1995,9 +2002,33 @@ class _HomeTabState extends State<_HomeTab>
           ),
         ),
         SizedBox(height: _sh * 0.014),
-        if (_loadingNearby)
-          _buildNearbyShimmer()
-        else if (_nearbyCourses.isEmpty)
+        if (_loadingNearby || _nearbyCourses.isNotEmpty)
+          Skeletonizer(
+            enabled: _loadingNearby,
+            child: SizedBox(
+              height: (_sh * 0.165).clamp(130.0, 160.0),
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.symmetric(horizontal: _hPad),
+                physics: _loadingNearby
+                    ? const NeverScrollableScrollPhysics()
+                    : const BouncingScrollPhysics(),
+                itemCount: _loadingNearby ? 3 : _nearbyCourses.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                itemBuilder: (_, i) {
+                  final course = _loadingNearby
+                      ? const GolfCourseDetail(
+                          placeId: '',
+                          name: 'Golf Course Name Here',
+                          address: '123 Fairway Drive, City',
+                        )
+                      : _nearbyCourses[i];
+                  return _buildNearbyCourseCard(course, c);
+                },
+              ),
+            ),
+          )
+        else
           Padding(
             padding: EdgeInsets.symmetric(horizontal: _hPad),
             child: Container(
@@ -2046,19 +2077,6 @@ class _HomeTabState extends State<_HomeTab>
                     ),
                 ],
               ),
-            ),
-          )
-        else
-          SizedBox(
-            height: (_sh * 0.165).clamp(130.0, 160.0),
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.symmetric(horizontal: _hPad),
-              physics: const BouncingScrollPhysics(),
-              itemCount: _nearbyCourses.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 12),
-              itemBuilder: (_, i) =>
-                  _buildNearbyCourseCard(_nearbyCourses[i], c),
             ),
           ),
       ],
@@ -2405,11 +2423,13 @@ class _StartModeSheet extends StatefulWidget {
   final double? customLat;
   final double? customLng;
   final String? locationName;
+  final BuildContext pageContext; // stable parent context for navigation after pop
 
   const _StartModeSheet({
     required this.c,
     required this.sw,
     required this.sh,
+    required this.pageContext,
     this.userPosition,
     this.customLat,
     this.customLng,
@@ -2520,6 +2540,21 @@ class _StartModeSheetState extends State<_StartModeSheet> {
             customLat: widget.customLat,
             customLng: widget.customLng,
             locationName: widget.locationName,
+          ),
+          SizedBox(height: sh * 0.014),
+          // Import Scorecard
+          _ModeOption(
+            icon: Icons.document_scanner_rounded,
+            color: const Color(0xFFFF9800),
+            title: 'Import Scorecard',
+            subtitle: 'Scan a paper scorecard with your camera or photo library',
+            body: body,
+            label: label,
+            c: c,
+            onTap: () {
+              Navigator.pop(context);
+              showScorecardImportFlow(widget.pageContext);
+            },
           ),
         ],
       ),

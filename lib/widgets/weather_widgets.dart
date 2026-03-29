@@ -160,92 +160,69 @@ class _SmallWeatherCardState extends State<SmallWeatherCard> {
     final icon     = _conditionIcon(w.condition);
     final color    = _conditionColor(w.condition);
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+    return Stack(
+      clipBehavior: Clip.none,
       children: [
-        // ── Left: weather icon ──────────────────────────────────────────────
-        Container(
-          width: iconSize,
-          height: iconSize,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.15),
-            shape: BoxShape.circle,
-            border: Border.all(color: color.withValues(alpha: 0.30)),
-          ),
-          child: Icon(icon, color: color, size: iconSize * 0.50),
-        ),
-        SizedBox(width: (sw * 0.030).clamp(8.0, 14.0)),
-
-        // ── Centre: temp + condition + summary ──────────────────────────────
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                w.tempLabel,
-                style: TextStyle(
-                  fontFamily: 'Nunito',
-                  color: Colors.white,
-                  fontSize: (sw * 0.060).clamp(20.0, 26.0),
-                  fontWeight: FontWeight.w800,
-                  height: 1.1,
-                ),
-              ),
-              Text(
-                w.condition,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.65),
-                  fontSize: label,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                w.conditionSummary,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: color.withValues(alpha: 0.90),
-                  fontSize: label,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+        // ── Background decorative icon ─────────────────────────────────────
+        Positioned(
+          right: -8,
+          top: -14,
+          child: Icon(
+            icon,
+            size: (sw * 0.38).clamp(120.0, 150.0),
+            color: color.withValues(alpha: 0.07),
           ),
         ),
 
-        SizedBox(width: (sw * 0.020).clamp(6.0, 10.0)),
-
-        // ── Right: wind ─────────────────────────────────────────────────────
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisSize: MainAxisSize.min,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            // ── Left: weather icon ────────────────────────────────────────
             Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: (sw * 0.022).clamp(7.0, 10.0),
-                vertical: 4,
+              width: iconSize,
+              height: iconSize,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+                border: Border.all(color: color.withValues(alpha: 0.30)),
               ),
-              decoration: ShapeDecoration(
-                color: Colors.white.withValues(alpha: 0.08),
-                shape: SuperellipseShape(
-                  borderRadius: BorderRadius.circular(20),
-                  side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
-                ),
-              ),
-              child: Row(
+              child: Icon(icon, color: color, size: iconSize * 0.50),
+            ),
+            SizedBox(width: (sw * 0.030).clamp(8.0, 14.0)),
+
+            // ── Centre: temp + condition + summary ────────────────────────
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.air_rounded,
-                      color: const Color(0xFF80DEEA), size: label),
-                  const SizedBox(width: 4),
                   Text(
-                    w.windLabel,
+                    w.tempLabel,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.85),
+                      fontFamily: 'Nunito',
+                      color: Colors.white,
+                      fontSize: (sw * 0.060).clamp(20.0, 26.0),
+                      fontWeight: FontWeight.w800,
+                      height: 1.1,
+                    ),
+                  ),
+                  Text(
+                    w.condition,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.65),
+                      fontSize: label,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    w.conditionSummary,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: color.withValues(alpha: 0.90),
                       fontSize: label,
                       fontWeight: FontWeight.w600,
                     ),
@@ -253,13 +230,52 @@ class _SmallWeatherCardState extends State<SmallWeatherCard> {
                 ],
               ),
             ),
-            const SizedBox(height: 5),
-            Text(
-              'Today',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.40),
-                fontSize: label * 0.88,
-              ),
+
+            SizedBox(width: (sw * 0.020).clamp(6.0, 10.0)),
+
+            // ── Right: wind ───────────────────────────────────────────────
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: (sw * 0.022).clamp(7.0, 10.0),
+                    vertical: 4,
+                  ),
+                  decoration: ShapeDecoration(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    shape: SuperellipseShape(
+                      borderRadius: BorderRadius.circular(20),
+                      side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.air_rounded,
+                          color: const Color(0xFF80DEEA), size: label),
+                      const SizedBox(width: 4),
+                      Text(
+                        w.windLabel,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.85),
+                          fontSize: label,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  'Today',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.40),
+                    fontSize: label * 0.88,
+                  ),
+                ),
+              ],
             ),
           ],
         ),

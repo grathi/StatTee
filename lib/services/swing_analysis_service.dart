@@ -7,7 +7,7 @@ import 'package:http/http.dart' as http;
 import '../models/swing_analysis.dart';
 
 class SwingAnalysisService {
-  static const String _apiKey = 'AIzaSyB6S8HpcnyuaOD-giUnDHHdxb2Eg9-TKpU';
+  static const String _apiKey = 'REDACTED_GEMINI_KEY';
   static const String _endpoint =
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 

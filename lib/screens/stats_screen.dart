@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import '../models/round.dart';
 import '../services/round_service.dart';
 import '../services/stats_service.dart';
@@ -67,23 +68,23 @@ class StatsScreen extends StatelessWidget {
                   ),
                 ),
                 SliverToBoxAdapter(
-                  child: isLoading
-                      ? _buildStatsShimmer(context, sw, sh, hPad)
-                      : Padding(
+                  child: Skeletonizer(
+                    enabled: isLoading,
+                    child: Padding(
                           padding: EdgeInsets.fromLTRB(hPad, 0, hPad, sh * 0.14),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               SizedBox(height: sh * 0.024),
-                              _buildHandicapCard(c, sw, sh, stats),
+                              _buildHandicapCard(c, sw, sh, isLoading ? AppStats.empty : stats),
                               SizedBox(height: sh * 0.022),
-                              if (rounds.length >= 3) ...[
+                              if (!isLoading && rounds.length >= 3) ...[
                                 _buildHandicapTrend(context, c, sw, sh, rounds),
                                 SizedBox(height: sh * 0.022),
                               ],
-                              _buildOverviewGrid(c, sw, sh, stats),
+                              _buildOverviewGrid(c, sw, sh, isLoading ? AppStats.empty : stats),
                               SizedBox(height: sh * 0.022),
-                              if (rounds.isNotEmpty) ...[
+                              if (!isLoading && rounds.isNotEmpty) ...[
                                 _buildScoreDistribution(c, sw, sh, rounds),
                                 SizedBox(height: sh * 0.022),
                                 _buildScoringTrend(c, sw, sh, rounds),
@@ -95,10 +96,11 @@ class StatsScreen extends StatelessWidget {
                                   SizedBox(height: sh * 0.022),
                                 ],
                               ],
-                              _buildDetailedStats(c, sw, sh, stats),
+                              _buildDetailedStats(c, sw, sh, isLoading ? AppStats.empty : stats),
                             ],
                           ),
                         ),
+                  ),  // Skeletonizer
                 ),
               ],
             ),  // CustomScrollView
@@ -110,42 +112,6 @@ class StatsScreen extends StatelessWidget {
   }
 
   // ── Handicap card ─────────────────────────────────────────────────────────
-  Widget _buildStatsShimmer(BuildContext context, double sw, double sh, double hPad) {
-    final tileH = (sh * 0.115).clamp(96.0, 116.0);
-    return Padding(
-      padding: EdgeInsets.fromLTRB(hPad, 0, hPad, sh * 0.14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(height: sh * 0.024),
-          const ShimmerHandicapCard(),
-          SizedBox(height: sh * 0.022),
-          ShimmerChartCard(height: (sh * 0.22).clamp(150.0, 220.0)),
-          SizedBox(height: sh * 0.022),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: EdgeInsets.zero,
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: sw * 0.03,
-              mainAxisSpacing: sw * 0.03,
-              mainAxisExtent: tileH,
-            ),
-            itemCount: 4,
-            itemBuilder: (_, __) => ShimmerOverviewTile(height: tileH),
-          ),
-          SizedBox(height: sh * 0.022),
-          ShimmerChartCard(height: (sh * 0.28).clamp(180.0, 260.0)),
-          SizedBox(height: sh * 0.022),
-          ShimmerChartCard(height: (sh * 0.18).clamp(130.0, 160.0)),
-          SizedBox(height: sh * 0.022),
-          ShimmerChartCard(height: (sh * 0.30).clamp(200.0, 300.0)),
-        ],
-      ),
-    );
-  }
-
   Widget _buildHandicapCard(AppColors c, double sw, double sh, AppStats stats) {
     final body = (sw * 0.036).clamp(13.0, 16.0);
     final label = (sw * 0.030).clamp(11.0, 13.0);
@@ -217,7 +183,7 @@ class StatsScreen extends StatelessWidget {
             ),
           ),
           // Ring chart
-          _HandicapRing(handicap: stats.handicapIndex, body: body, label: label),
+          _HandicapRing(handicap: stats.handicapIndex ?? 0, body: body, label: label),
         ],
       ),
     );
@@ -443,11 +409,14 @@ class StatsScreen extends StatelessWidget {
                     width: (sw * 0.185).clamp(64.0, 80.0),
                     child: Row(
                       children: [
-                        Text(
-                          item.label,
-                          style: TextStyle(
-                            color: c.secondaryText,
-                            fontSize: label,
+                        Flexible(
+                          child: Text(
+                            item.label,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: c.secondaryText,
+                              fontSize: label,
+                            ),
                           ),
                         ),
                         if (isTop) ...[
