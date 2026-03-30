@@ -284,9 +284,18 @@ class _FriendsTab extends StatelessWidget {
     return StreamBuilder<List<FriendProfile>>(
       stream: FriendsService.friendsStream(),
       builder: (context, snap) {
+        final loading  = snap.connectionState == ConnectionState.waiting;
         final all      = snap.data ?? [];
-        final accepted = all.where((f) => f.status == 'accepted').toList();
-        final pending  = all.where((f) => f.status == 'pending_received').toList();
+        final accepted = loading
+            ? List.generate(5, (i) => FriendProfile(
+                uid: 'dummy_$i',
+                displayName: 'Golfer Name Here',
+                email: '',
+                status: 'accepted',
+                addedAt: DateTime.now(),
+              ))
+            : all.where((f) => f.status == 'accepted').toList();
+        final pending  = loading ? <FriendProfile>[] : all.where((f) => f.status == 'pending_received').toList();
         final hasSearch = emailCtrl.text.trim().isNotEmpty;
 
         // Keep the search result card in sync with live stream data.
@@ -344,36 +353,40 @@ class _FriendsTab extends StatelessWidget {
 
             // List or empty state
             Expanded(
-              child: (accepted.isEmpty && pending.isEmpty && !hasSearch)
+              child: (!loading && accepted.isEmpty && pending.isEmpty && !hasSearch)
                   ? _emptyState(c, body, label)
-                  : ListView(
-                      padding: EdgeInsets.fromLTRB(hPad, sh * 0.016, hPad, sh * 0.12),
-                      children: [
-                        if (pending.isNotEmpty) ...[
-                          _sectionLabel(c, label, 'Pending Requests'),
-                          SizedBox(height: sh * 0.008),
-                          ...pending.map((f) => _PendingCard(
-                                c: c,
-                                body: body,
-                                label: label,
-                                profile: f,
-                                onAccept: () => onAccept(f.uid),
-                                onDecline: () => onDecline(f.uid),
-                              )),
-                          SizedBox(height: sh * 0.016),
+                  : Skeletonizer(
+                      enabled: loading,
+                      child: ListView(
+                        physics: loading ? const NeverScrollableScrollPhysics() : null,
+                        padding: EdgeInsets.fromLTRB(hPad, sh * 0.016, hPad, sh * 0.12),
+                        children: [
+                          if (pending.isNotEmpty) ...[
+                            _sectionLabel(c, label, 'Pending Requests'),
+                            SizedBox(height: sh * 0.008),
+                            ...pending.map((f) => _PendingCard(
+                                  c: c,
+                                  body: body,
+                                  label: label,
+                                  profile: f,
+                                  onAccept: () => onAccept(f.uid),
+                                  onDecline: () => onDecline(f.uid),
+                                )),
+                            SizedBox(height: sh * 0.016),
+                          ],
+                          if (accepted.isNotEmpty) ...[
+                            _sectionLabel(c, label, 'Friends'),
+                            SizedBox(height: sh * 0.008),
+                            ...accepted.map((f) => _FriendCard(
+                                  c: c,
+                                  body: body,
+                                  label: label,
+                                  profile: f,
+                                  onTap: () => onTapFriend(f),
+                                )),
+                          ],
                         ],
-                        if (accepted.isNotEmpty) ...[
-                          _sectionLabel(c, label, 'Friends'),
-                          SizedBox(height: sh * 0.008),
-                          ...accepted.map((f) => _FriendCard(
-                                c: c,
-                                body: body,
-                                label: label,
-                                profile: f,
-                                onTap: () => onTapFriend(f),
-                              )),
-                        ],
-                      ],
+                      ),
                     ),
             ),
           ],
