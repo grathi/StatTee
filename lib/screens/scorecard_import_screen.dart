@@ -415,8 +415,8 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
 
   static Color _scoreColor(int diff) {
     if (diff <= -2) return const Color(0xFFFFD700);
-    if (diff == -1) return const Color(0xFF4CAF50);
-    if (diff == 0) return const Color(0xFF5A9E1F);
+    if (diff == -1) return const Color(0xFF4CAF82);
+    if (diff == 0) return const Color(0xFF64B5F6);
     if (diff == 1) return const Color(0xFFFFB74D);
     return const Color(0xFFE53935);
   }
@@ -1462,8 +1462,8 @@ class _DiffChip extends StatelessWidget {
 
   static Color _color(int d) {
     if (d <= -2) return const Color(0xFFFFD700);
-    if (d == -1) return const Color(0xFF4CAF50);
-    if (d == 0) return const Color(0xFF5A9E1F);
+    if (d == -1) return const Color(0xFF4CAF82);
+    if (d == 0) return const Color(0xFF64B5F6);
     if (d == 1) return const Color(0xFFFFB74D);
     return const Color(0xFFE53935);
   }

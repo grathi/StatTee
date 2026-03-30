@@ -27,9 +27,9 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
   // ── Score colour coding ───────────────────────────────────────────────────
   Color _scoreColor(int diff) {
     if (diff <= -2) return const Color(0xFFFFD700);   // eagle or better → gold
-    if (diff == -1) return const Color(0xFF4CAF50);   // birdie → green
-    if (diff == 0)  return const Color(0xFF5A9E1F);   // par → app green
-    if (diff == 1)  return const Color(0xFFFFB74D);   // bogey → orange
+    if (diff == -1) return const Color(0xFF4CAF82);   // birdie → teal
+    if (diff == 0)  return const Color(0xFF64B5F6);   // par → blue
+    if (diff == 1)  return const Color(0xFFFFB74D);   // bogey → amber
     return const Color(0xFFE53935);                    // double bogey+ → red
   }
 

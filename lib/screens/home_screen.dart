@@ -814,9 +814,11 @@ class _HomeTabState extends State<_HomeTab>
   }
 
   Color _diffColor(int diff) {
-    if (diff < 0) return const Color(0xFF8FD44E);
-    if (diff == 0) return const Color(0xFF5A9E1F);
-    return const Color(0xFFFF6B6B);
+    if (diff <= -2) return const Color(0xFFFFD700);
+    if (diff == -1) return const Color(0xFF4CAF82);
+    if (diff == 0)  return const Color(0xFF64B5F6);
+    if (diff == 1)  return const Color(0xFFFFB74D);
+    return const Color(0xFFE53935);
   }
 
   @override
@@ -1559,10 +1561,10 @@ class _HomeTabState extends State<_HomeTab>
                 children: round.scores.map((h) {
                   Color hc(int d) {
                     if (d <= -2) return const Color(0xFFFFD700);
-                    if (d == -1) return const Color(0xFF8FD44E);
-                    if (d == 0)  return const Color(0xFF5A9E1F);
+                    if (d == -1) return const Color(0xFF4CAF82);
+                    if (d == 0)  return const Color(0xFF64B5F6);
                     if (d == 1)  return const Color(0xFFFFB74D);
-                    return const Color(0xFFFF6B6B);
+                    return const Color(0xFFE53935);
                   }
                   final diff = h.score - h.par;
                   return Expanded(child: Container(

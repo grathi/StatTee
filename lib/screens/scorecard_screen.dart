@@ -856,8 +856,8 @@ class _ScorecardScreenState extends State<ScorecardScreen>
       if (par == null) return c.accent; // putts — always accent
       final d = v - par;
       if (d <= -2) return const Color(0xFFFFD700);       // eagle+
-      if (d == -1) return const Color(0xFF4CAF50);       // birdie
-      if (d == 0)  return const Color(0xFF5A9E1F);       // par
+      if (d == -1) return const Color(0xFF4CAF82);       // birdie
+      if (d == 0)  return const Color(0xFF64B5F6);       // par
       if (d == 1)  return const Color(0xFFFFB74D);       // bogey
       return const Color(0xFFE53935);                    // double+
     }
