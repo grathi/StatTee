@@ -73,6 +73,7 @@ flutter:
     - assets/hero.png
     - assets/golfBag.png
     - assets/login.png
+    - assets/main.png
 
   fonts:
     - family: Nunito
