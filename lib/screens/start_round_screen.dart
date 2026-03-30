@@ -60,6 +60,9 @@ class _StartRoundScreenState extends State<StartRoundScreen>
   String _friendQuery = '';
   bool _loadingFriends = false;
   List<GolfApiHole>? _courseHoles;
+  GolfApiCourseDetail? _apiCourseDetail;
+  GolfApiTee?          _selectedApiTee;
+  bool                 _loadingApiCourse = false;
 
   // autocomplete state
   String?  _selectedPlaceId;
@@ -200,27 +203,55 @@ class _StartRoundScreenState extends State<StartRoundScreen>
   }
 
   Future<void> _selectSuggestion(GolfCourseSuggestion s) async {
-    // Hide overlay and clear suggestions first
     if (_overlayController.isShowing) _overlayController.hide();
-    // Set selectedPlaceId BEFORE updating text so listener ignores the change
     _selectedPlaceId = s.placeId;
     _selectedLat = null;
     _selectedLng = null;
     _courseNameCtrl.text = s.name;
     _locationCtrl.text   = s.address;
-    setState(() => _suggestions = []);
+    setState(() {
+      _suggestions      = [];
+      _apiCourseDetail  = null;
+      _selectedApiTee   = null;
+      _loadingApiCourse = true;
+    });
     FocusScope.of(context).unfocus();
 
-    // Fetch course coordinates in the background for accurate weather during scoring
-    if (s.placeId.isNotEmpty && s.placeId != 'prefilled') {
-      PlacesService.getPlaceDetail(s.placeId).then((detail) {
-        if (mounted && detail?.lat != null && detail?.lng != null) {
-          setState(() {
-            _selectedLat = detail!.lat;
-            _selectedLng = detail.lng;
-          });
-        }
-      });
+    // Fetch coordinates + GolfCourseAPI data in parallel
+    final results = await Future.wait([
+      PlacesService.getPlaceDetail(s.placeId.isNotEmpty && s.placeId != 'prefilled'
+          ? s.placeId : ''),
+      GolfCourseApiService.findBestMatch(s.name, address: s.address),
+    ]);
+
+    if (!mounted) return;
+    final placeDetail  = results[0] as dynamic;
+    final courseDetail = results[1] as GolfApiCourseDetail?;
+
+    setState(() {
+      _loadingApiCourse = false;
+      if (placeDetail?.lat != null) {
+        _selectedLat = placeDetail!.lat as double;
+        _selectedLng = placeDetail.lng as double;
+      }
+      if (courseDetail != null && courseDetail.hasTeeData) {
+        _apiCourseDetail = courseDetail;
+        // Auto-select first tee and pre-fill fields
+        final tee = courseDetail.availableTees.first;
+        _selectedApiTee = tee;
+        _applyTee(tee);
+      }
+    });
+  }
+
+  void _applyTee(GolfApiTee tee) {
+    final h = tee.effectiveHoles.length;
+    _holes = (h == 9 || h == 18) ? h : 18;
+    if (tee.courseRating > 0) {
+      _courseRatingCtrl.text = tee.courseRating.toStringAsFixed(1);
+    }
+    if (tee.slopeRating > 0) {
+      _slopeRatingCtrl.text = tee.slopeRating.toString();
     }
   }
 
@@ -237,38 +268,35 @@ class _StartRoundScreenState extends State<StartRoundScreen>
       final courseRating   = double.tryParse(_courseRatingCtrl.text.trim());
       final slopeRating    = int.tryParse(_slopeRatingCtrl.text.trim());
 
-      // Fetch hole data from GolfCourseAPI in parallel with round creation
-      final results = await Future.wait([
-        RoundService.startRound(
-          courseName:     courseName,
-          courseLocation: courseLocation,
-          totalHoles:     _holes,
-          courseRating:   courseRating,
-          slopeRating:    slopeRating,
-          weather:        null,
-          isPractice:     widget.isPractice,
-          tournamentId:   widget.tournamentId,
-        ),
-        GolfCourseApiService.findBestMatch(
+      // Use already-fetched tee data if available; otherwise fetch now
+      List<GolfApiHole>? holes = _selectedApiTee?.effectiveHoles;
+
+      final roundId = await RoundService.startRound(
+        courseName:     courseName,
+        courseLocation: courseLocation,
+        totalHoles:     _holes,
+        courseRating:   courseRating,
+        slopeRating:    slopeRating,
+        weather:        null,
+        isPractice:     widget.isPractice,
+        tournamentId:   widget.tournamentId,
+      );
+
+      if (holes == null) {
+        final courseDetail = await GolfCourseApiService.findBestMatch(
           courseName,
           address: courseLocation.isNotEmpty ? courseLocation : null,
-        ),
-      ]);
-
-      final roundId    = results[0] as String;
-      final courseDetail = results[1] as GolfApiCourseDetail?;
-
-      // Pick the tee with the closest hole count to _holes
-      List<GolfApiHole>? holes;
-      if (courseDetail != null && courseDetail.hasTeeData) {
-        final tees = courseDetail.availableTees;
-        GolfApiTee? best;
-        int bestDiff = 999;
-        for (final t in tees) {
-          final diff = (t.effectiveHoles.length - _holes).abs();
-          if (diff < bestDiff) { bestDiff = diff; best = t; }
+        );
+        if (courseDetail != null && courseDetail.hasTeeData) {
+          final tees = courseDetail.availableTees;
+          GolfApiTee? best;
+          int bestDiff = 999;
+          for (final t in tees) {
+            final diff = (t.effectiveHoles.length - _holes).abs();
+            if (diff < bestDiff) { bestDiff = diff; best = t; }
+          }
+          if (best != null) holes = best.effectiveHoles;
         }
-        if (best != null) holes = best.effectiveHoles;
       }
 
       // Create group session if friends were invited
@@ -593,6 +621,80 @@ class _StartRoundScreenState extends State<StartRoundScreen>
             ),
 
             SizedBox(height: _sh * 0.018),
+
+            // ── Tee selector (shown when GolfCourseAPI finds the course) ──
+            if (_loadingApiCourse)
+              Padding(
+                padding: EdgeInsets.only(bottom: _sh * 0.016),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 16, height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: c.accent),
+                    ),
+                    const SizedBox(width: 10),
+                    Text('Fetching tee data…',
+                        style: TextStyle(color: c.tertiaryText, fontSize: _label)),
+                  ],
+                ),
+              )
+            else if (_apiCourseDetail != null && _apiCourseDetail!.hasTeeData) ...[
+              _sectionLabel(c, 'SELECT TEE'),
+              SizedBox(height: _sh * 0.010),
+              SizedBox(
+                height: 44,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: _apiCourseDetail!.availableTees.map((tee) {
+                    final sel = _selectedApiTee?.name == tee.name;
+                    return GestureDetector(
+                      onTap: () => setState(() {
+                        _selectedApiTee = tee;
+                        _applyTee(tee);
+                      }),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        margin: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: ShapeDecoration(
+                          color: sel ? c.accentBg : c.fieldBg,
+                          shape: SuperellipseShape(
+                            borderRadius: BorderRadius.circular(14),
+                            side: BorderSide(
+                              color: sel ? c.accentBorder : c.fieldBorder,
+                              width: sel ? 1.5 : 1.0,
+                            ),
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              tee.name,
+                              style: TextStyle(
+                                color: sel ? c.accent : c.primaryText,
+                                fontSize: _label,
+                                fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              '${tee.effectiveHoles.length}H  ·  ${tee.courseRating.toStringAsFixed(1)}/${tee.slopeRating}',
+                              style: TextStyle(
+                                color: c.tertiaryText,
+                                fontSize: _label * 0.85,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              SizedBox(height: _sh * 0.018),
+            ],
+
             _sectionLabel(c, 'COURSE RATING (OPTIONAL)'),
             Padding(
               padding: const EdgeInsets.only(bottom: 3),
