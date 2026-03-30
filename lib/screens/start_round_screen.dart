@@ -699,10 +699,17 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                 height: 64,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
-                  children: [
-                    ..._apiCourseDetail!.maleTees.map((tee) => _teeChip(tee, null, c)),
-                    ..._apiCourseDetail!.femaleTees.map((tee) => _teeChip(tee, '♀', c)),
-                  ],
+                  children: () {
+                    // Male tees first, then female tees not already covered by name
+                    final maleNames = _apiCourseDetail!.maleTees.map((t) => t.name.toLowerCase()).toSet();
+                    final uniqueFemaleTees = _apiCourseDetail!.femaleTees
+                        .where((t) => !maleNames.contains(t.name.toLowerCase()))
+                        .toList();
+                    return [
+                      ..._apiCourseDetail!.maleTees.map((t) => _teeChip(t, null, c)),
+                      ...uniqueFemaleTees.map((t) => _teeChip(t, '♀', c)),
+                    ];
+                  }(),
                 ),
               ),
               SizedBox(height: _sh * 0.018),
