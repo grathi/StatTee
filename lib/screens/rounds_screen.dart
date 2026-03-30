@@ -380,9 +380,9 @@ class _RoundCard extends StatelessWidget {
 
   Color get _diffColor {
     final d = round.scoreDiff;
-    if (d < 0) return const Color(0xFF8FD44E);
-    if (d == 0) return const Color(0xFF64B5F6);
-    return const Color(0xFFFF6B6B);
+    if (d < 0)  return const Color(0xFF4CAF82);  // under par
+    if (d == 0) return const Color(0xFF64B5F6);  // par
+    return const Color(0xFFE53935);              // over par
   }
 
   String _timeAgo(DateTime dt) {

@@ -294,9 +294,9 @@ class GroupRoundResultsScreen extends StatelessWidget {
 
   Color _diffColor(AppColors c, double? diff) {
     if (diff == null) return c.tertiaryText;
-    if (diff < 0) return const Color(0xFF3B82F6);
-    if (diff == 0) return c.accent;
-    return c.tertiaryText;
+    if (diff < 0) return const Color(0xFF4CAF82);  // under par: birdie/eagle
+    if (diff == 0) return const Color(0xFF64B5F6); // par
+    return const Color(0xFFE53935);                // over par
   }
 
   void _share(GroupRound session) {

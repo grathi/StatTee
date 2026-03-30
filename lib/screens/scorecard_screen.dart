@@ -1656,11 +1656,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
 
   Widget _buildScoringCard(AppColors c) {
     final diff     = _score - _par;
-    final scoreCol = diff <= -2 ? const Color(0xFFFFD700)
-        : diff == -1 ? const Color(0xFF7BC344)
-        : diff == 0  ? c.primaryText
-        : diff == 1  ? const Color(0xFFF59E0B)
-        : const Color(0xFFEF4444);
+    final scoreCol = _scoreColor(diff);
     final scoreLabel = _scoreLabel(diff);
     final puttsMax = _score.clamp(0, 6);
 
