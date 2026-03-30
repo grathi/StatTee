@@ -244,11 +244,65 @@ class _StartRoundScreenState extends State<StartRoundScreen>
     });
   }
 
-  void _applyTee(GolfApiTee tee) {
-    final h = tee.effectiveHoles.length;
+  Widget _teeChip(GolfApiTee tee, String? genderBadge, AppColors c) {
+    final sel = _selectedApiTee?.name == tee.name &&
+        _selectedApiTee?.courseRating == tee.courseRating;
+    return GestureDetector(
+      onTap: () => setState(() {
+        _selectedApiTee = tee;
+        _applyTee(tee);
+      }),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: ShapeDecoration(
+          color: sel ? c.accentBg : c.fieldBg,
+          shape: SuperellipseShape(
+            borderRadius: BorderRadius.circular(14),
+            side: BorderSide(
+              color: sel ? c.accentBorder : c.fieldBorder,
+              width: sel ? 1.5 : 1.0,
+            ),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  tee.name,
+                  style: TextStyle(
+                    color: sel ? c.accent : c.primaryText,
+                    fontSize: _label,
+                    fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+                if (genderBadge != null) ...[
+                  const SizedBox(width: 4),
+                  Text(genderBadge,
+                      style: TextStyle(
+                          fontSize: _label * 0.8, color: c.tertiaryText)),
+                ],
+              ],
+            ),
+            Text(
+              '${tee.effectiveHoles.length}H  ·  ${tee.courseRating.round()}/${tee.slopeRating}',
+              style: TextStyle(color: c.tertiaryText, fontSize: _label * 0.85),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _applyTee(GolfApiTee tee) {    final h = tee.effectiveHoles.length;
     _holes = (h == 9 || h == 18) ? h : 18;
     if (tee.courseRating > 0) {
-      _courseRatingCtrl.text = tee.courseRating.toStringAsFixed(1);
+      _courseRatingCtrl.text = tee.courseRating.round().toString();
     }
     if (tee.slopeRating > 0) {
       _slopeRatingCtrl.text = tee.slopeRating.toString();
@@ -645,51 +699,10 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                 height: 64,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
-                  children: _apiCourseDetail!.availableTees.map((tee) {
-                    final sel = _selectedApiTee?.name == tee.name;
-                    return GestureDetector(
-                      onTap: () => setState(() {
-                        _selectedApiTee = tee;
-                        _applyTee(tee);
-                      }),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        margin: const EdgeInsets.only(right: 8),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                        decoration: ShapeDecoration(
-                          color: sel ? c.accentBg : c.fieldBg,
-                          shape: SuperellipseShape(
-                            borderRadius: BorderRadius.circular(14),
-                            side: BorderSide(
-                              color: sel ? c.accentBorder : c.fieldBorder,
-                              width: sel ? 1.5 : 1.0,
-                            ),
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              tee.name,
-                              style: TextStyle(
-                                color: sel ? c.accent : c.primaryText,
-                                fontSize: _label,
-                                fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
-                              ),
-                            ),
-                            Text(
-                              '${tee.effectiveHoles.length}H  ·  ${tee.courseRating.toStringAsFixed(1)}/${tee.slopeRating}',
-                              style: TextStyle(
-                                color: c.tertiaryText,
-                                fontSize: _label * 0.85,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
+                  children: [
+                    ..._apiCourseDetail!.maleTees.map((tee) => _teeChip(tee, null, c)),
+                    ..._apiCourseDetail!.femaleTees.map((tee) => _teeChip(tee, '♀', c)),
+                  ],
                 ),
               ),
               SizedBox(height: _sh * 0.018),
@@ -736,7 +749,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                     ),
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) return null;
-                      final val = double.tryParse(v.trim());
+                      final val = int.tryParse(v.trim());
                       if (val == null || val < 60 || val > 80) return '60–80';
                       return null;
                     },
