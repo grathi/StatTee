@@ -341,11 +341,13 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ],
                         ),
-                        child: Image.asset(
-                          'assets/main.png',
-                          width: playDia * 0.62,
-                          height: playDia * 0.62,
-                          fit: BoxFit.contain,
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/main.png',
+                            width: playDia * 1.15,
+                            height: playDia * 1.15,
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
                     ),

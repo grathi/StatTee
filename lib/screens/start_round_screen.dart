@@ -642,7 +642,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
               _sectionLabel(c, 'SELECT TEE'),
               SizedBox(height: _sh * 0.010),
               SizedBox(
-                height: 44,
+                height: 64,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: _apiCourseDetail!.availableTees.map((tee) {
@@ -655,7 +655,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
                         margin: const EdgeInsets.only(right: 8),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                         decoration: ShapeDecoration(
                           color: sel ? c.accentBg : c.fieldBg,
                           shape: SuperellipseShape(
