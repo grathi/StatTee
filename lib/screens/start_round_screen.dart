@@ -11,6 +11,7 @@ import '../theme/app_theme.dart';
 import '../widgets/shimmer_widgets.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'scorecard_screen.dart';
+import '../services/golf_course_api_service.dart';
 
 class StartRoundScreen extends StatefulWidget {
   final String? initialCourseName;
@@ -58,6 +59,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
   final _friendSearchCtrl = TextEditingController();
   String _friendQuery = '';
   bool _loadingFriends = false;
+  List<GolfApiHole>? _courseHoles;
 
   // autocomplete state
   String?  _selectedPlaceId;
@@ -235,16 +237,39 @@ class _StartRoundScreenState extends State<StartRoundScreen>
       final courseRating   = double.tryParse(_courseRatingCtrl.text.trim());
       final slopeRating    = int.tryParse(_slopeRatingCtrl.text.trim());
 
-      final roundId = await RoundService.startRound(
-        courseName:     courseName,
-        courseLocation: courseLocation,
-        totalHoles:     _holes,
-        courseRating:   courseRating,
-        slopeRating:    slopeRating,
-        weather:        null,
-        isPractice:     widget.isPractice,
-        tournamentId:   widget.tournamentId,
-      );
+      // Fetch hole data from GolfCourseAPI in parallel with round creation
+      final results = await Future.wait([
+        RoundService.startRound(
+          courseName:     courseName,
+          courseLocation: courseLocation,
+          totalHoles:     _holes,
+          courseRating:   courseRating,
+          slopeRating:    slopeRating,
+          weather:        null,
+          isPractice:     widget.isPractice,
+          tournamentId:   widget.tournamentId,
+        ),
+        GolfCourseApiService.findBestMatch(
+          courseName,
+          address: courseLocation.isNotEmpty ? courseLocation : null,
+        ),
+      ]);
+
+      final roundId    = results[0] as String;
+      final courseDetail = results[1] as GolfApiCourseDetail?;
+
+      // Pick the tee with the closest hole count to _holes
+      List<GolfApiHole>? holes;
+      if (courseDetail != null && courseDetail.hasTeeData) {
+        final tees = courseDetail.availableTees;
+        GolfApiTee? best;
+        int bestDiff = 999;
+        for (final t in tees) {
+          final diff = (t.effectiveHoles.length - _holes).abs();
+          if (diff < bestDiff) { bestDiff = diff; best = t; }
+        }
+        if (best != null) holes = best.effectiveHoles;
+      }
 
       // Create group session if friends were invited
       String? sessionId;
@@ -260,7 +285,6 @@ class _StartRoundScreenState extends State<StartRoundScreen>
           slopeRating:    slopeRating,
           invitees:       invitees,
         );
-        // Link host's roundId to the session
         await GroupRoundService.joinSession(sessionId, roundId);
       }
 
@@ -269,23 +293,21 @@ class _StartRoundScreenState extends State<StartRoundScreen>
         context,
         MaterialPageRoute(
           builder: (_) => ScorecardScreen(
-            roundId:    roundId,
-            courseName: courseName,
-            totalHoles: _holes,
-            lat: _selectedLat ?? _userPosition?.latitude ?? _customLat,
-            lng: _selectedLng ?? _userPosition?.longitude ?? _customLng,
-            onComplete: widget.onComplete,
-            sessionId:  sessionId,
+            roundId:        roundId,
+            courseName:     courseName,
+            totalHoles:     _holes,
+            lat:            _selectedLat ?? _userPosition?.latitude ?? _customLat,
+            lng:            _selectedLng ?? _userPosition?.longitude ?? _customLng,
+            onComplete:     widget.onComplete,
+            sessionId:      sessionId,
+            preloadedHoles: holes,
           ),
         ),
       );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: const Color(0xFFE53935),
-          ),
+          SnackBar(content: Text('Error: $e')),
         );
       }
     } finally {
