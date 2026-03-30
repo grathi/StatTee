@@ -1416,7 +1416,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                         ),
                         Text(
                           holeData != null
-                              ? 'PAR $_par  ·  HCP \${holeData.handicap}'
+                              ? 'PAR $_par  ·  HCP ${holeData.handicap}'
                               : 'PAR $_par',
                           style: TextStyle(
                             color:      Colors.white.withValues(alpha: 0.60),
@@ -1460,7 +1460,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                   children: [
                     Flexible(
                       child: Text(
-                        '\${holeData!.yardage}',
+                        '${holeData!.yardage}',
                         style: TextStyle(
                           fontFamily: 'Nunito',
                           color:      Colors.white,
