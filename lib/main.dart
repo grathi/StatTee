@@ -15,6 +15,7 @@ import 'services/smart_notification_service.dart';
 import 'services/friends_service.dart';
 import 'screens/friends_screen.dart';
 import 'screens/group_round_invite_screen.dart';
+import 'services/remote_config_service.dart';
 
 /// Global navigator key — lets NotificationService navigate without a context.
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -28,6 +29,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  unawaited(RemoteConfigService.init());
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   // Register tap handler BEFORE starting background init so getInitialMessage()

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'remote_config_service.dart';
 import '../models/scorecard_import_data.dart';
 
 class ScorecardNotDetectedException implements Exception {
@@ -18,8 +19,8 @@ class HoleCountException implements Exception {
 }
 
 class ScorecardOcrService {
-  static const String _apiKey = 'REDACTED_GEMINI_KEY';
-  static const String _endpoint =
+  static String get _apiKey => RemoteConfigService.geminiApiKey;
+  static String get _endpoint =>
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$_apiKey';
 
   static const String _prompt = '''

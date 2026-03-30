@@ -4,10 +4,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 // import 'package:video_compress/video_compress.dart'; // removed — unmaintained
+import 'remote_config_service.dart';
 import '../models/swing_analysis.dart';
 
 class SwingAnalysisService {
-  static const String _apiKey = 'REDACTED_GEMINI_KEY';
+  static String get _apiKey => RemoteConfigService.geminiApiKey;
   static const String _endpoint =
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 

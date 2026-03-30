@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'remote_config_service.dart';
 import '../models/round_summary_ai.dart';
 
 class AIRoundSummaryService {
-  // Paste your free Gemini API key from https://aistudio.google.com/app/apikey
-  static const String _apiKey = 'REDACTED_GEMINI_KEY';
+  static String get _apiKey => RemoteConfigService.geminiApiKey;
   static const String _endpoint =
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
