@@ -244,7 +244,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
     });
   }
 
-  Widget _teeChip(GolfApiTee tee, String? genderBadge, AppColors c) {
+  Widget _teeChip(GolfApiTee tee, AppColors c) {
     final sel = _selectedApiTee?.name == tee.name &&
         _selectedApiTee?.courseRating == tee.courseRating;
     return GestureDetector(
@@ -270,24 +270,13 @@ class _StartRoundScreenState extends State<StartRoundScreen>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  tee.name,
-                  style: TextStyle(
-                    color: sel ? c.accent : c.primaryText,
-                    fontSize: _label,
-                    fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
-                  ),
-                ),
-                if (genderBadge != null) ...[
-                  const SizedBox(width: 4),
-                  Text(genderBadge,
-                      style: TextStyle(
-                          fontSize: _label * 0.8, color: c.tertiaryText)),
-                ],
-              ],
+            Text(
+              tee.name,
+              style: TextStyle(
+                color: sel ? c.accent : c.primaryText,
+                fontSize: _label,
+                fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+              ),
             ),
             Text(
               '${tee.effectiveHoles.length}H  ·  ${tee.courseRating.round()}/${tee.slopeRating}',
@@ -706,8 +695,8 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                         .where((t) => !maleNames.contains(t.name.toLowerCase()))
                         .toList();
                     return [
-                      ..._apiCourseDetail!.maleTees.map((t) => _teeChip(t, null, c)),
-                      ...uniqueFemaleTees.map((t) => _teeChip(t, '♀', c)),
+                      ..._apiCourseDetail!.maleTees.map((t) => _teeChip(t, c)),
+                      ...uniqueFemaleTees.map((t) => _teeChip(t, c)),
                     ];
                   }(),
                 ),
@@ -757,7 +746,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) return null;
                       final val = int.tryParse(v.trim());
-                      if (val == null || val < 60 || val > 80) return '60–80';
+                      if (val == null) return 'Enter a number';
                       return null;
                     },
                   ),
