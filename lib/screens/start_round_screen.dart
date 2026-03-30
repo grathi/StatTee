@@ -684,12 +684,11 @@ class _StartRoundScreenState extends State<StartRoundScreen>
             else if (_apiCourseDetail != null && _apiCourseDetail!.hasTeeData) ...[
               _sectionLabel(c, 'SELECT TEE'),
               SizedBox(height: _sh * 0.010),
-              SizedBox(
-                height: 64,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: () {
-                    // Male tees first, then female tees not already covered by name
                     final maleNames = _apiCourseDetail!.maleTees.map((t) => t.name.toLowerCase()).toSet();
                     final uniqueFemaleTees = _apiCourseDetail!.femaleTees
                         .where((t) => !maleNames.contains(t.name.toLowerCase()))
