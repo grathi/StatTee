@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../services/onboarding_service.dart';
 import 'home_screen.dart';
 
@@ -123,7 +124,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 
   Future<void> _finish() async {
-    await OnboardingService.markOnboardingSeen();
+    await OnboardingService.markTourSeen();
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
@@ -173,7 +174,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     final visualHeight = size.height * 0.50;
     final isLast      = _page == _kSlides.length - 1;
 
-    return Scaffold(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light, // white icons on dark background
+      child: Scaffold(
       backgroundColor: const Color(0xFF0D1117),
       // ── FAB — bottom-right ──────────────────────────────────────────────
       floatingActionButton: Padding(
@@ -352,7 +355,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           ),
         ],
       ),
-    );
+    ), // Scaffold
+    ); // AnnotatedRegion
   }
 }
 

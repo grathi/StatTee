@@ -1,8 +1,76 @@
 const { onDocumentWritten, onDocumentCreated } = require('firebase-functions/v2/firestore');
-const { logger } = require('firebase-functions');
-const admin = require('firebase-admin');
+const { onCall, HttpsError }                   = require('firebase-functions/v2/https');
+const { defineSecret }                         = require('firebase-functions/params');
+const { logger }                               = require('firebase-functions');
+const admin                                    = require('firebase-admin');
+const { GoogleGenerativeAI }                   = require('@google/generative-ai');
 
 admin.initializeApp();
+
+const GEMINI_API_KEY = defineSecret('GEMINI_API_KEY');
+
+/**
+ * Callable function — receives a base64-encoded scorecard image and uses
+ * Gemini Flash vision to extract structured hole-by-hole data.
+ *
+ * Request:  { imageBase64: string, mimeType: string }
+ * Response: { courseName, location, tees: [{name, courseRating, slopeRating, holes: [{hole, par, yardage, handicap}]}] }
+ */
+exports.analyzeScorecard = onCall(
+  { secrets: [GEMINI_API_KEY], timeoutSeconds: 60 },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Must be signed in.');
+    }
+
+    const { imageBase64, mimeType } = request.data;
+    if (!imageBase64 || !mimeType) {
+      throw new HttpsError('invalid-argument', 'imageBase64 and mimeType are required.');
+    }
+
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY.value());
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+
+    const prompt = `You are extracting data from a golf scorecard image.
+Return ONLY valid JSON with no markdown, no code fences, no extra text.
+Schema:
+{
+  "courseName": "string",
+  "location": "City, State or Country",
+  "tees": [
+    {
+      "name": "tee name (e.g. White, Blue, Red)",
+      "courseRating": number,
+      "slopeRating": integer,
+      "holes": [
+        { "hole": integer, "par": integer, "yardage": integer, "handicap": integer }
+      ]
+    }
+  ]
+}
+Rules:
+- Include all tee sets visible on the scorecard (Men's and Ladies' if present).
+- holes array must have exactly 9 or 18 entries.
+- If a value is unreadable, use 0.
+- courseRating and slopeRating default to 0 if not shown.`;
+
+    try {
+      const result = await model.generateContent([
+        { text: prompt },
+        { inlineData: { mimeType, data: imageBase64 } },
+      ]);
+      const raw = result.response.text().trim();
+      // Strip markdown fences if Gemini adds them despite instructions
+      const jsonText = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+      const parsed = JSON.parse(jsonText);
+      logger.info(`[analyzeScorecard] Extracted course: ${parsed.courseName}`);
+      return parsed;
+    } catch (err) {
+      logger.error('[analyzeScorecard] Gemini error:', err.message);
+      throw new HttpsError('internal', `Extraction failed: ${err.message}`);
+    }
+  },
+);
 
 /**
  * Watches groupRounds/{sessionId} for new 'invited' players and sends

@@ -9,6 +9,8 @@ import 'theme/app_theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/rounds_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/onboarding_screen.dart';
+import 'services/onboarding_service.dart';
 import 'services/notification_service.dart';
 import 'services/round_service.dart';
 import 'services/smart_notification_service.dart';
@@ -45,7 +47,8 @@ void main() async {
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.light,
+    statusBarIconBrightness: Brightness.dark,   // black icons for light screens
+    statusBarBrightness: Brightness.light,       // iOS
   ));
   runApp(const TeeStatsApp());
 }
@@ -172,11 +175,26 @@ class _TeeStatsAppState extends State<TeeStatsApp> {
 // ---------------------------------------------------------------------------
 // Auth gate
 // ---------------------------------------------------------------------------
-class AuthGate extends StatelessWidget {
+class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  bool? _seenOnboarding;
+
+  @override
+  void initState() {
+    super.initState();
+    OnboardingService.hasSeenTour().then((seen) {
+      if (mounted) setState(() => _seenOnboarding = seen);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_seenOnboarding == null) return const _SplashScreen();
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       initialData: FirebaseAuth.instance.currentUser,
@@ -185,6 +203,7 @@ class AuthGate extends StatelessWidget {
           return const _SplashScreen();
         }
         if (snapshot.hasData && snapshot.data != null) {
+          if (!_seenOnboarding!) return const OnboardingScreen();
           return const HomeScreen();
         }
         return const LoginScreen();

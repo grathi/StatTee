@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -183,10 +184,12 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_rounded, color: c.primaryText, size: 20),
-          onPressed: () => Navigator.pop(context),
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
         ),
+        automaticallyImplyLeading: false,
         title: Text(
           round.courseName,
           style: TextStyle(fontFamily: 'Nunito',
@@ -229,128 +232,152 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            SizedBox(height: _sh * 0.08),
             // ── Summary header card ────────────────────────────────────────
-            Container(
-              decoration: ShapeDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF1A3A08), Color(0xFF3D6E14), Color(0xFF5A9E1F)],
-                  stops: [0.0, 0.55, 1.0],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                shape: SuperellipseShape(
-                  borderRadius: BorderRadius.circular(48),
-                ),
-                shadows: [
-                  BoxShadow(
-                    color: const Color(0xFF5A9E1F).withValues(alpha: 0.35),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              padding: EdgeInsets.all((_sw * 0.055).clamp(18.0, 24.0)),
-              child: Row(
-                children: [
-                  // Big score
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${round.totalScore}',
-                        style: TextStyle(fontFamily: 'Nunito',
-                          color: Colors.white,
-                          fontSize: (_sw * 0.16).clamp(52.0, 68.0),
-                          fontWeight: FontWeight.w800,
-                          height: 1.0,
-                        ),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // Green card
+                Container(
+                  decoration: ShapeDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF1A3A08), Color(0xFF3D6E14), Color(0xFF5A9E1F)],
+                      stops: [0.0, 0.55, 1.0],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: SuperellipseShape(
+                      borderRadius: BorderRadius.circular(48),
+                    ),
+                    shadows: [
+                      BoxShadow(
+                        color: const Color(0xFF5A9E1F).withValues(alpha: 0.35),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
                       ),
-                      Text(
-                        round.scoreDiffLabel,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: body,
-                          fontWeight: FontWeight.w600,
+                    ],
+                  ),
+                  padding: EdgeInsets.only(
+                    left: (_sw * 0.055).clamp(18.0, 24.0),
+                    top: (_sw * 0.055).clamp(18.0, 24.0),
+                    bottom: (_sw * 0.055).clamp(18.0, 24.0),
+                    right: (_sw * 0.32).clamp(110.0, 140.0),
+                  ),
+                  child: Row(
+                    children: [
+                      // Big score
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${round.totalScore}',
+                            style: TextStyle(fontFamily: 'Nunito',
+                              color: Colors.white,
+                              fontSize: (_sw * 0.16).clamp(52.0, 68.0),
+                              fontWeight: FontWeight.w800,
+                              height: 1.0,
+                            ),
+                          ),
+                          Text(
+                            round.scoreDiffLabel,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.7),
+                              fontSize: body,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (round.courseLocation.isNotEmpty)
+                              Row(children: [
+                                Icon(Icons.location_on_rounded,
+                                    color: Colors.white.withValues(alpha: 0.6),
+                                    size: label),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(round.courseLocation,
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(alpha: 0.7),
+                                        fontSize: label,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis),
+                                ),
+                              ]),
+                            const SizedBox(height: 4),
+                            Row(children: [
+                              Icon(Icons.calendar_today_rounded,
+                                  color: Colors.white.withValues(alpha: 0.6),
+                                  size: label),
+                              const SizedBox(width: 4),
+                              Text(_formatDate(round.startedAt),
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                    fontSize: label,
+                                  )),
+                            ]),
+                            const SizedBox(height: 4),
+                            Row(children: [
+                              Icon(Icons.sports_golf_rounded,
+                                  color: Colors.white.withValues(alpha: 0.6),
+                                  size: label),
+                              const SizedBox(width: 4),
+                              Text('${round.totalHoles} holes',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                    fontSize: label,
+                                  )),
+                              if (round.courseRating != null) ...[
+                                const SizedBox(width: 8),
+                                Text(
+                                  'CR ${round.courseRating!.toStringAsFixed(1)} / S ${round.slopeRating ?? "-"}',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.6),
+                                    fontSize: label * 0.88,
+                                  ),
+                                ),
+                              ],
+                            ]),
+                            if (round.weather != null) ...[
+                              const SizedBox(height: 4),
+                              Row(children: [
+                                Icon(Icons.thermostat_rounded,
+                                    color: Colors.white.withValues(alpha: 0.6),
+                                    size: label),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${round.weather!.tempF.round()}°F · ${round.weather!.condition} · ${round.weather!.windMph.round()} mph ${round.weather!.windDir}',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                    fontSize: label * 0.9,
+                                  ),
+                                ),
+                              ]),
+                            ],
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(width: 20),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (round.courseLocation.isNotEmpty)
-                          Row(children: [
-                            Icon(Icons.location_on_rounded,
-                                color: Colors.white.withValues(alpha: 0.6),
-                                size: label),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(round.courseLocation,
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.7),
-                                    fontSize: label,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis),
-                            ),
-                          ]),
-                        const SizedBox(height: 4),
-                        Row(children: [
-                          Icon(Icons.calendar_today_rounded,
-                              color: Colors.white.withValues(alpha: 0.6),
-                              size: label),
-                          const SizedBox(width: 4),
-                          Text(_formatDate(round.startedAt),
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.7),
-                                fontSize: label,
-                              )),
-                        ]),
-                        const SizedBox(height: 4),
-                        Row(children: [
-                          Icon(Icons.sports_golf_rounded,
-                              color: Colors.white.withValues(alpha: 0.6),
-                              size: label),
-                          const SizedBox(width: 4),
-                          Text('${round.totalHoles} holes',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.7),
-                                fontSize: label,
-                              )),
-                          if (round.courseRating != null) ...[
-                            const SizedBox(width: 8),
-                            Text(
-                              'CR ${round.courseRating!.toStringAsFixed(1)} / S ${round.slopeRating ?? "-"}',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.6),
-                                fontSize: label * 0.88,
-                              ),
-                            ),
-                          ],
-                        ]),
-                        if (round.weather != null) ...[
-                          const SizedBox(height: 4),
-                          Row(children: [
-                            Icon(Icons.thermostat_rounded,
-                                color: Colors.white.withValues(alpha: 0.6),
-                                size: label),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${round.weather!.tempF.round()}°F · ${round.weather!.condition} · ${round.weather!.windMph.round()} mph ${round.weather!.windDir}',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.7),
-                                fontSize: label * 0.9,
-                              ),
-                            ),
-                          ]),
-                        ],
-                      ],
-                    ),
+                ),
+                // Golfer image — large, bottom-right, overflows above card
+                Positioned(
+                  right: -100,
+                  bottom: 0,
+                  child: Image.network(
+                    'https://raw.githubusercontent.com/grathi/stattee_profile_pic/main/Adobe%20Express%20-%20file.png',
+                    height: (_sw * 0.55).clamp(180.0, 230.0),
+                    fit: BoxFit.contain,
+                    alignment: Alignment.bottomRight,
+                    errorBuilder: (context, e, s) => const SizedBox.shrink(),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
 
             SizedBox(height: _sh * 0.016),

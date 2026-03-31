@@ -8,10 +8,12 @@ import '../services/friends_service.dart';
 import '../services/group_round_service.dart';
 import '../models/friend_profile.dart';
 import '../theme/app_theme.dart';
-import '../widgets/shimmer_widgets.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'scorecard_screen.dart';
 import '../services/golf_course_api_service.dart';
+import '../services/course_service.dart';
+import '../models/course_model.dart';
+import 'scorecard_upload_screen.dart';
 
 class StartRoundScreen extends StatefulWidget {
   final String? initialCourseName;
@@ -59,10 +61,11 @@ class _StartRoundScreenState extends State<StartRoundScreen>
   final _friendSearchCtrl = TextEditingController();
   String _friendQuery = '';
   bool _loadingFriends = false;
-  List<GolfApiHole>? _courseHoles;
   GolfApiCourseDetail? _apiCourseDetail;
   GolfApiTee?          _selectedApiTee;
   bool                 _loadingApiCourse = false;
+  CourseData?          _firestoreCourse;   // course data from user-uploaded scorecards
+  CourseTee?           _selectedFirestoreTee;
 
   // autocomplete state
   String?  _selectedPlaceId;
@@ -175,6 +178,20 @@ class _StartRoundScreenState extends State<StartRoundScreen>
     _debounce?.cancel();
     final text = _courseNameCtrl.text.trim();
 
+    if (text.isEmpty) {
+      // User cleared the field — also reset tee and ratings
+      setState(() {
+        _suggestions     = [];
+        _selectedApiTee  = null;
+        _apiCourseDetail = null;
+        _holes           = 18;
+        _courseRatingCtrl.clear();
+        _slopeRatingCtrl.clear();
+      });
+      if (_overlayController.isShowing) _overlayController.hide();
+      return;
+    }
+
     if (text.length < 2) {
       setState(() => _suggestions = []);
       if (_overlayController.isShowing) _overlayController.hide();
@@ -210,10 +227,12 @@ class _StartRoundScreenState extends State<StartRoundScreen>
     _courseNameCtrl.text = s.name;
     _locationCtrl.text   = s.address;
     setState(() {
-      _suggestions      = [];
-      _apiCourseDetail  = null;
-      _selectedApiTee   = null;
-      _loadingApiCourse = true;
+      _suggestions          = [];
+      _apiCourseDetail      = null;
+      _selectedApiTee       = null;
+      _firestoreCourse      = null;
+      _selectedFirestoreTee = null;
+      _loadingApiCourse     = true;
     });
     FocusScope.of(context).unfocus();
 
@@ -242,6 +261,21 @@ class _StartRoundScreenState extends State<StartRoundScreen>
         _applyTee(tee);
       }
     });
+
+    // If GolfCourseAPI has no data, fall back to user-uploaded courses in Firestore
+    if (courseDetail == null || !courseDetail.hasTeeData) {
+      final courseName = _courseNameCtrl.text.trim();
+      if (courseName.isNotEmpty) {
+        final fsData = await CourseService.findCourse(courseName);
+        if (mounted) {
+          setState(() {
+            _firestoreCourse    = fsData;
+            _selectedFirestoreTee = fsData?.tees.isNotEmpty == true ? fsData!.tees.first : null;
+            if (_selectedFirestoreTee != null) _applyFirestoreTee(_selectedFirestoreTee!);
+          });
+        }
+      }
+    }
   }
 
   Widget _teeChip(GolfApiTee tee, AppColors c) {
@@ -298,6 +332,17 @@ class _StartRoundScreenState extends State<StartRoundScreen>
     }
   }
 
+  void _applyFirestoreTee(CourseTee tee) {
+    final h = tee.holeCount;
+    _holes = (h == 9 || h == 18) ? h : 18;
+    if (tee.courseRating > 0) {
+      _courseRatingCtrl.text = tee.courseRating.round().toString();
+    }
+    if (tee.slopeRating > 0) {
+      _slopeRatingCtrl.text = tee.slopeRating.toString();
+    }
+  }
+
   // ── Submit ────────────────────────────────────────────────────────────────
 
   Future<void> _teeOff() async {
@@ -312,7 +357,8 @@ class _StartRoundScreenState extends State<StartRoundScreen>
       final slopeRating    = int.tryParse(_slopeRatingCtrl.text.trim());
 
       // Use already-fetched tee data if available; otherwise fetch now
-      List<GolfApiHole>? holes = _selectedApiTee?.effectiveHoles;
+      List<GolfApiHole>? holes = _selectedApiTee?.effectiveHoles
+          ?? (_selectedFirestoreTee != null ? CourseService.toGolfApiHoles(_selectedFirestoreTee!) : null);
 
       final roundId = await RoundService.startRound(
         courseName:     courseName,
@@ -415,11 +461,11 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                   opacity: _fadeAnim,
                   child: Column(
                     children: [
-                      SizedBox(height: _sh * 0.068),
+                      SizedBox(height: _sh * 0.032),
                       _buildHeader(c),
                       SizedBox(height: _sh * 0.020),
                       _buildForm(c),
-                      if (_acceptedFriends.isNotEmpty && !widget.isPractice &&
+                      if ((_acceptedFriends.isNotEmpty || _loadingFriends) && !widget.isPractice &&
                           widget.tournamentId == null) ...[
                         SizedBox(height: _sh * 0.018),
                         _buildInviteSection(c),
@@ -428,26 +474,6 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                       _buildTeeOffButton(c),
                       SizedBox(height: _sh * 0.028),
                     ],
-                  ),
-                ),
-              ),
-            ),
-            // ── Floating back arrow ───────────────────────────────────────
-            SafeArea(
-              child: Padding(
-                padding: EdgeInsets.only(left: _hPad * 0.5, top: 4),
-                child: IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: Container(
-                    width: (_sw * 0.095).clamp(34.0, 44.0),
-                    height: (_sw * 0.095).clamp(34.0, 44.0),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: c.iconContainerBg,
-                      border: Border.all(color: c.iconContainerBorder),
-                    ),
-                    child: Icon(Icons.arrow_back_ios_new_rounded,
-                        color: c.iconColor, size: _body),
                   ),
                 ),
               ),
@@ -626,9 +652,16 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                                 onPressed: () {
                                   _courseNameCtrl.clear();
                                   _locationCtrl.clear();
+                                  _courseRatingCtrl.clear();
+                                  _slopeRatingCtrl.clear();
                                   _selectedPlaceId = null;
                                   _selectedLat = null;
                                   _selectedLng = null;
+                                  _selectedApiTee = null;
+                                  _apiCourseDetail = null;
+                                  _firestoreCourse = null;
+                                  _selectedFirestoreTee = null;
+                                  _holes = 18;
                                   _overlayController.hide();
                                   setState(() => _suggestions = []);
                                 },
@@ -701,6 +734,101 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                 ),
               ),
               SizedBox(height: _sh * 0.018),
+            ]
+            else if (_firestoreCourse != null && _firestoreCourse!.tees.isNotEmpty) ...[
+              _sectionLabel(c, 'SELECT TEE'),
+              SizedBox(height: _sh * 0.010),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: _firestoreCourse!.tees.map((t) {
+                    final sel = _selectedFirestoreTee?.name == t.name &&
+                        _selectedFirestoreTee?.courseRating == t.courseRating;
+                    return GestureDetector(
+                      onTap: () => setState(() {
+                        _selectedFirestoreTee = t;
+                        _applyFirestoreTee(t);
+                      }),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        margin: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                        decoration: ShapeDecoration(
+                          color: sel ? c.accentBg : c.fieldBg,
+                          shape: SuperellipseShape(
+                            borderRadius: BorderRadius.circular(14),
+                            side: BorderSide(
+                              color: sel ? c.accentBorder : c.fieldBorder,
+                              width: sel ? 1.5 : 1.0,
+                            ),
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(t.name,
+                                style: TextStyle(
+                                  color:      sel ? c.accent : c.primaryText,
+                                  fontSize:   _label,
+                                  fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+                                )),
+                            Text(
+                              '${t.holeCount}H  ·  ${t.courseRating.round()}/${t.slopeRating}',
+                              style: TextStyle(color: c.tertiaryText, fontSize: _label * 0.85),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              SizedBox(height: _sh * 0.018),
+            ]
+            else if (!_loadingApiCourse && _selectedPlaceId != null) ...[
+              // No tee data from either source — offer upload
+              Padding(
+                padding: EdgeInsets.only(bottom: _sh * 0.016),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline_rounded, size: 15, color: c.tertiaryText),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text('No hole data found for this course.',
+                          style: TextStyle(color: c.tertiaryText, fontSize: _label)),
+                    ),
+                    GestureDetector(
+                      onTap: () async {
+                        final result = await Navigator.of(context).push<CourseData>(
+                          MaterialPageRoute(builder: (_) => ScorecardUploadScreen(
+                            initialCourseName: _courseNameCtrl.text.trim(),
+                            initialLocation:   _locationCtrl.text.trim(),
+                          )),
+                        );
+                        if (result != null && mounted) {
+                          setState(() {
+                            _firestoreCourse      = result;
+                            _selectedFirestoreTee = result.tees.isNotEmpty ? result.tees.first : null;
+                            if (_selectedFirestoreTee != null) _applyFirestoreTee(_selectedFirestoreTee!);
+                          });
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color:        c.accentBg,
+                          borderRadius: BorderRadius.circular(20),
+                          border:       Border.all(color: c.accentBorder),
+                        ),
+                        child: Text('Upload Scorecard',
+                            style: TextStyle(color: c.accent, fontWeight: FontWeight.w600, fontSize: _label)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
 
             _sectionLabel(c, 'COURSE RATING (OPTIONAL)'),

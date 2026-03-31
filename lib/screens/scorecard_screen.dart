@@ -64,7 +64,6 @@ class _ScorecardScreenState extends State<ScorecardScreen>
 
   // GPS pin tracking
   Position? _userPos;
-  Position? _pinPos;
   StreamSubscription<Position>? _posSub;
   bool _weatherFetched = false;
   WeatherNow? _liveWeather;
@@ -185,7 +184,6 @@ class _ScorecardScreenState extends State<ScorecardScreen>
       _fairwayHit  = existing?.fairwayHit ?? true;
       _gir         = existing?.gir        ?? false;
       _club        = existing?.club;
-      _pinPos      = null; // reset pin for each hole
     });
     _animCtrl
       ..reset()
@@ -340,6 +338,13 @@ class _ScorecardScreenState extends State<ScorecardScreen>
     );
   }
 
+  // ── Plays Like distance (adjusts yardage for wind) ────────────────────────
+  int _playsLike(int baseYds) {
+    if (_liveWeather == null || baseYds == 0) return baseYds;
+    final wind = _liveWeather!.windSpeed;
+    return (baseYds + wind * 0.8).round();
+  }
+
   // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
@@ -348,14 +353,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
     return Scaffold(
       backgroundColor: c.scaffoldBg,
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: c.bgGradient,
-            stops: const [0.0, 0.5, 1.0],
-          ),
-        ),
+        color: c.scaffoldBg,
         child: SafeArea(
           child: Column(
             children: [
@@ -423,11 +421,11 @@ class _ScorecardScreenState extends State<ScorecardScreen>
               height: (_sw * 0.095).clamp(34.0, 44.0),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: c.iconContainerBg,
-                border: Border.all(color: c.iconContainerBorder),
+                color: c.accentBg,
+                border: Border.all(color: c.accentBorder),
               ),
               child: Icon(Icons.close_rounded,
-                  color: c.iconColor, size: _body * 1.1),
+                  color: c.accent, size: _body * 1.1),
             ),
           ),
           Expanded(
@@ -454,7 +452,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.people_rounded, size: _label, color: c.accent),
+                      Icon(Icons.people_rounded, size: 12, color: c.accent),
                       const SizedBox(width: 3),
                       Text('Playing with friends',
                           style: TextStyle(color: c.accent, fontSize: _label * 0.9, fontWeight: FontWeight.w600)),
@@ -468,28 +466,32 @@ class _ScorecardScreenState extends State<ScorecardScreen>
               ],
             ),
           ),
-          // Running total — only show when there's a non-zero diff
+          // Running total
           if (_saved.isNotEmpty && _runningDiff != 0)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: ShapeDecoration(
-              color: _runningDiff < 0 ? c.accentBg : const Color(0xFFE53935).withValues(alpha: 0.12),
-              shape: SuperellipseShape(
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: _runningDiff < 0
+                    ? c.accent.withValues(alpha: 0.15)
+                    : const Color(0xFFE53935).withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(24),
-                side: BorderSide(
-                  color: _runningDiff < 0 ? c.accentBorder : const Color(0xFFE53935).withValues(alpha: 0.3),
+                border: Border.all(
+                  color: _runningDiff < 0
+                      ? c.accent.withValues(alpha: 0.40)
+                      : const Color(0xFFE53935).withValues(alpha: 0.40),
                 ),
               ),
-            ),
-            child: Text(
-              _runningDiffLabel,
-              style: TextStyle(fontFamily: 'Nunito',
-                color: _runningDiff < 0 ? c.accent : const Color(0xFFE53935),
-                fontSize: _body,
-                fontWeight: FontWeight.w700,
+              child: Text(
+                _runningDiffLabel,
+                style: TextStyle(fontFamily: 'Nunito',
+                  color: _runningDiff < 0 ? c.accent : const Color(0xFFE53935),
+                  fontSize: _body,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-          ),
+            )
+          else
+            SizedBox(width: (_sw * 0.095).clamp(34.0, 44.0)),
         ],
       ),
     );
@@ -502,7 +504,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
       child: Row(
         children: List.generate(widget.totalHoles, (i) {
           final hole = i + 1;
-          final isDone   = _saved.any((h) => h.hole == hole);
+          final isDone    = _saved.any((h) => h.hole == hole);
           final isCurrent = hole == _currentHole;
           return Expanded(
             child: GestureDetector(
@@ -515,8 +517,8 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                   color: isCurrent
                       ? c.accent
                       : isDone
-                          ? c.accent.withValues(alpha: 0.5)
-                          : c.divider,
+                          ? c.accent.withValues(alpha: 0.45)
+                          : c.cardBorder,
                   borderRadius: BorderRadius.circular(3),
                 ),
               ),
@@ -650,9 +652,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
             ],
           ),
           SizedBox(height: _sh * 0.022),
-          // GPS pin distance
-          if (_userPos != null) _buildGpsRow(c),
-          if (_userPos != null) SizedBox(height: _sh * 0.022),
+          SizedBox(height: _sh * 0.022),
           // Club selector
           _rowLabel(c, 'Club Used'),
           SizedBox(height: _sh * 0.010),
@@ -690,99 +690,6 @@ class _ScorecardScreenState extends State<ScorecardScreen>
           ),
         ],
       ),
-    );
-  }
-
-  // ── GPS Pin distance ────────────────────────────────────────────────────────
-  int? get _pinDistanceYards {
-    if (_userPos == null || _pinPos == null) return null;
-    final meters = Geolocator.distanceBetween(
-      _userPos!.latitude, _userPos!.longitude,
-      _pinPos!.latitude, _pinPos!.longitude,
-    );
-    return (meters * 1.09361).round();
-  }
-
-  Color _distanceColor(int yards) {
-    if (yards <= 100) return const Color(0xFF4CAF50);   // green — short
-    if (yards <= 175) return const Color(0xFFFFB74D);   // amber — mid
-    return const Color(0xFFE53935);                      // red — long
-  }
-
-  Widget _buildGpsRow(AppColors c) {
-    final yards = _pinDistanceYards;
-    return Row(
-      children: [
-        if (yards == null) ...[
-          // No pin set yet
-          GestureDetector(
-            onTap: () => setState(() => _pinPos = _userPos),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: ShapeDecoration(
-                color: c.accentBg,
-                shape: SuperellipseShape(
-                  borderRadius: BorderRadius.circular(24),
-                  side: BorderSide(color: c.accentBorder),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.push_pin_rounded, color: c.accent, size: _label * 1.1),
-                  const SizedBox(width: 6),
-                  Text('Set Pin',
-                      style: TextStyle(
-                          color: c.accent,
-                          fontSize: _label,
-                          fontWeight: FontWeight.w600)),
-                ],
-              ),
-            ),
-          ),
-        ] else ...[
-          // Pin set — show live distance
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: ShapeDecoration(
-              color: _distanceColor(yards).withValues(alpha: 0.12),
-              shape: SuperellipseShape(
-                borderRadius: BorderRadius.circular(40),
-                side: BorderSide(
-                    color: _distanceColor(yards).withValues(alpha: 0.4)),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.push_pin_rounded,
-                    color: _distanceColor(yards), size: _label * 1.1),
-                const SizedBox(width: 6),
-                Text('$yards yds',
-                    style: TextStyle(
-                        fontFamily: 'Nunito',
-                        color: _distanceColor(yards),
-                        fontSize: _label * 1.1,
-                        fontWeight: FontWeight.w700)),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: () => setState(() => _pinPos = null),
-            child: Container(
-              padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                color: c.fieldBg,
-                shape: BoxShape.circle,
-                border: Border.all(color: c.fieldBorder),
-              ),
-              child: Icon(Icons.close_rounded,
-                  color: c.tertiaryText, size: _label),
-            ),
-          ),
-        ],
-      ],
     );
   }
 
@@ -1147,11 +1054,12 @@ class _ScorecardScreenState extends State<ScorecardScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Scorecard',
+          'SCORECARD',
           style: TextStyle(fontFamily: 'Nunito',
-              color: c.primaryText,
-              fontSize: _body,
-              fontWeight: FontWeight.w700),
+              color: c.secondaryText,
+              fontSize: _label,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5),
         ),
         SizedBox(height: _sh * 0.010),
         Container(
@@ -1203,7 +1111,8 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                       const SizedBox(width: 12),
                       Text('Par ${h.par}',
                           style: TextStyle(
-                              color: c.secondaryText, fontSize: _label)),
+                              color: c.secondaryText,
+                              fontSize: _label)),
                       const Spacer(),
                       Text(
                         label,
@@ -1270,21 +1179,21 @@ class _ScorecardScreenState extends State<ScorecardScreen>
               height: (_sh * 0.068).clamp(52.0, 64.0),
               decoration: ShapeDecoration(
                 gradient: LinearGradient(
-                  colors: const [Color(0xFF7BC344), Color(0xFF3D7A14)],
+                  colors: [c.accent, c.accent.withValues(alpha: 0.75)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                shape: SuperellipseShape(borderRadius: BorderRadius.circular(22)),
+                shape: SuperellipseShape(borderRadius: BorderRadius.circular(40)),
                 shadows: [
                   BoxShadow(
-                    color: const Color(0xFF3D7A14).withValues(alpha: 0.40),
+                    color: c.accent.withValues(alpha: 0.35),
                     blurRadius: 16,
                     offset: const Offset(0, 6),
                   ),
                 ],
               ),
               child: ClipPath(
-                clipper: _SuperellipseClipper(radius: 22),
+                clipper: _SuperellipseClipper(radius: 40),
                 child: Stack(
                   children: [
                     // Shimmer sweep
@@ -1299,7 +1208,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                               gradient: LinearGradient(
                                 colors: [
                                   Colors.white.withValues(alpha: 0.0),
-                                  Colors.white.withValues(alpha: 0.18),
+                                  Colors.white.withValues(alpha: 0.22),
                                   Colors.white.withValues(alpha: 0.0),
                                 ],
                               ),
@@ -1313,7 +1222,8 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                           ? const SizedBox(
                               width: 22, height: 22,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2.5, color: Colors.white))
+                                  strokeWidth: 2.5,
+                                  valueColor: AlwaysStoppedAnimation(Colors.white)))
                           : Text(
                               label,
                               style: const TextStyle(
@@ -1344,30 +1254,17 @@ class _ScorecardScreenState extends State<ScorecardScreen>
     final hasYds = holeData != null && holeData.yardage > 0;
     final hPad = (_sw * 0.055).clamp(18.0, 26.0);
 
-    // Running diff label
-    final diff  = _runningDiff;
-    final diffLabel = diff == 0 ? 'E' : (diff > 0 ? '+$diff' : '$diff');
-    final diffColor = diff < 0
-        ? const Color(0xFF7BDB4E)
-        : diff > 0 ? const Color(0xFFFF7B7B) : Colors.white;
+    final diff       = _runningDiff;
+    final diffLabel  = diff == 0 ? 'E' : (diff > 0 ? '+$diff' : '$diff');
+    final diffColor  = diff < 0 ? c.accent : diff > 0 ? const Color(0xFFFF7B7B) : c.primaryText;
 
     return Container(
       key: key,
       width: double.infinity,
       decoration: ShapeDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end:   Alignment.bottomRight,
-          colors: [Color(0xFF0D3B1E), Color(0xFF1B6030)],
-        ),
+        color: c.cardBg,
         shape: SuperellipseShape(borderRadius: BorderRadius.circular(28)),
-        shadows: [
-          BoxShadow(
-            color:      const Color(0x660D3B1E),
-            blurRadius: 24,
-            offset:     const Offset(0, 8),
-          ),
-        ],
+        shadows: c.cardShadow,
       ),
       child: ClipPath(
         clipper: _SuperellipseClipper(radius: 28),
@@ -1384,16 +1281,16 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                   Container(
                     width: 36, height: 36,
                     decoration: BoxDecoration(
-                      color:  Colors.white.withValues(alpha: 0.15),
+                      color:  c.accentBg,
                       shape:  BoxShape.circle,
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.30)),
+                      border: Border.all(color: c.accentBorder),
                     ),
                     child: Center(
                       child: Text(
                         '$_currentHole',
                         style: TextStyle(
                           fontFamily: 'Nunito',
-                          color:      Colors.white,
+                          color:      c.accent,
                           fontSize:   (_sw * 0.040).clamp(14.0, 17.0),
                           fontWeight: FontWeight.w800,
                         ),
@@ -1408,7 +1305,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                         Text(
                           'HOLE $_currentHole',
                           style: TextStyle(
-                            color:      Colors.white,
+                            color:      c.primaryText,
                             fontSize:   (_sw * 0.044).clamp(15.0, 20.0),
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.5,
@@ -1419,7 +1316,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                               ? 'PAR $_par  ·  HCP ${holeData.handicap}'
                               : 'PAR $_par',
                           style: TextStyle(
-                            color:      Colors.white.withValues(alpha: 0.60),
+                            color:      c.secondaryText,
                             fontSize:   (_sw * 0.030).clamp(11.0, 13.0),
                             fontWeight: FontWeight.w500,
                           ),
@@ -1432,9 +1329,9 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
+                        color: diffColor.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                        border: Border.all(color: diffColor.withValues(alpha: 0.35)),
                       ),
                       child: Text(
                         diffLabel,
@@ -1450,39 +1347,80 @@ class _ScorecardScreenState extends State<ScorecardScreen>
               ),
             ),
 
-            // ── Hero yardage ─────────────────────────────────────────────
+            // ── Hero yardage + mini-map ────────────────────────────────
             if (hasYds) ...[
               Padding(
-                padding: EdgeInsets.fromLTRB(hPad, (_sh * 0.014).clamp(10.0, 14.0), hPad, 0),
+                padding: EdgeInsets.fromLTRB(hPad, (_sh * 0.012).clamp(8.0, 14.0), hPad, 0),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Flexible(
-                      child: Text(
-                        '${holeData!.yardage}',
-                        style: TextStyle(
-                          fontFamily: 'Nunito',
-                          color:      Colors.white,
-                          fontSize:   (_sw * 0.20).clamp(68.0, 88.0),
-                          fontWeight: FontWeight.w900,
-                          height:     0.9,
-                        ),
+                    // Yardage + Plays Like
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                '${holeData!.yardage}',
+                                style: TextStyle(
+                                  fontFamily: 'Nunito',
+                                  color:      c.accent,
+                                  fontSize:   (_sw * 0.20).clamp(68.0, 88.0),
+                                  fontWeight: FontWeight.w900,
+                                  height:     0.9,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: Text(
+                                  'YDS',
+                                  style: TextStyle(
+                                    color:         c.secondaryText,
+                                    fontSize:      (_sw * 0.038).clamp(13.0, 17.0),
+                                    fontWeight:    FontWeight.w700,
+                                    letterSpacing: 1.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          // Plays Like chip (only when weather available)
+                          if (_liveWeather != null) ...[
+                            const SizedBox(height: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: c.iconContainerBg,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: c.cardBorder),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.air_rounded,
+                                      color: c.secondaryText, size: 11),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'PLAYS LIKE ${_playsLike(holeData.yardage)} YDS',
+                                    style: TextStyle(
+                                      color:         c.secondaryText,
+                                      fontSize:      (_sw * 0.024).clamp(9.0, 11.0),
+                                      fontWeight:    FontWeight.w600,
+                                      letterSpacing: 0.6,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: Text(
-                        'YDS',
-                        style: TextStyle(
-                          color:         Colors.white.withValues(alpha: 0.55),
-                          fontSize:      (_sw * 0.040).clamp(14.0, 18.0),
-                          fontWeight:    FontWeight.w700,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                    ),
+                    // Mini-map
+                    _HoleMiniMap(par: _par, size: (_sw * 0.22).clamp(72.0, 90.0), c: c),
                   ],
                 ),
               ),
@@ -1490,57 +1428,50 @@ class _ScorecardScreenState extends State<ScorecardScreen>
               SizedBox(height: (_sh * 0.014).clamp(10.0, 14.0)),
             ],
 
-            // ── Par selector strip ────────────────────────────────────────
+            // ── Segmented par control ─────────────────────────────────
             Container(
               width: double.infinity,
-              margin: EdgeInsets.only(top: (_sh * 0.014).clamp(8.0, 12.0)),
-              padding: EdgeInsets.symmetric(
-                horizontal: hPad,
-                vertical:   (_sh * 0.014).clamp(10.0, 14.0),
-              ),
+              margin: EdgeInsets.fromLTRB(hPad, (_sh * 0.014).clamp(8.0, 14.0), hPad, (_sh * 0.016).clamp(10.0, 16.0)),
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.20),
+                color: c.fieldBg,
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(color: c.fieldBorder),
               ),
               child: Row(
-                children: [
-                  Text(
-                    'CHANGE PAR',
-                    style: TextStyle(
-                      color:         Colors.white.withValues(alpha: 0.55),
-                      fontSize:      (_sw * 0.026).clamp(9.5, 11.5),
-                      fontWeight:    FontWeight.w600,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  ...([3, 4, 5].map((p) {
-                    final sel = _par == p;
-                    return GestureDetector(
+                children: [3, 4, 5].map((p) {
+                  final sel = _par == p;
+                  return Expanded(
+                    child: GestureDetector(
                       onTap: () => _scoreChanged(_score, newPar: p),
                       child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        margin: const EdgeInsets.only(right: 8),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                        duration: const Duration(milliseconds: 180),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
-                          color:        sel ? Colors.white : Colors.white.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: sel ? Colors.white : Colors.white.withValues(alpha: 0.20),
-                          ),
+                          color: sel ? c.accent : Colors.transparent,
+                          borderRadius: BorderRadius.circular(26),
+                          boxShadow: sel ? [BoxShadow(
+                            color: c.accent.withValues(alpha: 0.35),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          )] : null,
                         ),
-                        child: Text(
-                          '$p',
-                          style: TextStyle(
-                            fontFamily: 'Nunito',
-                            color:      sel ? const Color(0xFF0D3B1E) : Colors.white,
-                            fontSize:   (_sw * 0.032).clamp(12.0, 14.0),
-                            fontWeight: FontWeight.w800,
+                        child: Center(
+                          child: Text(
+                            'PAR $p',
+                            style: TextStyle(
+                              fontFamily: 'Nunito',
+                              color:      sel ? Colors.white : c.secondaryText,
+                              fontSize:   (_sw * 0.030).clamp(11.0, 13.0),
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.3,
+                            ),
                           ),
                         ),
                       ),
-                    );
-                  })),
-                ],
+                    ),
+                  );
+                }).toList(),
               ),
             ),
           ],
@@ -1572,31 +1503,17 @@ class _ScorecardScreenState extends State<ScorecardScreen>
   }
 
   Widget _buildSmartCaddyCard(AppColors c) {
-    const amber    = Color(0xFFF59E0B);
-    const amberBg  = Color(0xFFFFFBEB);
-    const amberBdr = Color(0xFFFDE68A);
-    const textCol  = Color(0xFF92400E);
+    const aiColor = Color(0xFF7C5CFC); // AI purple
     final tip = _smartCaddyTip();
 
     return Container(
       decoration: ShapeDecoration(
-        color: amberBg,
+        color: c.cardBg,
         shape: SuperellipseShape(
-          borderRadius: BorderRadius.circular(28),
-          side: BorderSide(color: amberBdr, width: 1.2),
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(color: aiColor.withValues(alpha: 0.25)),
         ),
-        shadows: [
-          BoxShadow(
-            color:      amber.withValues(alpha: 0.18),
-            blurRadius: 16,
-            offset:     const Offset(0, 6),
-          ),
-          BoxShadow(
-            color:      Colors.black.withValues(alpha: 0.05),
-            blurRadius: 6,
-            offset:     const Offset(0, 2),
-          ),
-        ],
+        shadows: c.cardShadow,
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(
@@ -1606,15 +1523,16 @@ class _ScorecardScreenState extends State<ScorecardScreen>
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Icon box
             Container(
               width: 36, height: 36,
               decoration: BoxDecoration(
-                color:        amber.withValues(alpha: 0.20),
+                color:        aiColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: amber.withValues(alpha: 0.35)),
+                border: Border.all(color: aiColor.withValues(alpha: 0.30)),
               ),
-              child: const Center(
-                child: Text('✦', style: TextStyle(fontSize: 14, color: amber)),
+              child: Center(
+                child: Text('✦', style: TextStyle(fontSize: 14, color: aiColor)),
               ),
             ),
             const SizedBox(width: 12),
@@ -1622,23 +1540,43 @@ class _ScorecardScreenState extends State<ScorecardScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'SMART CADDY',
-                    style: TextStyle(
-                      color:         amber,
-                      fontSize:      10.0,
-                      fontWeight:    FontWeight.w700,
-                      letterSpacing: 1.4,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        'AI CADDY',
+                        style: TextStyle(
+                          color:         aiColor,
+                          fontSize:      10.0,
+                          fontWeight:    FontWeight.w700,
+                          letterSpacing: 1.4,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      // Pulsing dot
+                      AnimatedBuilder(
+                        animation: _shimmerCtrl,
+                        builder: (_, __) => Container(
+                          width: 6, height: 6,
+                          decoration: BoxDecoration(
+                            color:  aiColor.withValues(alpha: 0.4 + _shimmerCtrl.value * 0.6),
+                            shape:  BoxShape.circle,
+                            boxShadow: [BoxShadow(
+                              color: aiColor.withValues(alpha: _shimmerCtrl.value * 0.4),
+                              blurRadius: 4,
+                            )],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 4),
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 350),
                     child: Text(
                       tip,
-                      key: ValueKey('\${_saved.length}_\$_par'),
-                      style: const TextStyle(
-                        color:      textCol,
+                      key: ValueKey('${_saved.length}_$_par'),
+                      style: TextStyle(
+                        color:      c.primaryText,
                         fontSize:   13.5,
                         fontWeight: FontWeight.w500,
                         height:     1.45,
@@ -1655,10 +1593,10 @@ class _ScorecardScreenState extends State<ScorecardScreen>
   }
 
   Widget _buildScoringCard(AppColors c) {
-    final diff     = _score - _par;
-    final scoreCol = _scoreColor(diff);
+    final diff       = _score - _par;
+    final scoreCol   = _scoreColor(diff);
     final scoreLabel = _scoreLabel(diff);
-    final puttsMax = _score.clamp(0, 6);
+    final puttsMax   = _score.clamp(0, 6);
 
     return Container(
       decoration: ShapeDecoration(
@@ -1667,9 +1605,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
           borderRadius: BorderRadius.circular(28),
           side: BorderSide(color: c.cardBorder),
         ),
-        shadows: c.cardShadow.map((s) => BoxShadow(
-          color: s.color, blurRadius: s.blurRadius, offset: s.offset,
-        )).toList(),
+        shadows: c.cardShadow,
       ),
       child: Padding(
         padding: EdgeInsets.all(_hPad * 0.85),
@@ -1781,12 +1717,6 @@ class _ScorecardScreenState extends State<ScorecardScreen>
 
             SizedBox(height: _sh * 0.020),
 
-            // ── GPS ─────────────────────────────────────────────────────
-            if (_userPos != null) ...[
-              _buildGpsRow(c),
-              SizedBox(height: _sh * 0.018),
-            ],
-
             // ── Club selector ────────────────────────────────────────────
             Text('CLUB', style: TextStyle(
               color: c.tertiaryText, fontSize: _label * 0.85,
@@ -1810,13 +1740,11 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                         horizontal: (_sw * 0.032).clamp(10.0, 14.0),
                         vertical:   6,
                       ),
-                      decoration: ShapeDecoration(
-                        color: sel ? c.accentBg : c.fieldBg,
-                        shape: SuperellipseShape(
-                          borderRadius: BorderRadius.circular(14),
-                          side: BorderSide(
-                            color: sel ? c.accentBorder : c.fieldBorder,
-                          ),
+                      decoration: BoxDecoration(
+                        color:        sel ? c.accentBg : c.fieldBg,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: sel ? c.accentBorder : c.fieldBorder,
                         ),
                       ),
                       child: Center(
@@ -2181,14 +2109,17 @@ class _ScoreStepperWidgetState extends State<_ScoreStepperWidget> {
             child: SizedBox(
               width: (sw * 0.22).clamp(75.0, 95.0),
               child: Center(
-                child: Text(
-                  '${widget.value}',
-                  style: TextStyle(
-                    fontFamily: 'Nunito',
-                    color:      widget.scoreColor,
-                    fontSize:   (sw * 0.18).clamp(68.0, 88.0),
-                    fontWeight: FontWeight.w900,
-                    height:     1.0,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    '${widget.value}',
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      color:      widget.scoreColor,
+                      fontSize:   (sw * 0.18).clamp(68.0, 88.0),
+                      fontWeight: FontWeight.w800,
+                      height:     1.0,
+                    ),
                   ),
                 ),
               ),
@@ -2296,6 +2227,110 @@ class _BigToggle extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── _HoleMiniMap — simple par-based hole shape ────────────────────────────────
+
+class _HoleMiniMap extends StatelessWidget {
+  final int par;
+  final double size;
+  final AppColors c;
+  const _HoleMiniMap({required this.par, required this.size, required this.c});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width:  size * 0.72,
+      height: size,
+      child:  CustomPaint(painter: _HolePainter(par: par, c: c)),
+    );
+  }
+}
+
+class _HolePainter extends CustomPainter {
+  final int par;
+  final AppColors c;
+  const _HolePainter({required this.par, required this.c});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
+    final fairwayPaint = Paint()
+      ..color = c.accentBg
+      ..style = PaintingStyle.fill;
+    final greenPaint = Paint()
+      ..color = c.accent
+      ..style = PaintingStyle.fill;
+    final teePaint = Paint()
+      ..color = c.secondaryText.withValues(alpha: 0.50)
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+    final fw = w * 0.40;
+
+    if (par <= 3) {
+      final rect = RRect.fromRectAndRadius(
+        Rect.fromLTWH((w - fw) / 2, h * 0.08, fw, h * 0.72),
+        Radius.circular(fw / 2),
+      );
+      path.addRRect(rect);
+    } else if (par == 4) {
+      path.moveTo(w * 0.30, h * 0.80);
+      path.lineTo(w * 0.30, h * 0.35);
+      path.quadraticBezierTo(w * 0.30, h * 0.15, w * 0.50, h * 0.12);
+      path.lineTo(w * 0.80, h * 0.12);
+      path.lineTo(w * 0.80, h * 0.28);
+      path.lineTo(w * 0.50, h * 0.28);
+      path.quadraticBezierTo(w * 0.44, h * 0.28, w * 0.44, h * 0.35);
+      path.lineTo(w * 0.44, h * 0.80);
+      path.close();
+    } else {
+      path.moveTo(w * 0.26, h * 0.82);
+      path.lineTo(w * 0.26, h * 0.56);
+      path.cubicTo(
+        w * 0.26, h * 0.42,
+        w * 0.60, h * 0.48,
+        w * 0.60, h * 0.34,
+      );
+      path.lineTo(w * 0.60, h * 0.10);
+      path.lineTo(w * 0.74, h * 0.10);
+      path.lineTo(w * 0.74, h * 0.34);
+      path.cubicTo(
+        w * 0.74, h * 0.52,
+        w * 0.40, h * 0.46,
+        w * 0.40, h * 0.60,
+      );
+      path.lineTo(w * 0.40, h * 0.82);
+      path.close();
+    }
+
+    canvas.drawPath(path, fairwayPaint);
+
+    final greenCenter = par <= 3
+        ? Offset(w / 2, h * 0.12)
+        : par == 4
+            ? Offset(w * 0.80, h * 0.20)
+            : Offset(w * 0.67, h * 0.10);
+    canvas.drawCircle(greenCenter, w * 0.14, greenPaint);
+
+    final teeRect = RRect.fromRectAndRadius(
+      Rect.fromCenter(
+        center: Offset(
+          par <= 3 ? w / 2 : w * 0.37,
+          h * 0.87,
+        ),
+        width:  w * 0.26,
+        height: h * 0.07,
+      ),
+      Radius.circular(3),
+    );
+    canvas.drawRRect(teeRect, teePaint);
+  }
+
+  @override
+  bool shouldRepaint(_HolePainter old) => old.par != par;
 }
 
 // ── _SuperellipseClipper ─────────────────────────────────────────────────────

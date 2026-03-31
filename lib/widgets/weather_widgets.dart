@@ -8,9 +8,11 @@ import '../theme/app_theme.dart';
 // Icon helpers
 // ---------------------------------------------------------------------------
 
-/// Maps a weather condition string to a Material icon.
-IconData _conditionIcon(String condition) {
+/// Maps a weather condition string + OWM icon code to a Material icon.
+IconData _conditionIcon(String condition, [String iconCode = '']) {
   final lower = condition.toLowerCase();
+  final isNight = iconCode.endsWith('n');
+
   if (lower.contains('thunder')) return Icons.thunderstorm_rounded;
   if (lower.contains('rain') || lower.contains('shower') || lower.contains('drizzle')) {
     return Icons.grain_rounded;
@@ -21,13 +23,20 @@ IconData _conditionIcon(String condition) {
   if (lower.contains('fog') || lower.contains('mist') || lower.contains('haze')) {
     return Icons.blur_on_rounded;
   }
-  if (lower.contains('partly') || lower.contains('mostly')) {
-    return Icons.cloud_queue_rounded;
+  if (lower.contains('smoke') || lower.contains('dust') || lower.contains('ash') || lower.contains('sand')) {
+    return Icons.blur_on_rounded;
   }
-  if (lower.contains('overcast') || lower.contains('cloud')) {
+  if (lower.contains('tornado') || lower.contains('squall')) {
+    return Icons.tornado_rounded;
+  }
+  if (lower.contains('partly') || lower.contains('mostly')) {
+    return isNight ? Icons.nights_stay_rounded : Icons.cloud_queue_rounded;
+  }
+  if (lower.contains('overcast') || lower.contains('cloud') || lower.contains('broken') || lower.contains('scattered') || lower.contains('few cloud')) {
     return Icons.cloud_rounded;
   }
-  return Icons.wb_sunny_rounded; // clear / sunny
+  // Clear / sunny — use moon for night
+  return isNight ? Icons.nights_stay_rounded : Icons.wb_sunny_rounded;
 }
 
 Color _conditionColor(String condition) {
@@ -157,7 +166,7 @@ class _SmallWeatherCardState extends State<SmallWeatherCard> {
   Widget _buildContent(AppColors c, double sw, WeatherNow w) {
     final label    = (sw * 0.030).clamp(11.0, 13.0);
     final iconSize = (sw * 0.122).clamp(42.0, 52.0);
-    final icon     = _conditionIcon(w.condition);
+    final icon     = _conditionIcon(w.condition, w.iconCode);
     final color    = _conditionColor(w.condition);
 
     return Stack(
@@ -437,7 +446,7 @@ class _RoundWeatherTopBarState extends State<RoundWeatherTopBar> {
     final w = _weather;
     if (w == null) return const SizedBox.shrink();
 
-    final icon  = _conditionIcon(w.condition);
+    final icon  = _conditionIcon(w.condition, w.iconCode);
     final color = _conditionColor(w.condition);
 
     return Container(
@@ -806,7 +815,7 @@ class TeeTimeWeatherPreview extends StatelessWidget {
     final sw    = MediaQuery.of(context).size.width;
     final body  = (sw * 0.036).clamp(13.0, 16.0);
     final label = (sw * 0.030).clamp(11.0, 13.0);
-    final icon  = _conditionIcon(forecast.condition);
+    final icon  = _conditionIcon(forecast.condition, forecast.iconCode);
     final color = _conditionColor(forecast.condition);
 
     final hour = forecast.time.hour;
