@@ -31,11 +31,11 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>TeeStats uses your location to find nearby golf courses.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>TeeStats needs camera access to record your golf swing.</string>
+	<string>TeeStats uses your camera to record swing videos and capture hole moments during your round.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Required for swing video recording.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>TeeStats needs access to pick a swing video from your library.</string>
+	<string>TeeStats accesses your photo library to pick swing videos and hole moment photos.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>TeeStats saves your analyzed swing video to your photo library.</string>
 	<key>UIApplicationSceneManifest</key>
@@ -80,6 +80,11 @@
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>https</string>
+		<string>http</string>
 	</array>
 </dict>
 </plist>

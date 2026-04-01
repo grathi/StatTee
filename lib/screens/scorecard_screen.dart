@@ -1759,6 +1759,8 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                 },
               ),
             ),
+
+            SizedBox(height: _sh * 0.020),
           ],
         ),
       ),

@@ -332,17 +332,17 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
                                     color: Colors.white.withValues(alpha: 0.7),
                                     fontSize: label,
                                   )),
-                              if (round.courseRating != null) ...[
-                                const SizedBox(width: 8),
-                                Text(
-                                  'CR ${round.courseRating!.toStringAsFixed(1)} / S ${round.slopeRating ?? "-"}',
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.6),
-                                    fontSize: label * 0.88,
-                                  ),
-                                ),
-                              ],
                             ]),
+                            if (round.courseRating != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                'CR ${round.courseRating!.toStringAsFixed(1)} / S ${round.slopeRating ?? "-"}',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.6),
+                                  fontSize: label * 0.88,
+                                ),
+                              ),
+                            ],
                             if (round.weather != null) ...[
                               const SizedBox(height: 4),
                               Row(children: [

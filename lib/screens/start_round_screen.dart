@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
 import '../services/places_service.dart';
 import '../services/round_service.dart';
+import '../services/ai_strategy_brief_service.dart';
+import '../models/round_strategy_brief.dart';
 import '../services/friends_service.dart';
 import '../services/group_round_service.dart';
 import '../models/friend_profile.dart';
@@ -79,6 +82,9 @@ class _StartRoundScreenState extends State<StartRoundScreen>
   double?   _customLat;
   double?   _customLng;
 
+  // Strategy brief
+  RoundStrategyBrief? _strategyBrief;
+  bool _loadingStrategyBrief = false;
   late AnimationController _animCtrl;
   late Animation<double>   _fadeAnim;
 
@@ -330,6 +336,33 @@ class _StartRoundScreenState extends State<StartRoundScreen>
     if (tee.slopeRating > 0) {
       _slopeRatingCtrl.text = tee.slopeRating.toString();
     }
+    // Reset brief so a fresh one is generated for this tee
+    setState(() {
+      _strategyBrief = null;
+    });
+    _generateStrategyBrief(tee);
+  }
+
+  Future<void> _generateStrategyBrief(GolfApiTee tee) async {
+    if (!mounted) return;
+    setState(() => _loadingStrategyBrief = true);
+    try {
+      final rounds = await RoundService.allCompletedRoundsStream().first;
+      if (!mounted) return;
+      final brief = await AIStrategyBriefService.generateBrief(
+        courseName: _courseNameCtrl.text,
+        tee: tee,
+        rounds: rounds,
+      );
+      if (mounted && brief != null) {
+        setState(() => _strategyBrief = brief);
+        _showStrategyBriefSheet(brief);
+      }
+    } catch (_) {
+      // Silently fail — never block round start
+    } finally {
+      if (mounted) setState(() => _loadingStrategyBrief = false);
+    }
   }
 
   void _applyFirestoreTee(CourseTee tee) {
@@ -340,6 +373,32 @@ class _StartRoundScreenState extends State<StartRoundScreen>
     }
     if (tee.slopeRating > 0) {
       _slopeRatingCtrl.text = tee.slopeRating.toString();
+    }
+    setState(() {
+      _strategyBrief = null;
+    });
+    _generateStrategyBriefFromFirestore(tee);
+  }
+
+  Future<void> _generateStrategyBriefFromFirestore(CourseTee tee) async {
+    if (!mounted) return;
+    setState(() => _loadingStrategyBrief = true);
+    try {
+      final rounds = await RoundService.allCompletedRoundsStream().first;
+      if (!mounted) return;
+      final brief = await AIStrategyBriefService.generateBriefFromFirestore(
+        courseName: _courseNameCtrl.text,
+        tee: tee,
+        rounds: rounds,
+      );
+      if (mounted && brief != null) {
+        setState(() => _strategyBrief = brief);
+        _showStrategyBriefSheet(brief);
+      }
+    } catch (_) {
+      // Silently fail — never block round start
+    } finally {
+      if (mounted) setState(() => _loadingStrategyBrief = false);
     }
   }
 
@@ -471,13 +530,47 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                         _buildInviteSection(c),
                       ],
                       SizedBox(height: _sh * 0.024),
-                      _buildTeeOffButton(c),
+                      if (_strategyBrief == null && !_loadingStrategyBrief)
+                        _buildTeeOffButton(c),
                       SizedBox(height: _sh * 0.028),
                     ],
                   ),
                 ),
               ),
             ),
+
+            // ── Full-page loading overlay ──────────────────────────────────
+            if (_loadingStrategyBrief)
+              Positioned.fill(
+                child: Container(
+                  color: c.scaffoldBg.withValues(alpha: 0.92),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _BouncingGolfBall(color: c.accent, size: 80),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Building your game plan…',
+                        style: TextStyle(
+                          fontFamily: 'Nunito',
+                          color: c.primaryText,
+                          fontSize: (_sw * 0.048).clamp(16.0, 20.0),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Analysing course & your stats',
+                        style: TextStyle(
+                          fontFamily: 'Nunito',
+                          color: c.tertiaryText,
+                          fontSize: (_sw * 0.032).clamp(12.0, 14.0),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -1332,6 +1425,27 @@ class _StartRoundScreenState extends State<StartRoundScreen>
     );
   }
 
+  // ── Strategy Brief ────────────────────────────────────────────────────────
+  void _showStrategyBriefSheet(RoundStrategyBrief brief) {
+    if (!mounted) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _StrategyBriefSheet(
+        brief: brief,
+        c: AppColors.of(context),
+        onTeeOff: _teeOff,
+        onGoHome: () => Navigator.of(context).pop(),
+        isLoading: _isLoading,
+      ),
+    );
+  }
+
+
+
   Widget _buildTeeOffButton(AppColors c) {
     return GestureDetector(
       onTap: _isLoading ? null : _teeOff,
@@ -1385,4 +1499,424 @@ class _StartRoundScreenState extends State<StartRoundScreen>
       ),
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// Strategy Brief Bottom Sheet
+// ---------------------------------------------------------------------------
+class _StrategyBriefSheet extends StatelessWidget {
+  final RoundStrategyBrief brief;
+  final AppColors c;
+  final VoidCallback onTeeOff;
+  final VoidCallback onGoHome;
+  final bool isLoading;
+
+  const _StrategyBriefSheet({
+    required this.brief,
+    required this.c,
+    required this.onTeeOff,
+    required this.onGoHome,
+    required this.isLoading,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final mq   = MediaQuery.of(context);
+    final sw   = mq.size.width;
+    final sh   = mq.size.height;
+    final bot  = mq.padding.bottom;
+    final lbl  = (sw * 0.030).clamp(11.0, 13.0);
+    final body = (sw * 0.036).clamp(13.0, 16.0);
+    final hPad = (sw * 0.065).clamp(20.0, 32.0);
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: sh * 0.92),
+      child: Container(
+        decoration: BoxDecoration(
+          color: c.scaffoldBg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── Handle ───────────────────────────────────────────────────
+            const SizedBox(height: 10),
+            Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: c.divider,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // ── Header ───────────────────────────────────────────────────
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: hPad),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: ShapeDecoration(
+                      color: c.accentBg,
+                      shape: SuperellipseShape(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    child: Icon(Icons.auto_awesome_rounded, color: c.accent, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Pre-Round Strategy',
+                            style: TextStyle(
+                                fontFamily: 'Nunito',
+                                color: c.tertiaryText,
+                                fontSize: lbl,
+                                fontWeight: FontWeight.w600)),
+                        Text(brief.headline,
+                            style: TextStyle(
+                                fontFamily: 'Nunito',
+                                color: c.primaryText,
+                                fontSize: body * 1.1,
+                                fontWeight: FontWeight.w800)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 14),
+            Divider(color: c.divider, thickness: 1, indent: hPad, endIndent: hPad),
+
+            // ── Scrollable body ───────────────────────────────────────────
+            Flexible(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(hPad, 12, hPad, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(brief.strategy,
+                        style: TextStyle(
+                            fontFamily: 'Nunito',
+                            color: c.primaryText,
+                            fontSize: lbl,
+                            height: 1.5)),
+                    const SizedBox(height: 16),
+                    _section(c, Icons.gps_fixed_rounded, 'Key Focus', brief.keyFocus, lbl),
+                    const SizedBox(height: 14),
+                    Text('Hole Strategy',
+                        style: TextStyle(
+                            fontFamily: 'Nunito',
+                            color: c.accent,
+                            fontSize: lbl,
+                            fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 8),
+                    ...brief.holeCoachingTips.map((tip) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: c.accent.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(tip.parType,
+                                style: TextStyle(
+                                    fontFamily: 'Nunito',
+                                    color: c.accent,
+                                    fontSize: lbl * 0.88,
+                                    fontWeight: FontWeight.w700)),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(tip.tip,
+                                style: TextStyle(
+                                    fontFamily: 'Nunito',
+                                    color: c.secondaryText,
+                                    fontSize: lbl,
+                                    height: 1.4)),
+                          ),
+                        ],
+                      ),
+                    )),
+                    const SizedBox(height: 4),
+                    _section(c, Icons.sports_golf_rounded, 'On the Greens', brief.putterReminder, lbl),
+                    const SizedBox(height: 14),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: c.accent.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: c.accent.withValues(alpha: 0.2)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('💪', style: TextStyle(fontSize: 18)),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(brief.confidenceBoost,
+                                style: TextStyle(
+                                    fontFamily: 'Nunito',
+                                    color: c.primaryText,
+                                    fontSize: lbl,
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.45)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // ── Pinned buttons ────────────────────────────────────────────
+            Padding(
+              padding: EdgeInsets.fromLTRB(hPad, 12, hPad, bot + 20),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () { Navigator.pop(context); onGoHome(); },
+                    child: Container(
+                      width: 58, height: 58,
+                      alignment: Alignment.center,
+                      decoration: ShapeDecoration(
+                        color: c.cardBg,
+                        shape: SuperellipseShape(
+                          borderRadius: BorderRadius.circular(48),
+                          side: BorderSide(color: c.cardBorder),
+                        ),
+                        shadows: c.cardShadow,
+                      ),
+                      child: Icon(Icons.home_rounded, color: c.secondaryText, size: 24),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: isLoading ? null : () { Navigator.pop(context); onTeeOff(); },
+                      child: Opacity(
+                        opacity: isLoading ? 0.6 : 1.0,
+                        child: Container(
+                          height: 58,
+                          alignment: Alignment.center,
+                          decoration: ShapeDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF7BC344), Color(0xFF5A9E1F)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            shape: SuperellipseShape(borderRadius: BorderRadius.circular(48)),
+                            shadows: [
+                              BoxShadow(
+                                color: const Color(0xFF5A9E1F).withValues(alpha: 0.40),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: isLoading
+                              ? const SizedBox(
+                                  width: 22, height: 22,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      valueColor: AlwaysStoppedAnimation(Colors.white)))
+                              : const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.sports_golf_rounded, size: 22, color: Colors.white),
+                                    SizedBox(width: 10),
+                                    Text('Tee Off!',
+                                        style: TextStyle(
+                                            fontFamily: 'Nunito',
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: 0.5,
+                                            color: Colors.white)),
+                                  ],
+                                ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _section(AppColors c, IconData icon, String label, String text, double fontSize) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          Icon(icon, color: c.accent, size: fontSize),
+          const SizedBox(width: 6),
+          Text(label,
+              style: TextStyle(
+                  fontFamily: 'Nunito',
+                  color: c.accent,
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w700)),
+        ]),
+        const SizedBox(height: 4),
+        Text(text,
+            style: TextStyle(
+                fontFamily: 'Nunito',
+                color: c.primaryText,
+                fontSize: fontSize,
+                height: 1.45)),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Bouncing golf ball animation
+// ---------------------------------------------------------------------------
+class _BouncingGolfBall extends StatefulWidget {
+  final Color color;
+  final double size;
+  const _BouncingGolfBall({required this.color, this.size = 36});
+
+  @override
+  State<_BouncingGolfBall> createState() => _BouncingGolfBallState();
+}
+
+class _BouncingGolfBallState extends State<_BouncingGolfBall>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = widget.size;
+    final ballSize = s * 0.28;
+    final bounceH  = s * 0.44;
+    final shadowH  = s * 0.083;
+    final totalH   = shadowH + bounceH + ballSize + s * 0.05; // shadow + travel + ball + padding
+    return SizedBox(
+      width: s,
+      height: totalH,
+      child: AnimatedBuilder(
+        animation: _ctrl,
+        builder: (_, __) {
+          final t = math.sin(_ctrl.value * math.pi);
+          return Stack(
+            alignment: Alignment.bottomCenter,
+            children: [
+              Positioned(
+                bottom: 0,
+                child: Container(
+                  width: ballSize - t * (ballSize * 0.33),
+                  height: shadowH,
+                  decoration: BoxDecoration(
+                    color: widget.color.withValues(alpha: 0.25 - t * 0.15),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: shadowH + t * bounceH,
+                child: Container(
+                  width: ballSize,
+                  height: ballSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      center: const Alignment(-0.35, -0.45),
+                      radius: 0.85,
+                      colors: const [
+                        Color(0xFFFFFFFF),
+                        Color(0xFFE8E8E0),
+                        Color(0xFFCCCCC0),
+                      ],
+                      stops: const [0.0, 0.55, 1.0],
+                    ),
+                  ),
+                  child: CustomPaint(painter: _DimplePainter()),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _DimplePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final r  = size.width / 2;
+
+    // Clip everything to the ball circle
+    canvas.save();
+    canvas.clipPath(Path()..addOval(Rect.fromCircle(center: Offset(cx, cy), radius: r)));
+
+    // Dimple grid — offset rows like a real golf ball
+    final dimpleR = r * 0.13;
+    final spacing = r * 0.36;
+    final shadowPaint = Paint()
+      ..color = const Color(0x55888880)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = dimpleR * 0.6;
+    final innerPaint = Paint()
+      ..color = const Color(0x22000000)
+      ..style = PaintingStyle.fill;
+
+    for (int row = -4; row <= 4; row++) {
+      final offsetX = (row.isOdd ? spacing * 0.5 : 0.0);
+      for (int col = -4; col <= 4; col++) {
+        final dx = cx + col * spacing + offsetX;
+        final dy = cy + row * spacing * 0.88;
+        // Only draw dimples that fall within the ball surface
+        final dist = math.sqrt((dx - cx) * (dx - cx) + (dy - cy) * (dy - cy));
+        if (dist + dimpleR > r * 0.95) continue;
+        final c = Offset(dx, dy);
+        canvas.drawCircle(c, dimpleR, innerPaint);
+        canvas.drawCircle(c, dimpleR, shadowPaint);
+      }
+    }
+
+    // Specular highlight — top-left bright spot
+    final highlightPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [Colors.white.withValues(alpha: 0.7), Colors.white.withValues(alpha: 0.0)],
+      ).createShader(Rect.fromCircle(
+        center: Offset(cx - r * 0.28, cy - r * 0.32),
+        radius: r * 0.38,
+      ));
+    canvas.drawCircle(Offset(cx - r * 0.28, cy - r * 0.32), r * 0.38, highlightPaint);
+
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

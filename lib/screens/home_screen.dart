@@ -32,6 +32,10 @@ import '../services/group_round_service.dart';
 import '../services/friends_service.dart';
 import 'group_round_invite_screen.dart';
 import 'friends_screen.dart';
+import '../models/news_article.dart';
+import '../services/news_service.dart';
+import 'news_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // ---------------------------------------------------------------------------
 // Shell — owns the bottom nav and tab switching
@@ -398,6 +402,8 @@ class _HomeTabState extends State<_HomeTab>
   String?   _locationName;
   double?   _customLat;
   double?   _customLng;
+
+  late Future<List<NewsArticle>> _newsFuture;
   List<GolfCourseDetail> _nearbyCourses = [];
   bool _loadingNearby = false;
   int  _loadGeneration = 0; // incremented each time a new load starts
@@ -444,6 +450,7 @@ class _HomeTabState extends State<_HomeTab>
     _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
     _animController.forward();
     _initLocation();
+    _newsFuture = NewsService.fetchNews();
   }
 
   /// Restores any previously saved custom location from Firestore,
@@ -576,8 +583,7 @@ class _HomeTabState extends State<_HomeTab>
                   decoration: ShapeDecoration(
                     color: c.fieldBg,
                     shape: SuperellipseShape(
-                      borderRadius: BorderRadius.circular(28),
-                      side: BorderSide(color: c.fieldBorder),
+                      borderRadius: BorderRadius.circular(28), side: BorderSide(color: c.fieldBorder),
                     ),
                   ),
                   child: TextField(
@@ -620,8 +626,7 @@ class _HomeTabState extends State<_HomeTab>
                     decoration: ShapeDecoration(
                       color: c.cardBg,
                       shape: SuperellipseShape(
-                        borderRadius: BorderRadius.circular(28),
-                        side: BorderSide(color: c.cardBorder),
+                        borderRadius: BorderRadius.circular(28), side: BorderSide(color: c.cardBorder),
                       ),
                       shadows: c.cardShadow,
                     ),
@@ -698,8 +703,7 @@ class _HomeTabState extends State<_HomeTab>
                     decoration: ShapeDecoration(
                       color: c.accentBg,
                       shape: SuperellipseShape(
-                        borderRadius: BorderRadius.circular(24),
-                        side: BorderSide(color: c.accentBorder),
+                        borderRadius: BorderRadius.circular(24), side: BorderSide(color: c.accentBorder),
                       ),
                     ),
                     child: Row(children: [
@@ -890,6 +894,11 @@ class _HomeTabState extends State<_HomeTab>
                                     lng: _userPosition?.longitude ?? _customLng,
                                   ),
                                   SizedBox(height: _sh * 0.024),
+                                  Container(
+                                    key: _nearbyCourseKey,
+                                    child: _buildNearbyCourses(),
+                                  ),
+                                  SizedBox(height: _sh * 0.024),
                                   Skeletonizer(
                                     enabled: recentLoading,
                                     child: _buildRecentRounds(
@@ -907,27 +916,7 @@ class _HomeTabState extends State<_HomeTab>
                                     ),
                                   ),
                                   SizedBox(height: _sh * 0.024),
-                                  Skeletonizer(
-                                    enabled: allLoading,
-                                    child: _buildPerformanceSummary(
-                                      allLoading ? AppStats.empty : stats,
-                                    ),
-                                  ),
-                                  SizedBox(height: _sh * 0.024),
-                                  Container(
-                                    key: _quickStatsKey,
-                                    child: Skeletonizer(
-                                      enabled: allLoading,
-                                      child: _buildQuickStats(
-                                        allLoading ? AppStats.empty : stats,
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(height: _sh * 0.024),
-                                  Container(
-                                    key: _nearbyCourseKey,
-                                    child: _buildNearbyCourses(),
-                                  ),
+                                  _buildGolfNews(),
                                   SizedBox(height: _sh * 0.024),
                                   // _buildSwingAnalyzerCard(),
                                   SizedBox(height: _sh * 0.14),
@@ -1371,6 +1360,135 @@ class _HomeTabState extends State<_HomeTab>
     );
   }
 
+  // ── Golf News ──────────────────────────────────────────────────────────────
+  Widget _buildGolfNews() {
+    final c    = AppColors.of(context);
+    final sw   = MediaQuery.of(context).size.width;
+    final hPad = (sw * 0.05).clamp(16.0, 24.0);
+    final cardW = (sw * 0.62).clamp(200.0, 280.0);
+
+    return FutureBuilder<List<NewsArticle>>(
+      future: _newsFuture,
+      builder: (context, snap) {
+        final loading  = snap.connectionState == ConnectionState.waiting;
+        final articles = snap.data ?? [];
+
+        if (!loading && articles.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Section header
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: hPad),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Golf News',
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: c.primaryText,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const NewsScreen()),
+                    ),
+                    child: Text(
+                      'See all',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: c.accent,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            // Horizontal scroll
+            SizedBox(
+              height: 178,
+              child: loading
+                  ? _buildNewsShimmer(c, hPad, cardW)
+                  : ListView.separated(
+                      padding: EdgeInsets.symmetric(horizontal: hPad),
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: articles.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 10),
+                      itemBuilder: (_, i) => _NewsHCard(
+                        article: articles[i],
+                        width: cardW,
+                        c: c,
+                        onTap: () async {
+                          final uri = Uri.parse(articles[i].url);
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(uri, mode: LaunchMode.externalApplication);
+                          }
+                        },
+                      ),
+                    ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildNewsShimmer(AppColors c, double hPad, double cardW) {
+    return Skeletonizer(
+      enabled: true,
+      child: ListView.separated(
+        padding: EdgeInsets.symmetric(horizontal: hPad),
+        scrollDirection: Axis.horizontal,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: 3,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (_, __) => Container(
+          width: cardW,
+          clipBehavior: Clip.antiAlias,
+          decoration: ShapeDecoration(
+            color: c.cardBg,
+            shape: SuperellipseShape(borderRadius: BorderRadius.circular(48), side: BorderSide(color: c.cardBorder)),
+            shadows: c.cardShadow,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // image area
+              Container(
+                height: 108,
+                width: double.infinity,
+                color: c.iconContainerBg,
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(height: 10, width: cardW * 0.35, decoration: BoxDecoration(color: c.accent.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(4))),
+                    const SizedBox(height: 6),
+                    Container(height: 11, width: double.infinity, decoration: BoxDecoration(color: c.primaryText.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(4))),
+                    const SizedBox(height: 4),
+                    Container(height: 11, width: cardW * 0.75, decoration: BoxDecoration(color: c.primaryText.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(4))),
+                    const SizedBox(height: 4),
+                    Container(height: 11, width: cardW * 0.55, decoration: BoxDecoration(color: c.primaryText.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4))),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   // ── Recent Rounds ─────────────────────────────────────────────────────────
   Widget _buildRecentRounds(Round? activeRound, List<Round> recentRounds) {
     final c = AppColors.of(context);
@@ -1451,8 +1569,7 @@ class _HomeTabState extends State<_HomeTab>
       decoration: ShapeDecoration(
         gradient: LinearGradient(colors: c.cardGradient, begin: Alignment.topCenter, end: Alignment.bottomCenter),
         shape: SuperellipseShape(
-          borderRadius: BorderRadius.circular(48),
-          side: BorderSide(color: c.cardBorder),
+          borderRadius: BorderRadius.circular(48), side: BorderSide(color: c.cardBorder),
         ),
         shadows: c.cardShadow,
       ),
@@ -1489,8 +1606,7 @@ class _HomeTabState extends State<_HomeTab>
           end: Alignment.bottomCenter,
         ),
         shape: SuperellipseShape(
-          borderRadius: BorderRadius.circular(48),
-          side: BorderSide(
+          borderRadius: BorderRadius.circular(48), side: BorderSide(
             color: round.isActive ? c.accentBorder : c.cardBorder,
           ),
         ),
@@ -1523,8 +1639,7 @@ class _HomeTabState extends State<_HomeTab>
                   decoration: ShapeDecoration(
                     color: c.accentBg,
                     shape: SuperellipseShape(
-                      borderRadius: BorderRadius.circular(40),
-                      side: BorderSide(color: c.accentBorder),
+                      borderRadius: BorderRadius.circular(40), side: BorderSide(color: c.accentBorder),
                     ),
                   ),
                   child: Text(
@@ -1664,8 +1779,7 @@ class _HomeTabState extends State<_HomeTab>
             decoration: ShapeDecoration(
               gradient: LinearGradient(colors: c.cardGradient, begin: Alignment.topCenter, end: Alignment.bottomCenter),
               shape: SuperellipseShape(
-                borderRadius: BorderRadius.circular(48),
-                side: BorderSide(color: c.cardBorder),
+                borderRadius: BorderRadius.circular(48), side: BorderSide(color: c.cardBorder),
               ),
               shadows: c.cardShadow,
             ),
@@ -1921,8 +2035,7 @@ class _HomeTabState extends State<_HomeTab>
       decoration: ShapeDecoration(
         gradient: LinearGradient(colors: c.cardGradient, begin: Alignment.topCenter, end: Alignment.bottomCenter),
         shape: SuperellipseShape(
-          borderRadius: BorderRadius.circular(48),
-          side: BorderSide(color: c.cardBorder),
+          borderRadius: BorderRadius.circular(48), side: BorderSide(color: c.cardBorder),
         ),
         shadows: c.cardShadow,
       ),
@@ -2044,8 +2157,7 @@ class _HomeTabState extends State<_HomeTab>
               decoration: ShapeDecoration(
                 gradient: LinearGradient(colors: c.cardGradient, begin: Alignment.topCenter, end: Alignment.bottomCenter),
                 shape: SuperellipseShape(
-                  borderRadius: BorderRadius.circular(48),
-                  side: BorderSide(color: c.cardBorder),
+                  borderRadius: BorderRadius.circular(48), side: BorderSide(color: c.cardBorder),
                 ),
               ),
               child: Row(
@@ -2072,8 +2184,7 @@ class _HomeTabState extends State<_HomeTab>
                         decoration: ShapeDecoration(
                           color: c.accentBg,
                           shape: SuperellipseShape(
-                            borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(color: c.accentBorder),
+                            borderRadius: BorderRadius.circular(16), side: BorderSide(color: c.accentBorder),
                           ),
                         ),
                         child: Text('Allow',
@@ -2114,8 +2225,7 @@ class _HomeTabState extends State<_HomeTab>
         decoration: ShapeDecoration(
           gradient: LinearGradient(colors: c.cardGradient, begin: Alignment.topCenter, end: Alignment.bottomCenter),
           shape: SuperellipseShape(
-            borderRadius: BorderRadius.circular(48),
-            side: BorderSide(color: c.cardBorder),
+            borderRadius: BorderRadius.circular(48), side: BorderSide(color: c.cardBorder),
           ),
           shadows: c.cardShadow,
         ),
@@ -2131,8 +2241,7 @@ class _HomeTabState extends State<_HomeTab>
                   decoration: ShapeDecoration(
                     color: c.accentBg,
                     shape: SuperellipseShape(
-                      borderRadius: BorderRadius.circular(20),
-                      side: BorderSide(color: c.accentBorder),
+                      borderRadius: BorderRadius.circular(20), side: BorderSide(color: c.accentBorder),
                     ),
                   ),
                   child: Icon(Icons.golf_course_rounded,
@@ -2601,8 +2710,7 @@ class _ModeOption extends StatelessWidget {
         decoration: ShapeDecoration(
           gradient: LinearGradient(colors: c.cardGradient, begin: Alignment.topCenter, end: Alignment.bottomCenter),
           shape: SuperellipseShape(
-            borderRadius: BorderRadius.circular(48),
-            side: BorderSide(color: c.cardBorder),
+            borderRadius: BorderRadius.circular(48), side: BorderSide(color: c.cardBorder),
           ),
           shadows: c.cardShadow,
         ),
@@ -2686,8 +2794,7 @@ class _TournamentModeOption extends StatelessWidget {
             decoration: ShapeDecoration(
               gradient: LinearGradient(colors: c.cardGradient, begin: Alignment.topCenter, end: Alignment.bottomCenter),
               shape: SuperellipseShape(
-                borderRadius: BorderRadius.circular(48),
-                side: BorderSide(color: c.cardBorder),
+                borderRadius: BorderRadius.circular(48), side: BorderSide(color: c.cardBorder),
               ),
               shadows: c.cardShadow,
             ),
@@ -2854,8 +2961,7 @@ class _TournamentPickerInlineState extends State<_TournamentPickerInline> {
                     decoration: ShapeDecoration(
                       color: sel ? c.accentBg : c.fieldBg,
                       shape: SuperellipseShape(
-                        borderRadius: BorderRadius.circular(24),
-                        side: BorderSide(
+                        borderRadius: BorderRadius.circular(24), side: BorderSide(
                             color: sel ? c.accentBorder : c.fieldBorder),
                       ),
                     ),
@@ -3061,4 +3167,147 @@ class _HandicapArcPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _HandicapArcPainter old) => old.progress != progress;
+}
+
+
+// ---------------------------------------------------------------------------
+// News horizontal card widget
+// ---------------------------------------------------------------------------
+class _NewsHCard extends StatelessWidget {
+  final NewsArticle article;
+  final double width;
+  final AppColors c;
+  final VoidCallback onTap;
+
+  const _NewsHCard({
+    required this.article,
+    required this.width,
+    required this.c,
+    required this.onTap,
+  });
+
+  String _timeAgo(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 60)  return '${diff.inMinutes}m ago';
+    if (diff.inHours   < 24)  return '${diff.inHours}h ago';
+    if (diff.inDays    < 7)   return '${diff.inDays}d ago';
+    return '${dt.day}/${dt.month}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const imageHeight = 100.0;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipPath(
+        clipper: ShapeBorderClipper(
+          shape: SuperellipseShape(borderRadius: BorderRadius.circular(48)),
+        ),
+        child: Container(
+          width: width,
+          decoration: ShapeDecoration(
+            color: c.cardBg,
+            shape: SuperellipseShape(borderRadius: BorderRadius.circular(48), side: BorderSide(color: c.cardBorder)),
+            shadows: c.cardShadow,
+          ),
+          child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image area
+            SizedBox(
+              height: imageHeight,
+              width: double.infinity,
+              child: article.imageUrl != null
+                  ? Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.network(
+                          article.imageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _imgPlaceholder(),
+                        ),
+                        // gradient overlay
+                        Positioned(
+                          bottom: 0, left: 0, right: 0,
+                          child: Container(
+                            height: 36,
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                                colors: [Colors.black45, Colors.transparent],
+                              ),
+                            ),
+                          ),
+                        ),
+                        // source pill
+                        Positioned(
+                          top: 8, left: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.black54,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              article.sourceName,
+                              style: const TextStyle(
+                                fontFamily: 'Nunito',
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  : _imgPlaceholder(),
+            ),
+            // Text
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 7, 10, 6),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      article.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: c.primaryText,
+                        height: 1.3,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      _timeAgo(article.publishedAt),
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 10,
+                        color: c.tertiaryText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        ),  // Container
+      ),    // ClipPath
+    );
+  }
+
+  Widget _imgPlaceholder() => Container(
+        color: c.accentBg,
+        child: Center(
+          child: Icon(Icons.sports_golf_rounded, color: c.accent, size: 32),
+        ),
+      );
 }
