@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import '../services/golf_course_api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/tip_banner.dart';
+import '../widgets/club_swipe_selector.dart';
 import '../services/onboarding_service.dart';
 import 'round_summary_screen.dart';
 import 'group_round_results_screen.dart';
@@ -59,7 +60,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
   int _putts = 2;
   bool _fairwayHit = true;
   bool _gir        = false;
-  String? _club;
+  List<String> _selectedClubs = [];
   bool _isSaving   = false;
 
   // GPS pin tracking
@@ -72,6 +73,15 @@ class _ScorecardScreenState extends State<ScorecardScreen>
     'Driver','3W','5W','4H','3I','4I','5I','6I','7I','8I','9I',
     'PW','GW','SW','LW','Putter',
   ];
+
+  /// Carry distances (yards) for a ~18-handicap amateur.
+  static const Map<String, int> _clubDistances = {
+    'Driver': 220, '3W': 200, '5W': 185, '4H': 175,
+    '3I': 165, '4I': 155, '5I': 145, '6I': 135,
+    '7I': 125, '8I': 115, '9I': 105,
+    'PW': 90, 'GW': 80, 'SW': 65, 'LW': 50,
+    'Putter': 0,
+  };
 
   // Completed hole scores saved so far
   final List<HoleScore> _saved = [];
@@ -176,14 +186,21 @@ class _ScorecardScreenState extends State<ScorecardScreen>
   void _resetForHole(int hole) {
     // Check if we already have a saved score for this hole (editing)
     final existing = _saved.where((h) => h.hole == hole).firstOrNull;
+    // Look up par from API data if no saved score yet
+    final apiPar = widget.preloadedHoles
+        ?.where((h) => h.hole == hole)
+        .firstOrNull
+        ?.par;
     setState(() {
       _currentHole = hole;
-      _par         = existing?.par   ?? 4;
-      _score       = existing?.score ?? 4;
+      _par         = existing?.par   ?? apiPar ?? 4;
+      _score       = existing?.score ?? apiPar ?? 4;
       _putts       = existing?.putts ?? 2;
       _fairwayHit  = existing?.fairwayHit ?? true;
       _gir         = existing?.gir        ?? false;
-      _club        = existing?.club;
+      _selectedClubs = existing?.club != null
+          ? existing!.club!.split(',').where((s) => s.isNotEmpty).toList()
+          : [];
     });
     _animCtrl
       ..reset()
@@ -207,7 +224,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
       putts:      _putts,
       fairwayHit: _fairwayHit,
       gir:        _gir,
-      club:       _club,
+      club:       _selectedClubs.isNotEmpty ? _selectedClubs.join(',') : null,
     );
 
     try {
@@ -343,6 +360,37 @@ class _ScorecardScreenState extends State<ScorecardScreen>
     if (_liveWeather == null || baseYds == 0) return baseYds;
     final wind = _liveWeather!.windSpeed;
     return (baseYds + wind * 0.8).round();
+  }
+
+  // ── Club recommendation ────────────────────────────────────────────────────
+  List<String> get _recommendedClubs {
+    if (widget.preloadedHoles == null) return [];
+    final holeData = widget.preloadedHoles!
+        .where((h) => h.hole == _currentHole).firstOrNull;
+    if (holeData == null || holeData.yardage <= 0) return [];
+
+    final target = _playsLike(holeData.yardage);
+
+    final candidates = _clubDistances.entries
+        .where((e) => e.value > 0).toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    if (_par == 3) {
+      final primary = candidates.lastWhere(
+        (e) => e.value >= target, orElse: () => candidates.last);
+      final idx = candidates.indexOf(primary);
+      final secondary = idx > 0 ? candidates[idx - 1] : null;
+      return [primary.key, if (secondary != null) secondary.key];
+    } else {
+      const idealApproach = 115;
+      final desiredDrive = target - idealApproach;
+      if (desiredDrive <= 0) return ['7I', '8I'];
+      final primary = candidates.lastWhere(
+        (e) => e.value <= desiredDrive, orElse: () => candidates.first);
+      final idx = candidates.indexOf(primary);
+      final secondary = idx < candidates.length - 1 ? candidates[idx + 1] : null;
+      return [primary.key, if (secondary != null) secondary.key];
+    }
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
@@ -664,9 +712,15 @@ class _ScorecardScreenState extends State<ScorecardScreen>
               separatorBuilder: (_, __) => const SizedBox(width: 6),
               itemBuilder: (_, i) {
                 final club = _clubs[i];
-                final selected = _club == club;
+                final selected = _selectedClubs.contains(club);
                 return GestureDetector(
-                  onTap: () => setState(() => _club = selected ? null : club),
+                  onTap: () => setState(() {
+                    if (selected) {
+                      _selectedClubs = List.from(_selectedClubs)..remove(club);
+                    } else {
+                      _selectedClubs = [..._selectedClubs, club];
+                    }
+                  }),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -1723,41 +1777,12 @@ class _ScorecardScreenState extends State<ScorecardScreen>
               fontWeight: FontWeight.w700, letterSpacing: 1.2,
             )),
             SizedBox(height: _sh * 0.012),
-            SizedBox(
-              height: (_sh * 0.052).clamp(38.0, 48.0),
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: _clubs.length,
-                itemBuilder: (_, i) {
-                  final club = _clubs[i];
-                  final sel  = _club == club;
-                  return GestureDetector(
-                    onTap: () => setState(() => _club = sel ? null : club),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 130),
-                      margin: const EdgeInsets.only(right: 8),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: (_sw * 0.032).clamp(10.0, 14.0),
-                        vertical:   6,
-                      ),
-                      decoration: BoxDecoration(
-                        color:        sel ? c.accentBg : c.fieldBg,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: sel ? c.accentBorder : c.fieldBorder,
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(club, style: TextStyle(
-                          color:      sel ? c.accent : c.secondaryText,
-                          fontSize:   _label,
-                          fontWeight: sel ? FontWeight.w700 : FontWeight.w400,
-                        )),
-                      ),
-                    ),
-                  );
-                },
-              ),
+            ClubSwipeSelector(
+              clubs: _clubs,
+              recommendedClubs: _recommendedClubs,
+              selectedClubs: _selectedClubs,
+              maxSelections: _score,
+              onClubsChanged: (clubs) => setState(() => _selectedClubs = clubs),
             ),
 
             SizedBox(height: _sh * 0.020),
@@ -2183,13 +2208,12 @@ class _BigToggle extends StatelessWidget {
           vertical:   12,
         ),
         decoration: ShapeDecoration(
-          color: on ? c.accent.withValues(alpha: 0.10) : c.fieldBg,
+          color: on ? c.accentBg.withValues(alpha: 0.6) : c.fieldBg,
           shape: SuperellipseShape(borderRadius: BorderRadius.circular(20)),
-          shadows: on
-              ? [BoxShadow(color: c.accent.withValues(alpha: 0.20),
-                  blurRadius: 12, offset: const Offset(0, 4))]
-              : [BoxShadow(color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 4, offset: const Offset(0, 2))],
+          shadows: [BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 4, offset: const Offset(0, 2),
+          )],
         ),
         child: Row(
           children: [
@@ -2197,15 +2221,15 @@ class _BigToggle extends StatelessWidget {
               duration: const Duration(milliseconds: 180),
               width: 36, height: 36,
               decoration: BoxDecoration(
-                color:        on ? c.accent : c.fieldBorder.withValues(alpha: 0.5),
+                color:        on ? c.accentBorder : c.fieldBorder.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: on ? Colors.white : c.tertiaryText, size: 20),
+              child: Icon(icon, color: on ? c.accent : c.tertiaryText, size: 20),
             ),
             SizedBox(width: (sw * 0.03).clamp(10.0, 14.0)),
             Expanded(
               child: Text(label, style: TextStyle(
-                color:      on ? c.accent : c.secondaryText,
+                color:      on ? c.primaryText : c.secondaryText,
                 fontSize:   (sw * 0.034).clamp(12.0, 15.0),
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.3,
@@ -2215,11 +2239,11 @@ class _BigToggle extends StatelessWidget {
               duration: const Duration(milliseconds: 180),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color:        on ? c.accent : c.fieldBorder.withValues(alpha: 0.4),
+                color:        on ? c.accentBorder : c.fieldBorder.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Text(on ? 'ON' : 'OFF', style: const TextStyle(
-                color:      Colors.white,
+              child: Text(on ? 'ON' : 'OFF', style: TextStyle(
+                color:      on ? c.accent : Colors.white,
                 fontSize:   11.0,
                 fontWeight: FontWeight.w800,
               )),
