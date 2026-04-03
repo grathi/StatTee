@@ -1,3 +1,5 @@
+import 'shot_position.dart';
+
 class HoleScore {
   final int hole;
   final int par;
@@ -6,6 +8,7 @@ class HoleScore {
   final bool fairwayHit; // meaningful only on par 4/5
   final bool gir;        // greens in regulation
   final String? club;    // club used on the tee/approach shot
+  final List<ShotPosition>? shots; // GPS shot trail (optional)
 
   const HoleScore({
     required this.hole,
@@ -15,6 +18,7 @@ class HoleScore {
     required this.fairwayHit,
     required this.gir,
     this.club,
+    this.shots,
   });
 
   int get diff => score - par;
@@ -32,6 +36,8 @@ class HoleScore {
         'fairwayHit': fairwayHit,
         'gir': gir,
         if (club != null) 'club': club,
+        if (shots != null && shots!.isNotEmpty)
+          'shots': shots!.map((s) => s.toMap()).toList(),
       };
 
   factory HoleScore.fromMap(Map<String, dynamic> m) => HoleScore(
@@ -42,5 +48,9 @@ class HoleScore {
         fairwayHit: m['fairwayHit'] as bool? ?? false,
         gir: m['gir'] as bool? ?? false,
         club: m['club'] as String?,
+        shots: (m['shots'] as List<dynamic>?)
+            ?.map((e) => ShotPosition.fromMap(e as Map<String, dynamic>))
+            .toList(),
       );
 }
+

@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:async';
+import 'dart:math' as math;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
-import 'dart:async';
+import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
+import '../models/shot_position.dart';
+import 'shot_tracker_screen.dart';
 import '../models/hole_score.dart';
 import '../services/round_service.dart';
 import '../services/notification_service.dart';
 import '../services/weather_service.dart';
 import '../services/group_round_service.dart';
-import 'package:flutter/services.dart';
 import '../services/golf_course_api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/tip_banner.dart';
 import '../widgets/club_swipe_selector.dart';
+import '../widgets/golf_animations.dart';
 import '../services/onboarding_service.dart';
 import 'round_summary_screen.dart';
 import 'group_round_results_screen.dart';
@@ -62,6 +67,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
   bool _gir        = false;
   List<String> _selectedClubs = [];
   bool _isSaving   = false;
+  List<ShotPosition> _currentHoleShots = [];
 
   // GPS pin tracking
   Position? _userPos;
@@ -93,7 +99,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
   late AnimationController _shimmerCtrl;
   late AnimationController _bounceCtrl;
   late Animation<double>   _bounceAnim;
-  int _slideDirection = 1;
+  final int _slideDirection = 1;
 
   double get _sw => MediaQuery.of(context).size.width;
   double get _sh => MediaQuery.of(context).size.height;
@@ -201,10 +207,51 @@ class _ScorecardScreenState extends State<ScorecardScreen>
       _selectedClubs = existing?.club != null
           ? existing!.club!.split(',').where((s) => s.isNotEmpty).toList()
           : [];
+      _currentHoleShots = existing?.shots?.toList() ?? [];
     });
     _animCtrl
       ..reset()
       ..forward();
+  }
+
+  Future<void> _openShotTracker() async {
+    // Course coords take priority — the map should open on the course,
+    // not the user's current GPS location (which may be elsewhere).
+    LatLng? initial;
+    if (widget.lat != null && widget.lng != null) {
+      initial = LatLng(widget.lat!, widget.lng!);
+    } else if (_userPos != null) {
+      initial = LatLng(_userPos!.latitude, _userPos!.longitude);
+    }
+    final shots = await Navigator.push<List<ShotPosition>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ShotTrackerScreen(
+          holeNumber: _currentHole,
+          par: _par,
+          initialPosition: initial,
+          targetPin: initial,
+          // Restore any shots already tracked for this hole so re-opening
+          // the tracker never loses prior work.
+          initialShots: List.of(_currentHoleShots),
+          // Ghost-layer: all previously completed holes that have shot data.
+          previousHolesShots: _saved
+              .where((h) => h.shots?.isNotEmpty == true)
+              .map((h) => List<ShotPosition>.of(h.shots!))
+              .toList(),
+        ),
+      ),
+    );
+    if (shots != null && mounted) {
+      setState(() {
+        _currentHoleShots = shots;
+        // shots[0] is the tee marker, so stroke count = shots.length - 1.
+        // Only auto-fill if the score hasn't been changed yet.
+        if (shots.length > 1 && _score == _par) {
+          _score = (shots.length - 1).clamp(1, 15);
+        }
+      });
+    }
   }
 
   void _scoreChanged(int v, {int? newPar}) {
@@ -225,6 +272,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
       fairwayHit: _fairwayHit,
       gir:        _gir,
       club:       _selectedClubs.isNotEmpty ? _selectedClubs.join(',') : null,
+      shots:      _currentHoleShots.isNotEmpty ? List.unmodifiable(_currentHoleShots) : null,
     );
 
     try {
@@ -238,8 +286,11 @@ class _ScorecardScreenState extends State<ScorecardScreen>
       }
 
       if (_isLastHole) {
+        if (mounted) CloudSyncPulse.show(context);
         await _completeRound();
       } else {
+        if (mounted) GolfSaveOverlay.show(context);
+        if (mounted) CloudSyncPulse.show(context);
         final nextHole = _currentHole + 1;
         // Persist the current hole position so the round can be resumed.
         unawaited(RoundService.saveCurrentHole(widget.roundId, nextHole));
@@ -329,8 +380,10 @@ class _ScorecardScreenState extends State<ScorecardScreen>
     final duration   = DateTime.now().difference(_roundStartTime).inMinutes;
 
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => RoundSummaryScreen(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 520),
+        reverseTransitionDuration: const Duration(milliseconds: 300),
+        pageBuilder: (context, animation, secondaryAnimation) => RoundSummaryScreen(
           roundId:         widget.roundId,
           courseName:      widget.courseName,
           totalHoles:      widget.totalHoles,
@@ -349,8 +402,22 @@ class _ScorecardScreenState extends State<ScorecardScreen>
           bestHole:        bestHole,
           worstHole:       worstHole,
           durationMinutes: duration,
-          carriedBag:      true,  // default: walking with bag
+          carriedBag:      true,
         ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final anim = CurvedAnimation(
+              parent: animation, curve: Curves.easeInOutCubic);
+          return AnimatedBuilder(
+            animation: anim,
+            builder: (context, w) => ClipOval(
+              clipper: _RadialExpandClipper(progress: anim.value),
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 0.92, end: 1.0).animate(anim),
+                child: FadeTransition(opacity: animation, child: child),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -577,230 +644,6 @@ class _ScorecardScreenState extends State<ScorecardScreen>
     );
   }
 
-  // ── Hole entry card ────────────────────────────────────────────────────────
-  Widget _buildHoleCard(AppColors c) {
-    return Container(
-      decoration: ShapeDecoration(
-        color: c.cardBg,
-        shape: SuperellipseShape(
-          borderRadius: BorderRadius.circular(28),
-          side: BorderSide(color: c.cardBorder),
-        ),
-        shadows: c.cardShadow
-            .map((s) => BoxShadow(
-                  color: s.color,
-                  blurRadius: s.blurRadius,
-                  offset: s.offset,
-                  spreadRadius: s.spreadRadius,
-                ))
-            .toList(),
-      ),
-      padding: EdgeInsets.all((_sw * 0.06).clamp(20.0, 28.0)),
-      child: Column(
-        children: [
-          // Hole number big display
-          _rowLabel(c, 'Hole'),
-          SizedBox(height: _sh * 0.004),
-          Center(
-            child: Text(
-              '$_currentHole',
-              style: TextStyle(fontFamily: 'Nunito',
-                color: c.primaryText,
-                fontSize: (_sw * 0.16).clamp(54.0, 72.0),
-                fontWeight: FontWeight.w800,
-                height: 1.0,
-              ),
-            ),
-          ),
-          SizedBox(height: _sh * 0.024),
-          // Par selector
-          _rowLabel(c, 'Par'),
-          SizedBox(height: _sh * 0.010),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [3, 4, 5].map((p) {
-              final sel = _par == p;
-              return GestureDetector(
-                onTap: () => setState(() {
-                  _par = p;
-                  _score = p; // default score to par
-                }),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  margin: const EdgeInsets.symmetric(horizontal: 6),
-                  width: (_sw * 0.17).clamp(56.0, 72.0),
-                  height: (_sw * 0.12).clamp(40.0, 52.0),
-                  decoration: ShapeDecoration(
-                    color: sel ? c.accent : c.fieldBg,
-                    shape: SuperellipseShape(
-                      borderRadius: BorderRadius.circular(24),
-                      side: BorderSide(
-                        color: sel ? c.accent : c.fieldBorder,
-                        width: sel ? 2 : 1,
-                      ),
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '$p',
-                      style: TextStyle(fontFamily: 'Nunito',
-                        color: sel ? Colors.white : c.primaryText,
-                        fontSize: (_sw * 0.052).clamp(18.0, 22.0),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          SizedBox(height: _sh * 0.026),
-          // Score tiles
-          _rowLabel(c, 'Score'),
-          SizedBox(height: _sh * 0.010),
-          _numberTiles(
-            context: context,
-            values: List.generate(12, (i) => i + 1),
-            selected: _score,
-            par: _par,
-            onSelect: (v) => setState(() => _score = v),
-            c: c,
-            sw: _sw,
-            label: _label,
-          ),
-          SizedBox(height: _sh * 0.022),
-          // Putts tiles
-          _rowLabel(c, 'Putts'),
-          SizedBox(height: _sh * 0.010),
-          _numberTiles(
-            context: context,
-            values: List.generate(9, (i) => i),
-            selected: _putts,
-            par: null,
-            onSelect: (v) => setState(() => _putts = v),
-            c: c,
-            sw: _sw,
-            label: _label,
-          ),
-          SizedBox(height: _sh * 0.026),
-          // Toggles
-          Row(
-            children: [
-              if (_par >= 4) ...[
-                Expanded(child: _buildToggle(c, 'Fairway Hit', _fairwayHit,
-                    Icons.straighten_rounded,
-                    (v) => setState(() => _fairwayHit = v))),
-                const SizedBox(width: 10),
-              ],
-              Expanded(
-                child: _buildToggle(c, 'Green in Reg.', _gir,
-                    Icons.flag_rounded,
-                    (v) => setState(() => _gir = v)),
-              ),
-            ],
-          ),
-          SizedBox(height: _sh * 0.022),
-          SizedBox(height: _sh * 0.022),
-          // Club selector
-          _rowLabel(c, 'Club Used'),
-          SizedBox(height: _sh * 0.010),
-          SizedBox(
-            height: 36,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: _clubs.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 6),
-              itemBuilder: (_, i) {
-                final club = _clubs[i];
-                final selected = _selectedClubs.contains(club);
-                return GestureDetector(
-                  onTap: () => setState(() {
-                    if (selected) {
-                      _selectedClubs = List.from(_selectedClubs)..remove(club);
-                    } else {
-                      _selectedClubs = [..._selectedClubs, club];
-                    }
-                  }),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: selected ? c.accent : c.fieldBg,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: selected ? c.accent : c.fieldBorder),
-                    ),
-                    child: Text(
-                      club,
-                      style: TextStyle(
-                        color: selected ? Colors.white : c.secondaryText,
-                        fontSize: _label,
-                        fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _rowLabel(AppColors c, String text) => Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          text,
-          style: TextStyle(
-            color: c.secondaryText,
-            fontSize: _label,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-          ),
-        ),
-      );
-
-  Widget _buildToggle(AppColors c, String label, bool value, IconData icon,
-      void Function(bool) onChanged) {
-    return GestureDetector(
-      onTap: () => onChanged(!value),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(
-            horizontal: (_sw * 0.032).clamp(10.0, 16.0),
-            vertical: (_sh * 0.014).clamp(10.0, 14.0)),
-        decoration: ShapeDecoration(
-          color: value ? c.accentBg : c.fieldBg,
-          shape: SuperellipseShape(
-            borderRadius: BorderRadius.circular(24),
-            side: BorderSide(
-                color: value ? c.accentBorder : c.fieldBorder),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon,
-                color: value ? c.accent : c.tertiaryText,
-                size: _body * 1.1),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: value ? c.accent : c.secondaryText,
-                  fontSize: _label,
-                  fontWeight: value ? FontWeight.w600 : FontWeight.w400,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   // ── Number tile grid (score / putts picker) ────────────────────────────────
   Widget _numberTiles({
@@ -1417,6 +1260,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               Text(
+                                // ignore: unnecessary_non_null_assertion
                                 '${holeData!.yardage}',
                                 style: TextStyle(
                                   fontFamily: 'Nunito',
@@ -1609,7 +1453,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                       // Pulsing dot
                       AnimatedBuilder(
                         animation: _shimmerCtrl,
-                        builder: (_, __) => Container(
+                        builder: (context, w) => Container(
                           width: 6, height: 6,
                           decoration: BoxDecoration(
                             color:  aiColor.withValues(alpha: 0.4 + _shimmerCtrl.value * 0.6),
@@ -1771,6 +1615,52 @@ class _ScorecardScreenState extends State<ScorecardScreen>
 
             SizedBox(height: _sh * 0.020),
 
+            // ── Shot tracker ─────────────────────────────────────────────
+            GestureDetector(
+              onTap: _openShotTracker,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: _currentHoleShots.isNotEmpty ? c.accentBg : c.cardBg,
+                  borderRadius: BorderRadius.circular(50),
+                  border: Border.all(color: c.accentBorder),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _currentHoleShots.isNotEmpty
+                          ? Icons.location_on_rounded
+                          : Icons.my_location_rounded,
+                      size: _label * 1.1,
+                      color: c.accent,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _currentHoleShots.isEmpty
+                          ? 'Track shots'
+                          : _currentHoleShots.length == 1
+                              ? 'Tee set'
+                              : '${_currentHoleShots.length - 1} shot${(_currentHoleShots.length - 1) == 1 ? '' : 's'} tracked',
+                      style: TextStyle(
+                        fontSize: _label,
+                        color: c.accent,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: 'Nunito',
+                      ),
+                    ),
+                    if (_currentHoleShots.isNotEmpty) ...[
+                      const SizedBox(width: 6),
+                      Icon(Icons.check_circle_rounded,
+                          size: _label, color: c.accent),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+
+            SizedBox(height: _sh * 0.020),
+
             // ── Club selector ────────────────────────────────────────────
             Text('CLUB', style: TextStyle(
               color: c.tertiaryText, fontSize: _label * 0.85,
@@ -1864,11 +1754,11 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                       }
                     } catch (_) {}
                   }
-                  if (context.mounted) {
-                    Navigator.of(context)
+                  if (!mounted) return;
+                  // ignore: use_build_context_synchronously
+                  Navigator.of(context)
                       ..pop() // dialog
                       ..pop(); // scorecard screen
-                  }
                 },
                 child: Container(
                   width: double.infinity,
@@ -2374,4 +2264,21 @@ class _SuperellipseClipper extends CustomClipper<Path> {
 
   @override
   bool shouldReclip(_SuperellipseClipper old) => old.radius != radius;
+}
+
+// ── _RadialExpandClipper ──────────────────────────────────────────────────────
+
+class _RadialExpandClipper extends CustomClipper<Rect> {
+  final double progress;
+  const _RadialExpandClipper({required this.progress});
+
+  @override
+  Rect getClip(Size size) {
+    final c = Offset(size.width / 2, size.height / 2);
+    final r = math.sqrt(c.dx * c.dx + c.dy * c.dy) * progress;
+    return Rect.fromCircle(center: c, radius: r);
+  }
+
+  @override
+  bool shouldReclip(_RadialExpandClipper o) => o.progress != progress;
 }

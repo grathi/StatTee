@@ -167,6 +167,13 @@ class _TeeStatsAppState extends State<TeeStatsApp> {
       navigatorKey: navigatorKey,
       theme: AppTheme.light,
       themeMode: ThemeMode.light,
+      // Cap system text scale at 1.15× — prevents accessibility "Large Text"
+      // from inflating fonts past the clamp() layout boundaries.
+      builder: (context, child) => MediaQuery.withClampedTextScaling(
+        minScaleFactor: 1.0,
+        maxScaleFactor: 1.15,
+        child: child!,
+      ),
       home: const AuthGate(),
     );
   }

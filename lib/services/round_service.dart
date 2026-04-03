@@ -23,6 +23,8 @@ class RoundService {
     WeatherData? weather,
     bool isPractice = false,
     String? tournamentId,
+    double? lat,
+    double? lng,
   }) async {
     final doc = await _col.add(Round(
       userId: _uid,
@@ -36,6 +38,8 @@ class RoundService {
       weather: weather,
       isPractice: isPractice,
       tournamentId: tournamentId,
+      lat: lat,
+      lng: lng,
     ).toFirestore());
     return doc.id;
   }

@@ -1550,6 +1550,8 @@ class _HomeTabState extends State<_HomeTab>
                         totalHoles: activeRound.totalHoles,
                         initialHole: activeRound.currentHole,
                         savedScores: activeRound.scores,
+                        lat: activeRound.lat,
+                        lng: activeRound.lng,
                       ),
                     ));
                   }

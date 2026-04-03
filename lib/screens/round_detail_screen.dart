@@ -6,9 +6,11 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
 import '../models/round.dart';
+import '../models/hole_score.dart';
 import '../services/round_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/weather_widgets.dart';
+import 'shot_tracker_screen.dart' show ShotTrailMapView;
 
 class RoundDetailScreen extends StatefulWidget {
   final Round round;
@@ -441,9 +443,163 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
               controller: _screenshotController,
               child: _buildScorecardTable(c, round, body, label),
             ),
+
+            // ── Shot trails section ────────────────────────────────────────
+            _buildShotTrailsSection(c, round, body, label),
           ],
         ),
       ),
+    );
+  }
+
+  // ── Shot Trails section ────────────────────────────────────────────────────
+  Widget _buildShotTrailsSection(
+      AppColors c, Round round, double body, double label) {
+    final holesWithShots = round.scores
+        .where((h) => h.shots?.isNotEmpty == true)
+        .toList();
+    if (holesWithShots.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(height: _sh * 0.022),
+        Text(
+          'Shot Trails',
+          style: TextStyle(
+            fontFamily: 'Nunito',
+            color: c.primaryText,
+            fontSize: body * 1.1,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        SizedBox(height: _sh * 0.012),
+        SizedBox(
+          height: 96,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: holesWithShots.length,
+            separatorBuilder: (context, i) => const SizedBox(width: 10),
+            itemBuilder: (_, i) =>
+                _trailChip(c, holesWithShots[i], body, label),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _trailChip(
+      AppColors c, HoleScore h, double body, double label) {
+    return GestureDetector(
+      onTap: () => _showTrailSheet(h),
+      child: Container(
+        width: 86,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: c.cardBg,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: c.accentBorder),
+          boxShadow: [
+            BoxShadow(
+              color: c.accent.withValues(alpha: 0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.location_on_rounded, color: c.accent, size: 18),
+            const SizedBox(height: 4),
+            Text(
+              'Hole ${h.hole}',
+              style: TextStyle(
+                fontFamily: 'Nunito',
+                color: c.primaryText,
+                fontSize: label,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            Text(
+              '${h.shots!.length - 1} shot${(h.shots!.length - 1) == 1 ? '' : 's'}',
+              style: TextStyle(
+                fontFamily: 'Nunito',
+                color: c.secondaryText,
+                fontSize: label * 0.9,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showTrailSheet(HoleScore h) {
+    final shots = h.shots!;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        final sh = MediaQuery.of(context).size.height;
+        final c = AppColors.of(context);
+        return Container(
+          height: sh * 0.65,
+          decoration: BoxDecoration(
+            color: c.sheetBg,
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            children: [
+              // Handle
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: c.divider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              // Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
+                child: Row(
+                  children: [
+                    Icon(Icons.location_on_rounded,
+                        color: c.accent, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Hole ${h.hole} · ${shots.length} shots',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        color: c.primaryText,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Map
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                      bottom: Radius.circular(28)),
+                  child: ShotTrailMapView(
+                    shots: shots,
+                    holeNumber: h.hole,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
@@ -13,6 +12,7 @@ import '../models/friend_profile.dart';
 import '../theme/app_theme.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'scorecard_screen.dart';
+import '../widgets/golf_animations.dart';
 import '../services/golf_course_api_service.dart';
 import '../services/course_service.dart';
 import '../models/course_model.dart';
@@ -428,7 +428,11 @@ class _StartRoundScreenState extends State<StartRoundScreen>
         weather:        null,
         isPractice:     widget.isPractice,
         tournamentId:   widget.tournamentId,
+        lat:            _selectedLat ?? _userPosition?.latitude ?? _customLat,
+        lng:            _selectedLng ?? _userPosition?.longitude ?? _customLng,
       );
+
+      if (mounted) CloudSyncPulse.show(context);
 
       if (holes == null) {
         final courseDetail = await GolfCourseApiService.findBestMatch(
@@ -467,8 +471,10 @@ class _StartRoundScreenState extends State<StartRoundScreen>
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (_) => ScorecardScreen(
+        PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 420),
+          reverseTransitionDuration: const Duration(milliseconds: 280),
+          pageBuilder: (_, __, ___) => ScorecardScreen(
             roundId:        roundId,
             courseName:     courseName,
             totalHoles:     _holes,
@@ -478,6 +484,24 @@ class _StartRoundScreenState extends State<StartRoundScreen>
             sessionId:      sessionId,
             preloadedHoles: holes,
           ),
+          transitionsBuilder: (_, animation, secondaryAnimation, child) {
+            final curve = CurvedAnimation(
+                parent: animation, curve: Curves.easeOutCubic);
+            return FadeTransition(
+              opacity: Tween<double>(begin: 1.0, end: 0.0).animate(
+                  CurvedAnimation(
+                      parent: secondaryAnimation, curve: Curves.easeIn)),
+              child: SlideTransition(
+                position: Tween<Offset>(
+                        begin: const Offset(1.0, 0), end: Offset.zero)
+                    .animate(curve),
+                child: ScaleTransition(
+                  scale: Tween<double>(begin: 0.94, end: 1.0).animate(curve),
+                  child: child,
+                ),
+              ),
+            );
+          },
         ),
       );
     } catch (e) {
@@ -547,7 +571,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _BouncingGolfBall(color: c.accent, size: 80),
+                      BouncingGolfBall(color: c.accent, size: 80),
                       const SizedBox(height: 24),
                       Text(
                         'Building your game plan…',
@@ -1778,145 +1802,4 @@ class _StrategyBriefSheet extends StatelessWidget {
       ],
     );
   }
-}
-
-// ---------------------------------------------------------------------------
-// Bouncing golf ball animation
-// ---------------------------------------------------------------------------
-class _BouncingGolfBall extends StatefulWidget {
-  final Color color;
-  final double size;
-  const _BouncingGolfBall({required this.color, this.size = 36});
-
-  @override
-  State<_BouncingGolfBall> createState() => _BouncingGolfBallState();
-}
-
-class _BouncingGolfBallState extends State<_BouncingGolfBall>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final s = widget.size;
-    final ballSize = s * 0.28;
-    final bounceH  = s * 0.44;
-    final shadowH  = s * 0.083;
-    final totalH   = shadowH + bounceH + ballSize + s * 0.05; // shadow + travel + ball + padding
-    return SizedBox(
-      width: s,
-      height: totalH,
-      child: AnimatedBuilder(
-        animation: _ctrl,
-        builder: (_, __) {
-          final t = math.sin(_ctrl.value * math.pi);
-          return Stack(
-            alignment: Alignment.bottomCenter,
-            children: [
-              Positioned(
-                bottom: 0,
-                child: Container(
-                  width: ballSize - t * (ballSize * 0.33),
-                  height: shadowH,
-                  decoration: BoxDecoration(
-                    color: widget.color.withValues(alpha: 0.25 - t * 0.15),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: shadowH + t * bounceH,
-                child: Container(
-                  width: ballSize,
-                  height: ballSize,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      center: const Alignment(-0.35, -0.45),
-                      radius: 0.85,
-                      colors: const [
-                        Color(0xFFFFFFFF),
-                        Color(0xFFE8E8E0),
-                        Color(0xFFCCCCC0),
-                      ],
-                      stops: const [0.0, 0.55, 1.0],
-                    ),
-                  ),
-                  child: CustomPaint(painter: _DimplePainter()),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _DimplePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
-    final cy = size.height / 2;
-    final r  = size.width / 2;
-
-    // Clip everything to the ball circle
-    canvas.save();
-    canvas.clipPath(Path()..addOval(Rect.fromCircle(center: Offset(cx, cy), radius: r)));
-
-    // Dimple grid — offset rows like a real golf ball
-    final dimpleR = r * 0.13;
-    final spacing = r * 0.36;
-    final shadowPaint = Paint()
-      ..color = const Color(0x55888880)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = dimpleR * 0.6;
-    final innerPaint = Paint()
-      ..color = const Color(0x22000000)
-      ..style = PaintingStyle.fill;
-
-    for (int row = -4; row <= 4; row++) {
-      final offsetX = (row.isOdd ? spacing * 0.5 : 0.0);
-      for (int col = -4; col <= 4; col++) {
-        final dx = cx + col * spacing + offsetX;
-        final dy = cy + row * spacing * 0.88;
-        // Only draw dimples that fall within the ball surface
-        final dist = math.sqrt((dx - cx) * (dx - cx) + (dy - cy) * (dy - cy));
-        if (dist + dimpleR > r * 0.95) continue;
-        final c = Offset(dx, dy);
-        canvas.drawCircle(c, dimpleR, innerPaint);
-        canvas.drawCircle(c, dimpleR, shadowPaint);
-      }
-    }
-
-    // Specular highlight — top-left bright spot
-    final highlightPaint = Paint()
-      ..shader = RadialGradient(
-        colors: [Colors.white.withValues(alpha: 0.7), Colors.white.withValues(alpha: 0.0)],
-      ).createShader(Rect.fromCircle(
-        center: Offset(cx - r * 0.28, cy - r * 0.32),
-        radius: r * 0.38,
-      ));
-    canvas.drawCircle(Offset(cx - r * 0.28, cy - r * 0.32), r * 0.38, highlightPaint);
-
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

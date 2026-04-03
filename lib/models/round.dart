@@ -22,6 +22,10 @@ class Round {
   /// The hole the user was on when they last left the round (1-indexed).
   /// Used to resume from the correct position.
   final int currentHole;
+  /// Course coordinates — persisted so the shot tracker can centre on the
+  /// course when a round is resumed (not just when first started).
+  final double? lat;
+  final double? lng;
 
   const Round({
     this.id,
@@ -39,6 +43,8 @@ class Round {
     this.isPractice = false,
     this.tournamentId,
     this.currentHole = 1,
+    this.lat,
+    this.lng,
   });
 
   // ── Computed stats ──────────────────────────────────────────────────────
@@ -102,6 +108,8 @@ class Round {
         if (isPractice) 'isPractice': true,
         if (tournamentId != null) 'tournamentId': tournamentId,
         'currentHole': currentHole,
+        if (lat != null) 'lat': lat,
+        if (lng != null) 'lng': lng,
       };
 
   factory Round.fromFirestore(DocumentSnapshot doc) {
@@ -131,6 +139,8 @@ class Round {
       isPractice: (d['isPractice'] as bool?) ?? false,
       tournamentId: d['tournamentId'] as String?,
       currentHole: (d['currentHole'] as num?)?.toInt() ?? 1,
+      lat: (d['lat'] as num?)?.toDouble(),
+      lng: (d['lng'] as num?)?.toDouble(),
     );
   }
 
@@ -145,6 +155,8 @@ class Round {
     bool? isPractice,
     String? tournamentId,
     int? currentHole,
+    double? lat,
+    double? lng,
   }) =>
       Round(
         id: id ?? this.id,
@@ -162,5 +174,7 @@ class Round {
         isPractice: isPractice ?? this.isPractice,
         tournamentId: tournamentId ?? this.tournamentId,
         currentHole: currentHole ?? this.currentHole,
+        lat: lat ?? this.lat,
+        lng: lng ?? this.lng,
       );
 }

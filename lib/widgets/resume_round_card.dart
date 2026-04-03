@@ -26,6 +26,8 @@ class ResumeRoundCard extends StatelessWidget {
           totalHoles: round.totalHoles,
           initialHole: round.currentHole,
           savedScores: round.scores,
+          lat: round.lat,
+          lng: round.lng,
         ),
       ),
     );

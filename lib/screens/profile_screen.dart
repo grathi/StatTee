@@ -10,6 +10,7 @@ import '../services/user_profile_service.dart';
 import '../theme/app_theme.dart';
 import '../services/notification_service.dart';
 import '../screens/notification_preferences_screen.dart';
+import '../screens/golf_world_map_screen.dart';
 import '../widgets/shimmer_widgets.dart';
 import '../widgets/tip_banner.dart';
 import '../services/onboarding_service.dart';
@@ -124,15 +125,26 @@ class ProfileScreen extends StatelessWidget {
                     // Settings section
                     _buildSection(c, sw, sh, body, label, 'Account', [
                       _MenuItem(
+                        icon: Icons.map_rounded,
+                        label: 'Golf Places',
+                        color: const Color(0xFF5A9E1F),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const GolfWorldMap(),
+                          ),
+                        ),
+                      ),
+                      _MenuItem(
                         icon: Icons.person_outline_rounded,
                         label: 'Edit Profile',
-                        color: const Color(0xFF8FD44E),
+                        color: const Color(0xFF5A9E1F),
                         onTap: () => _showEditProfileSheet(context, c, sw, sh, body, label),
                       ),
                       _MenuItem(
                         icon: Icons.notifications_active_rounded,
                         label: 'Smart Notifications',
-                        color: const Color(0xFF7BC344),
+                        color: const Color(0xFF5A9E1F),
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -241,6 +253,8 @@ class ProfileScreen extends StatelessWidget {
                         fontSize: (sw * 0.052).clamp(18.0, 22.0),
                         fontWeight: FontWeight.w800,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Text(
