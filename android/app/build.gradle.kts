@@ -29,10 +29,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
-    }
-
     signingConfigs {
         create("release") {
             keyAlias = keyProperties["keyAlias"] as String
@@ -50,7 +46,9 @@ android {
         versionName = flutter.versionName
         // Only ship English strings — removes ~2 MB of translated resources
         // from Firebase/GMS that the app never uses.
-        resourceConfigurations += listOf("en")
+        androidResources {
+            localeFilters += listOf("en")
+        }
     }
 
     buildTypes {
@@ -68,6 +66,12 @@ android {
 
 flutter {
     source = "../.."
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+    }
 }
 
 dependencies {
