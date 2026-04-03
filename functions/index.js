@@ -7,7 +7,64 @@ const { GoogleGenerativeAI }                   = require('@google/generative-ai'
 
 admin.initializeApp();
 
-const GEMINI_API_KEY = defineSecret('GEMINI_API_KEY');
+const GEMINI_API_KEY  = defineSecret('GEMINI_API_KEY');
+const CLOUD_RUN_URL   = defineSecret('CLOUD_RUN_URL');
+
+/**
+ * Triggered when a new swingJobs document is created.
+ * Posts the job to the Cloud Run Python processing service.
+ */
+exports.onSwingJobCreated = onDocumentCreated(
+  { document: 'swingJobs/{jobId}', secrets: [CLOUD_RUN_URL], timeoutSeconds: 10 },
+  async (event) => {
+    const data = event.data?.data();
+    if (!data) return;
+
+    const { jobId, inputUrl, userId } = data;
+    const cloudRunUrl = CLOUD_RUN_URL.value();
+
+    logger.info(`[swingJob] Dispatching job ${jobId} to Cloud Run`);
+
+    // Fire-and-forget: abort after 8s so the Cloud Function doesn't time out.
+    // Cloud Run processes synchronously and keeps its instance alive up to 600s.
+    // An AbortError just means Cloud Run is still running — that's expected.
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+
+    try {
+      const response = await fetch(`${cloudRunUrl}/process-video`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_id: jobId, input_url: inputUrl, user_id: userId }),
+        signal: ctrl.signal,
+      });
+      clearTimeout(timer);
+      if (!response.ok) {
+        const body = await response.text().catch(() => '');
+        logger.error(`[swingJob] Cloud Run returned ${response.status}: ${body}`);
+        await admin.firestore().collection('swingJobs').doc(jobId).update({
+          status: 'failed',
+          errorMessage: `Cloud Run dispatch failed (${response.status})`,
+        });
+      } else {
+        logger.info(`[swingJob] Job ${jobId} completed`);
+      }
+    } catch (err) {
+      clearTimeout(timer);
+      if (err.name === 'AbortError') {
+        // Expected: Cloud Run is processing (>8s). Not an error.
+        logger.info(`[swingJob] Job ${jobId} running on Cloud Run (async)`);
+      } else {
+        logger.error(`[swingJob] Dispatch error for job ${jobId}:`, err.message);
+        await admin.firestore().collection('swingJobs').doc(jobId).update({
+          status: 'failed',
+          errorMessage: `Dispatch error: ${err.message}`,
+        });
+      }
+    }
+  },
+);
+
 
 /**
  * Callable function — receives a base64-encoded scorecard image and uses

@@ -26,7 +26,6 @@ class _BallTracerViewState extends State<BallTracerView> {
   // Manual point selection (used when AI returns no ball path)
   final List<Offset> _manualPoints = []; // normalized 0–1
 
-  // ignore: unused_element
   bool get _hasAiTrace => widget.analysis.ballPath.isNotEmpty;
 
   static const _pointLabels = ['Start', 'Mid', 'End'];
@@ -34,7 +33,25 @@ class _BallTracerViewState extends State<BallTracerView> {
   @override
   void initState() {
     super.initState();
-    final path = widget.analysis.videoLocalPath;
+    final networkUrl = widget.analysis.outputVideoUrl;
+    final localPath = widget.analysis.videoLocalPath;
+
+    if (networkUrl != null && networkUrl.isNotEmpty) {
+      _controller = VideoPlayerController.networkUrl(Uri.parse(networkUrl));
+      _controller.initialize().then((_) {
+        if (mounted) setState(() => _initialized = true);
+        _controller.addListener(_onVideoTick);
+      }).catchError((Object e) {
+        // Network video failed — only fall back to local if it's likely playable
+        // (skip if local is a Dolby Vision / HEVC file that Android can't decode)
+        _tryLocalVideo(localPath, networkFailed: true);
+      });
+    } else {
+      _tryLocalVideo(localPath, networkFailed: false);
+    }
+  }
+
+  void _tryLocalVideo(String? path, {bool networkFailed = false}) {
     if (path != null && File(path).existsSync()) {
       _controller = VideoPlayerController.file(File(path));
       _controller.initialize().then((_) {
@@ -42,13 +59,21 @@ class _BallTracerViewState extends State<BallTracerView> {
         _controller.addListener(_onVideoTick);
       }).catchError((Object e) {
         if (mounted) {
-          setState(() => _videoError = e is PlatformException
-              ? 'Unsupported video format'
-              : 'Failed to load video');
+          // If we already tried the network URL and it failed too, show unavailable
+          // rather than a raw codec error message
+          setState(() => _videoError = networkFailed
+              ? 'Video preview unavailable'
+              : e is PlatformException
+                  ? 'Unsupported video format'
+                  : 'Failed to load video');
         }
       });
     } else {
-      _videoError = 'Video file not found';
+      if (mounted) {
+        setState(() => _videoError = networkFailed
+            ? 'Video preview unavailable'
+            : 'Video file not found');
+      }
     }
   }
 
@@ -80,23 +105,19 @@ class _BallTracerViewState extends State<BallTracerView> {
   }
 
   void _onTapUp(TapUpDetails details, Size widgetSize) {
-    // Ball tracking disabled — tap always plays/pauses
-    _togglePlay();
-
-    // ── Re-enable manual point selection when ball tracking is ready ──────────
-    // if (_hasAiTrace) {
-    //   _togglePlay();
-    //   return;
-    // }
-    // if (_manualPoints.length >= 3) {
-    //   setState(() => _manualPoints.clear());
-    //   return;
-    // }
-    // final norm = Offset(
-    //   (details.localPosition.dx / widgetSize.width).clamp(0.0, 1.0),
-    //   (details.localPosition.dy / widgetSize.height).clamp(0.0, 1.0),
-    // );
-    // setState(() => _manualPoints.add(norm));
+    if (_hasAiTrace) {
+      _togglePlay();
+      return;
+    }
+    if (_manualPoints.length >= 3) {
+      setState(() => _manualPoints.clear());
+      return;
+    }
+    final norm = Offset(
+      (details.localPosition.dx / widgetSize.width).clamp(0.0, 1.0),
+      (details.localPosition.dy / widgetSize.height).clamp(0.0, 1.0),
+    );
+    setState(() => _manualPoints.add(norm));
   }
 
   @override
@@ -156,20 +177,20 @@ class _BallTracerViewState extends State<BallTracerView> {
               // Layer 1 — Video
               VideoPlayer(_controller),
 
-              // Layer 2 — AI neon tracer (re-enable when ball tracking is ready)
-              // if (_hasAiTrace)
-              //   CustomPaint(
-              //     painter: BallTracerPainter(
-              //       points: widget.analysis.ballPath,
-              //       currentPositionMs: _posMs,
-              //     ),
-              //   ),
+              // Layer 2 — AI neon tracer
+              if (_hasAiTrace)
+                CustomPaint(
+                  painter: BallTracerPainter(
+                    points: widget.analysis.ballPath,
+                    currentPositionMs: _posMs,
+                  ),
+                ),
 
-              // Layer 2b — Manual Bezier tracer (re-enable when ball tracking is ready)
-              // if (!_hasAiTrace && _manualPoints.isNotEmpty)
-              //   CustomPaint(
-              //     painter: ManualTracerPainter(points: _manualPoints),
-              //   ),
+              // Layer 2b — Manual Bezier tracer
+              if (!_hasAiTrace && _manualPoints.isNotEmpty)
+                CustomPaint(
+                  painter: ManualTracerPainter(points: _manualPoints),
+                ),
 
               // Layer 3 — Play/pause hint
               if (!_controller.value.isPlaying)
@@ -186,57 +207,57 @@ class _BallTracerViewState extends State<BallTracerView> {
                   ),
                 ),
 
-              // Layer 4 — Manual mode UI (re-enable when ball tracking is ready)
-              // if (!_hasAiTrace) ...[
-              //   _buildManualInstructions(),
-              //   Positioned(
-              //     bottom: 12,
-              //     left: 12,
-              //     child: GestureDetector(
-              //       onTap: _togglePlay,
-              //       child: Container(
-              //         width: 40,
-              //         height: 40,
-              //         decoration: BoxDecoration(
-              //           color: Colors.black.withValues(alpha: 0.55),
-              //           shape: BoxShape.circle,
-              //           border: Border.all(
-              //             color: Colors.white.withValues(alpha: 0.3),
-              //           ),
-              //         ),
-              //         child: Icon(
-              //           _controller.value.isPlaying
-              //               ? Icons.pause_rounded
-              //               : Icons.play_arrow_rounded,
-              //           color: Colors.white,
-              //           size: 22,
-              //         ),
-              //       ),
-              //     ),
-              //   ),
-              //   if (_manualPoints.isNotEmpty)
-              //     Positioned(
-              //       bottom: 12,
-              //       left: 60,
-              //       child: GestureDetector(
-              //         onTap: () => setState(() => _manualPoints.clear()),
-              //         child: Container(
-              //           padding: const EdgeInsets.symmetric(
-              //               horizontal: 10, vertical: 6),
-              //           decoration: BoxDecoration(
-              //             color: Colors.black.withValues(alpha: 0.55),
-              //             borderRadius: BorderRadius.circular(20),
-              //             border: Border.all(
-              //               color: Colors.white.withValues(alpha: 0.2),
-              //             ),
-              //           ),
-              //           child: const Text('Reset',
-              //               style: TextStyle(
-              //                   color: Colors.white70, fontSize: 12)),
-              //         ),
-              //       ),
-              //     ),
-              // ],
+              // Layer 4 — Manual mode UI
+              if (!_hasAiTrace) ...[
+                _buildManualInstructions(),
+                Positioned(
+                  bottom: 12,
+                  left: 12,
+                  child: GestureDetector(
+                    onTap: _togglePlay,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.55),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Icon(
+                        _controller.value.isPlaying
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                ),
+                if (_manualPoints.isNotEmpty)
+                  Positioned(
+                    bottom: 12,
+                    left: 60,
+                    child: GestureDetector(
+                      onTap: () => setState(() => _manualPoints.clear()),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.55),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: const Text('Reset',
+                            style: TextStyle(
+                                color: Colors.white70, fontSize: 12)),
+                      ),
+                    ),
+                  ),
+              ],
 
               // Layer 5 — Shot stats card (bottom-right)
               Positioned(
@@ -254,7 +275,6 @@ class _BallTracerViewState extends State<BallTracerView> {
     });
   }
 
-  // ignore: unused_element
   Widget _buildManualInstructions() {
     if (_manualPoints.length >= 3) return const SizedBox.shrink();
 
@@ -472,38 +492,49 @@ class ManualTracerPainter extends CustomPainter {
 // ── Shared neon path drawing ──────────────────────────────────────────────────
 
 void _drawNeonPath(Canvas canvas, Path path) {
-  // Layer 1: Outer glow halo
-  canvas.drawPath(
-    path,
-    Paint()
-      ..color = const Color(0xFF7BC344).withValues(alpha: 0.22)
-      ..strokeWidth = 14
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10)
-      ..style = PaintingStyle.stroke
-      ..strokeJoin = StrokeJoin.round
-      ..strokeCap = StrokeCap.round,
-  );
-  // Layer 2: Inner glow
-  canvas.drawPath(
-    path,
-    Paint()
-      ..color = const Color(0xFF8FD44E).withValues(alpha: 0.55)
-      ..strokeWidth = 6
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4)
-      ..style = PaintingStyle.stroke
-      ..strokeJoin = StrokeJoin.round
-      ..strokeCap = StrokeCap.round,
-  );
-  // Layer 3: Crisp neon core
-  canvas.drawPath(
-    path,
-    Paint()
-      ..color = const Color(0xFFCCFF44)
-      ..strokeWidth = 2.5
-      ..style = PaintingStyle.stroke
-      ..strokeJoin = StrokeJoin.round
-      ..strokeCap = StrokeCap.round,
-  );
+  final metrics = path.computeMetrics().toList();
+  if (metrics.isEmpty) return;
+  final totalLen = metrics.fold(0.0, (s, m) => s + m.length);
+  if (totalLen == 0) return;
+
+  // Glow halo pass (full path, low opacity)
+  final haloPaint = Paint()
+    ..color = const Color(0xFF7BC344).withValues(alpha: 0.18)
+    ..strokeWidth = 14
+    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10)
+    ..style = PaintingStyle.stroke
+    ..strokeCap = StrokeCap.round;
+  for (final m in metrics) {
+    canvas.drawPath(m.extractPath(0, m.length), haloPaint);
+  }
+
+  // Gradient stroke: transparent blue at tail → white at ball head
+  double drawn = 0;
+  const steps = 48;
+  for (final metric in metrics) {
+    final segLen = metric.length;
+    for (int i = 0; i < steps; i++) {
+      final start = segLen * i / steps;
+      final end   = segLen * (i + 1) / steps;
+      final tMid  = (drawn + (start + end) / 2) / totalLen;
+      final t     = Curves.easeIn.transform(tMid.clamp(0.0, 1.0));
+      final color = Color.lerp(
+        const Color(0x0044AAFF), // transparent blue — tail
+        const Color(0xFFFFFFFF), // white — ball head
+        t,
+      )!;
+      canvas.drawPath(
+        metric.extractPath(start, end),
+        Paint()
+          ..color = color
+          ..strokeWidth = 3.0
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, (1.0 - t) * 3 + 1),
+      );
+    }
+    drawn += segLen;
+  }
 }
 
 // ── Shot Stats Card ───────────────────────────────────────────────────────────

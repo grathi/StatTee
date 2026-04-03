@@ -19,7 +19,7 @@ import 'rounds_screen.dart';
 import 'stats_screen.dart';
 import 'profile_screen.dart';
 import '../widgets/resume_round_card.dart';
-// import 'swing_analyzer_screen.dart';
+import 'swing_analyzer_screen.dart';
 import '../widgets/shimmer_widgets.dart';
 import '../widgets/weather_widgets.dart';
 import '../widgets/tour_overlay.dart';
@@ -918,7 +918,7 @@ class _HomeTabState extends State<_HomeTab>
                                   SizedBox(height: _sh * 0.024),
                                   _buildGolfNews(),
                                   SizedBox(height: _sh * 0.024),
-                                  // _buildSwingAnalyzerCard(),
+                                  _buildSwingAnalyzerCard(),
                                   SizedBox(height: _sh * 0.14),
                                 ],
                               ),
@@ -2329,100 +2329,149 @@ class _HomeTabState extends State<_HomeTab>
     );
   }
 
-  // ignore: unused_element
   Widget _buildSwingAnalyzerCard() {
-    // ignore: dead_code
-    return const SizedBox.shrink(); // re-enable below when swing analyzer is ready
-    // return GestureDetector(
-    //   onTap: () => Navigator.push(
-    //     context,
-    //     MaterialPageRoute(builder: (_) => const SwingAnalyzerScreen()),
-    //   ),
-    //   child: Container(
-    //     width: double.infinity,
-    //     decoration: BoxDecoration(
-    //       gradient: const LinearGradient(
-    //         begin: Alignment.topLeft,
-    //         end: Alignment.bottomRight,
-    //         colors: [Color(0xFF1A3A08), Color(0xFF2E6B12)],
-    //       ),
-    //       borderRadius: BorderRadius.circular(20),
-    //       border: Border.all(
-    //           color: const Color(0xFF7BC344).withValues(alpha: 0.35)),
-    //       boxShadow: [
-    //         BoxShadow(
-    //           color: const Color(0xFF5A9E1F).withValues(alpha: 0.18),
-    //           blurRadius: 16,
-    //           offset: const Offset(0, 6),
-    //         ),
-    //       ],
-    //     ),
-    //     padding: EdgeInsets.symmetric(
-    //       horizontal: (_sw * 0.05).clamp(16.0, 24.0),
-    //       vertical: (_sh * 0.022).clamp(16.0, 22.0),
-    //     ),
-    //     child: Row(
-    //       children: [
-    //         Container(
-    //           width: 52,
-    //           height: 52,
-    //           decoration: BoxDecoration(
-    //             color: const Color(0xFF7BC344).withValues(alpha: 0.15),
-    //             borderRadius: BorderRadius.circular(14),
-    //             border: Border.all(
-    //                 color: const Color(0xFF7BC344).withValues(alpha: 0.3)),
-    //           ),
-    //           child: const Icon(Icons.sports_golf_rounded,
-    //               color: Color(0xFF8FD44E), size: 26),
-    //         ),
-    //         SizedBox(width: (_sw * 0.04).clamp(12.0, 18.0)),
-    //         Expanded(
-    //           child: Column(
-    //             crossAxisAlignment: CrossAxisAlignment.start,
-    //             children: [
-    //               const Text(
-    //                 'AI Swing Tracer',
-    //                 style: TextStyle(
-    //                   fontFamily: 'Nunito',
-    //                   color: Colors.white,
-    //                   fontSize: 16,
-    //                   fontWeight: FontWeight.w800,
-    //                 ),
-    //               ),
-    //               const SizedBox(height: 3),
-    //               Text(
-    //                 'Record or upload a swing — Gemini tracks the ball path',
-    //                 style: TextStyle(
-    //                   color: Colors.white.withValues(alpha: 0.6),
-    //                   fontSize: 12,
-    //                   height: 1.4,
-    //                 ),
-    //               ),
-    //             ],
-    //           ),
-    //         ),
-    //         const SizedBox(width: 8),
-    //         Container(
-    //           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-    //           decoration: BoxDecoration(
-    //             color: const Color(0xFF7BC344).withValues(alpha: 0.2),
-    //             borderRadius: BorderRadius.circular(20),
-    //             border: Border.all(
-    //                 color: const Color(0xFF7BC344).withValues(alpha: 0.4)),
-    //           ),
-    //           child: const Text(
-    //             'Try it',
-    //             style: TextStyle(
-    //               color: Color(0xFF8FD44E),
-    //               fontSize: 12,
-    //               fontWeight: FontWeight.w700,
-    //             ),
-    //           ),
-    //         ),
-    //       ],
-    //     ),
-    //   ),
-    // );
+    final c = AppColors.of(context);
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: _hPad),
+      child: GestureDetector(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SwingAnalyzerScreen()),
+        ),
+        child: Container(
+          width: double.infinity,
+          decoration: ShapeDecoration(
+            color: c.cardBg,
+            shape: SuperellipseShape(borderRadius: BorderRadius.circular(48)),
+            shadows: [
+              BoxShadow(
+                color: const Color(0xFF7BC344).withValues(alpha: 0.13),
+                blurRadius: 20,
+                offset: const Offset(0, 5),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: ClipPath(
+            clipper: ShapeBorderClipper(
+              shape: SuperellipseShape(borderRadius: BorderRadius.circular(48)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Green accent top strip
+                Container(
+                  height: 3,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF5A9E1F), Color(0xFF8FD44E)],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    (_sw * 0.045).clamp(14.0, 20.0),
+                    (_sh * 0.018).clamp(14.0, 18.0),
+                    (_sw * 0.045).clamp(14.0, 20.0),
+                    (_sh * 0.018).clamp(14.0, 18.0),
+                  ),
+                  child: Row(
+                    children: [
+                      // Icon container
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: ShapeDecoration(
+                          color: c.accentBg,
+                          shape: SuperellipseShape(
+                              borderRadius: BorderRadius.circular(14)),
+                        ),
+                        child: Icon(Icons.sports_golf_rounded,
+                            color: c.accent, size: 24),
+                      ),
+                      SizedBox(width: (_sw * 0.035).clamp(12.0, 16.0)),
+                      // Text content
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'AI Swing Tracer',
+                                  style: TextStyle(
+                                    fontFamily: 'Nunito',
+                                    color: c.primaryText,
+                                    fontSize: (_sw * 0.040).clamp(14.0, 16.0),
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                // Beta badge
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 7, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF5A9E1F)
+                                        .withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: const Color(0xFF5A9E1F)
+                                          .withValues(alpha: 0.35),
+                                      width: 0.8,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'BETA',
+                                    style: TextStyle(
+                                      color: c.accent,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.8,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              'Record or upload a swing to trace the ball path',
+                              style: TextStyle(
+                                color: c.secondaryText,
+                                fontSize: (_sw * 0.030).clamp(11.0, 12.5),
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      // Arrow CTA
+                      Container(
+                        width: 34,
+                        height: 34,
+                        decoration: ShapeDecoration(
+                          color: c.accentBg,
+                          shape: SuperellipseShape(
+                              borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: Icon(Icons.arrow_forward_rounded,
+                            color: c.accent, size: 18),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
