@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/golf_course_api_service.dart';
 
 class GroupRoundPlayer {
   final String uid;
@@ -51,6 +52,7 @@ class GroupRound {
   final int totalHoles;
   final double? courseRating;
   final int? slopeRating;
+  final List<GolfApiHole> holes;
   final DateTime createdAt;
   /// 'waiting' | 'active' | 'completed'
   final String status;
@@ -65,6 +67,7 @@ class GroupRound {
     required this.totalHoles,
     this.courseRating,
     this.slopeRating,
+    this.holes = const [],
     required this.createdAt,
     required this.status,
     required this.players,
@@ -88,6 +91,17 @@ class GroupRound {
       totalHoles: (d['totalHoles'] as num).toInt(),
       courseRating: (d['courseRating'] as num?)?.toDouble(),
       slopeRating: (d['slopeRating'] as num?)?.toInt(),
+      holes: (d['holes'] as List<dynamic>? ?? [])
+          .map((e) {
+            final m = e as Map<String, dynamic>;
+            return GolfApiHole(
+              hole: (m['hole'] as num).toInt(),
+              par: (m['par'] as num).toInt(),
+              yardage: (m['yardage'] as num?)?.toInt() ?? 0,
+              handicap: (m['handicap'] as num?)?.toInt() ?? 0,
+            );
+          })
+          .toList(),
       createdAt: (d['createdAt'] as Timestamp).toDate(),
       status: d['status'] as String? ?? 'waiting',
       players: players,
@@ -102,6 +116,7 @@ class GroupRound {
         'totalHoles': totalHoles,
         if (courseRating != null) 'courseRating': courseRating,
         if (slopeRating != null) 'slopeRating': slopeRating,
+        if (holes.isNotEmpty) 'holes': holes.map((h) => h.toJson()).toList(),
         'createdAt': Timestamp.fromDate(createdAt),
         'status': status,
         'players': players.map((uid, p) => MapEntry(uid, p.toMap())),

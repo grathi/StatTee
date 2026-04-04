@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/group_round.dart';
 import '../models/friend_profile.dart';
 import '../services/friends_service.dart';
+import 'golf_course_api_service.dart';
 
 class GroupRoundService {
   static final _db   = FirebaseFirestore.instance;
@@ -22,6 +23,7 @@ class GroupRoundService {
     required int totalHoles,
     double? courseRating,
     int? slopeRating,
+    List<GolfApiHole> holes = const [],
     required List<FriendProfile> invitees,
   }) async {
     final me = _auth.currentUser!;
@@ -55,6 +57,7 @@ class GroupRoundService {
       totalHoles: totalHoles,
       courseRating: courseRating,
       slopeRating: slopeRating,
+      holes: holes,
       createdAt: DateTime.now(),
       status: 'waiting',
       players: players,

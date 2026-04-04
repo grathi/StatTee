@@ -242,12 +242,12 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: c.scaffoldBg,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        title: const Text('Swing Analyzer',
-            style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w700)),
+        backgroundColor: c.scaffoldBg,
+        foregroundColor: c.primaryText,
+        title: Text('Swing Analyzer',
+            style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w700, color: c.primaryText)),
         actions: [
           if (_state == _AnalyzerState.result) ...[
             IconButton(
@@ -308,19 +308,19 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
         // Instruction bar
         Container(
           width: double.infinity,
-          color: const Color(0xFF1A2E14),
+          color: c.accentBg,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              const Icon(Icons.touch_app_rounded, color: Color(0xFF7BC344), size: 20),
+              Icon(Icons.touch_app_rounded, color: c.accent, size: 20),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   videoUnavailable
                       ? (hasHint ? 'Tap to reposition the ball' : 'Preview unavailable — tap where the ball is')
                       : (hasHint ? 'Tap to reposition' : 'Tap on the golf ball'),
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: c.primaryText,
                     fontFamily: 'Nunito',
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
@@ -361,7 +361,7 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    Container(color: Colors.black),
+                    Container(color: c.scaffoldBg),
                     if (!videoUnavailable)
                       SizedBox(
                         width: renderW,
@@ -369,7 +369,7 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
                         child: VideoPlayer(ctrl),
                       )
                     else
-                      // Dark placeholder with golf ball icon hint
+                      // Placeholder with golf ball icon hint
                       SizedBox(
                         width: renderW,
                         height: renderH,
@@ -378,13 +378,13 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(Icons.sports_golf_rounded,
-                                  color: Colors.white.withValues(alpha: 0.2),
+                                  color: c.secondaryText,
                                   size: 48),
                               const SizedBox(height: 8),
                               Text(
                                 'Tap where the ball is sitting',
                                 style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.35),
+                                  color: c.secondaryText,
                                   fontSize: 12,
                                 ),
                               ),
@@ -410,7 +410,7 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
 
         // Action buttons
         Container(
-          color: const Color(0xFF0F172A),
+          color: c.cardBg,
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
           child: Row(
             children: [
@@ -422,18 +422,18 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
                     height: 50,
                     alignment: Alignment.center,
                     decoration: ShapeDecoration(
-                      color: Colors.white.withValues(alpha: 0.08),
+                      color: c.accentBg,
                       shape: SuperellipseShape(
                         borderRadius: BorderRadius.circular(28),
-                        side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                        side: BorderSide(color: c.accentBorder),
                       ),
                     ),
-                    child: const Text('Skip',
+                    child: Text('Skip',
                         style: TextStyle(
                             fontFamily: 'Nunito',
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white)),
+                            color: c.accent)),
                   ),
                 ),
               ),
@@ -450,9 +450,7 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
                     height: 50,
                     alignment: Alignment.center,
                     decoration: ShapeDecoration(
-                      color: hasHint
-                          ? const Color(0xFF5A9E1F)
-                          : Colors.white.withValues(alpha: 0.1),
+                      color: hasHint ? c.accent : c.accentBg,
                       shape: SuperellipseShape(
                         borderRadius: BorderRadius.circular(28),
                       ),
@@ -462,18 +460,14 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
                       children: [
                         Icon(Icons.analytics_rounded,
                             size: 18,
-                            color: hasHint
-                                ? Colors.white
-                                : Colors.white.withValues(alpha: 0.35)),
+                            color: hasHint ? Colors.white : c.secondaryText),
                         const SizedBox(width: 8),
                         Text('Analyze',
                             style: TextStyle(
                                 fontFamily: 'Nunito',
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
-                                color: hasHint
-                                    ? Colors.white
-                                    : Colors.white.withValues(alpha: 0.35))),
+                                color: hasHint ? Colors.white : c.secondaryText)),
                       ],
                     ),
                   ),
@@ -500,20 +494,19 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: const Color(0xFF7BC344).withValues(alpha: 0.15),
+                color: c.accentBg,
                 shape: BoxShape.circle,
-                border: Border.all(
-                    color: const Color(0xFF7BC344).withValues(alpha: 0.3)),
+                border: Border.all(color: c.accentBorder),
               ),
-              child: const Icon(Icons.sports_golf_rounded,
-                  color: Color(0xFF7BC344), size: 38),
+              child: Icon(Icons.sports_golf_rounded,
+                  color: c.accent, size: 38),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'AI Swing Tracer',
               style: TextStyle(
                   fontFamily: 'Nunito',
-                  color: Colors.white,
+                  color: c.primaryText,
                   fontSize: 24,
                   fontWeight: FontWeight.w800),
             ),
@@ -522,23 +515,82 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
               'Record or upload a golf swing video.\nGemini AI will track the ball and overlay a live tracer.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6), fontSize: 14, height: 1.5),
+                  color: c.secondaryText, fontSize: 14, height: 1.5),
             ),
             const SizedBox(height: 40),
-            _sourceButton(
-              icon: Icons.videocam_rounded,
-              label: 'Record New Swing',
-              onTap: _recordNewSwing,
-            ),
-            const SizedBox(height: 14),
-            _sourceButton(
-              icon: Icons.photo_library_rounded,
-              label: 'Choose from Library',
-              onTap: _pickFromLibrary,
-              primary: false,
+            GestureDetector(
+              onTap: () => _showUpcomingDialog(c),
+              child: Opacity(
+                opacity: 0.5,
+                child: Container(
+                  width: double.infinity,
+                  height: 54,
+                  alignment: Alignment.center,
+                  decoration: ShapeDecoration(
+                    color: c.accent,
+                    shape: SuperellipseShape(
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.videocam_rounded, color: Colors.white, size: 20),
+                      SizedBox(width: 10),
+                      Text('Analyze Swing',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showUpcomingDialog(AppColors c) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: c.cardBg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: c.accentBg,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.sports_golf_rounded, color: c.accent, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Text('Coming Soon',
+                style: TextStyle(
+                    color: c.primaryText,
+                    fontFamily: 'Nunito',
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18)),
+          ],
+        ),
+        content: Text(
+          'AI Swing Tracer is currently under development. Stay tuned for the update!',
+          style: TextStyle(color: c.secondaryText, fontSize: 14, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Got it',
+                style: TextStyle(
+                    color: c.accent,
+                    fontWeight: FontWeight.w700)),
+          ),
+        ],
       ),
     );
   }
@@ -549,6 +601,7 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
     required VoidCallback onTap,
     bool primary = true,
   }) {
+    final c = AppColors.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -556,25 +609,25 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
         height: 54,
         alignment: Alignment.center,
         decoration: ShapeDecoration(
-          color: primary ? const Color(0xFF5A9E1F) : Colors.white.withValues(alpha: 0.08),
+          color: primary ? c.accent : c.accentBg,
           shape: SuperellipseShape(
             borderRadius: BorderRadius.circular(28),
             side: primary
                 ? BorderSide.none
-                : BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                : BorderSide(color: c.accentBorder),
           ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 20, color: Colors.white),
+            Icon(icon, size: 20, color: primary ? Colors.white : c.accent),
             const SizedBox(width: 8),
             Text(label,
-                style: const TextStyle(
+                style: TextStyle(
                     fontFamily: 'Nunito',
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white)),
+                    color: primary ? Colors.white : c.accent)),
           ],
         ),
       ),
@@ -590,11 +643,11 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           CircularProgressIndicator(
-              color: const Color(0xFF7BC344), strokeWidth: 2.5),
+              color: c.accent, strokeWidth: 2.5),
           const SizedBox(height: 20),
           Text(message,
               style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7), fontSize: 15)),
+                  color: c.secondaryText, fontSize: 15)),
         ],
       ),
     );
@@ -616,19 +669,19 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
               child: _progressPct > 0
                   ? CircularProgressIndicator(
                       value: _progressPct / 100,
-                      color: const Color(0xFF7BC344),
+                      color: c.accent,
                       strokeWidth: 3,
                     )
                   : CircularProgressIndicator(
-                      color: const Color(0xFF7BC344),
+                      color: c.accent,
                       strokeWidth: 3,
                     ),
             ),
             const SizedBox(height: 24),
             Text(title,
-                style: const TextStyle(
+                style: TextStyle(
                     fontFamily: 'Nunito',
-                    color: Colors.white,
+                    color: c.primaryText,
                     fontSize: 20,
                     fontWeight: FontWeight.w700)),
             const SizedBox(height: 10),
@@ -636,7 +689,7 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
               _statusMessage,
               textAlign: TextAlign.center,
               style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.55),
+                  color: c.secondaryText,
                   fontSize: 14,
                   height: 1.5),
             ),
@@ -671,15 +724,15 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
 
           // Stats panel
           Container(
-            color: const Color(0xFF0F172A),
+            color: c.cardBg,
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Shot Analysis',
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontFamily: 'Nunito',
-                        color: Colors.white,
+                        color: c.primaryText,
                         fontSize: 18,
                         fontWeight: FontWeight.w800)),
                 const SizedBox(height: 16),
@@ -716,7 +769,7 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
                           child: Text(
                             'Ball path not detected. Try better lighting or a closer angle.',
                             style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.7),
+                                color: c.secondaryText,
                                 fontSize: 13),
                           ),
                         ),
@@ -735,7 +788,7 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
                     height: 50,
                     alignment: Alignment.center,
                     decoration: ShapeDecoration(
-                      color: const Color(0xFF5A9E1F),
+                      color: c.accent,
                       shape: SuperellipseShape(
                         borderRadius: BorderRadius.circular(28),
                       ),
@@ -763,31 +816,32 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
   }
 
   Widget _statTile(String label, String value, IconData icon) {
+    final c = AppColors.of(context);
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
         decoration: ShapeDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: c.accentBg,
           shape: SuperellipseShape(
             borderRadius: BorderRadius.circular(24),
-            side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+            side: BorderSide(color: c.accentBorder),
           ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: const Color(0xFF7BC344), size: 20),
+            Icon(icon, color: c.accent, size: 20),
             const SizedBox(height: 6),
             Text(value,
-                style: const TextStyle(
+                style: TextStyle(
                     fontFamily: 'Nunito',
-                    color: Colors.white,
+                    color: c.primaryText,
                     fontSize: 16,
                     fontWeight: FontWeight.w800)),
             const SizedBox(height: 2),
             Text(label,
                 style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.45),
+                    color: c.secondaryText,
                     fontSize: 11,
                     fontWeight: FontWeight.w500)),
           ],
@@ -817,10 +871,10 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
                   color: Color(0xFFFF6B6B), size: 30),
             ),
             const SizedBox(height: 20),
-            const Text('Analysis Failed',
+            Text('Analysis Failed',
                 style: TextStyle(
                     fontFamily: 'Nunito',
-                    color: Colors.white,
+                    color: c.primaryText,
                     fontSize: 20,
                     fontWeight: FontWeight.w700)),
             const SizedBox(height: 10),
@@ -828,7 +882,7 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
               _errorMessage ?? 'Something went wrong. Please try again.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
+                  color: c.secondaryText,
                   fontSize: 13,
                   height: 1.5),
             ),
@@ -838,7 +892,7 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                 decoration: ShapeDecoration(
-                  color: const Color(0xFF5A9E1F),
+                  color: c.accent,
                   shape: SuperellipseShape(
                     borderRadius: BorderRadius.circular(28),
                   ),
@@ -990,20 +1044,20 @@ class _NoTracePreview extends StatefulWidget {
 class _NoTracePreviewState extends State<_NoTracePreview> {
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     // Just show a placeholder when ball path is empty
     return Container(
-      color: Colors.black,
+      color: c.accentBg,
       height: 240,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.visibility_off_rounded,
-                color: Colors.white38, size: 36),
+            Icon(Icons.visibility_off_rounded,
+                color: c.secondaryText, size: 36),
             const SizedBox(height: 12),
             Text('Ball not detected in video',
-                style:
-                    TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14)),
+                style: TextStyle(color: c.secondaryText, fontSize: 14)),
           ],
         ),
       ),
@@ -1086,6 +1140,7 @@ class _AnimatedDotState extends State<_AnimatedDot>
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return AnimatedBuilder(
       animation: _anim,
       builder: (_, w) => Container(
@@ -1095,8 +1150,8 @@ class _AnimatedDotState extends State<_AnimatedDot>
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: Color.lerp(
-            Colors.white.withValues(alpha: 0.15),
-            const Color(0xFF7BC344),
+            c.accentBg,
+            c.accent,
             _anim.value,
           ),
         ),

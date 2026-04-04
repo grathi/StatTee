@@ -15,6 +15,25 @@ String get _apiKey {
   return Platform.isAndroid ? _androidKey : _iosKey;
 }
 
+/// Normalises any Google address string to "City, State" format.
+/// Works with both `vicinity` ("4501 Main St, San Jose") and
+/// `formatted_address` ("4501 Main St, San Jose, CA 94566, USA").
+String _shortAddress(String raw) {
+  final parts = raw.split(',').map((s) => s.trim()).toList();
+  if (parts.length >= 3) {
+    // formatted_address: [..., city, state+zip, country]
+    // Take the second-to-last part for state (strip zip if present)
+    final city  = parts[parts.length - 3];
+    final state = parts[parts.length - 2].split(' ').first;
+    return '$city, $state';
+  }
+  if (parts.length == 2) {
+    // vicinity: "Street, City" — return just the city
+    return parts[1];
+  }
+  return raw;
+}
+
 // ---------------------------------------------------------------------------
 // Data models
 // ---------------------------------------------------------------------------
@@ -267,7 +286,7 @@ class PlacesService {
             return GolfCourseDetail(
               placeId: r['place_id'] as String? ?? '',
               name: r['name'] as String? ?? '',
-              address: r['formatted_address'] as String? ?? r['vicinity'] as String? ?? '',
+              address: _shortAddress(r['formatted_address'] as String? ?? r['vicinity'] as String? ?? ''),
               lat: (geo?['lat'] as num?)?.toDouble(),
               lng: (geo?['lng'] as num?)?.toDouble(),
             );
@@ -349,7 +368,7 @@ class PlacesService {
         return GolfCourseDetail(
           placeId: r['place_id'] as String? ?? '',
           name: r['name'] as String? ?? '',
-          address: r['vicinity'] as String? ?? '',
+          address: _shortAddress(r['vicinity'] as String? ?? r['formatted_address'] as String? ?? ''),
           lat: (geo?['lat'] as num?)?.toDouble(),
           lng: (geo?['lng'] as num?)?.toDouble(),
         );

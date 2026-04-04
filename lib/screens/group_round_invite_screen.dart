@@ -5,6 +5,7 @@ import '../models/group_round.dart';
 import '../services/group_round_service.dart';
 import '../services/round_service.dart';
 import '../theme/app_theme.dart';
+import 'scorecard_import_screen.dart';
 import 'scorecard_screen.dart';
 
 class GroupRoundInviteScreen extends StatefulWidget {
@@ -59,6 +60,8 @@ class _GroupRoundInviteScreenState extends State<GroupRoundInviteScreen> {
               final alreadyJoined =
                   myEntry?.status == 'joined' || myEntry?.status == 'completed';
               final declined = myEntry?.status == 'declined';
+              final isLateJoin = !alreadyJoined && !declined && !cancelled &&
+                  (session.status == 'active' || session.status == 'completed');
 
               return SingleChildScrollView(
                 padding: EdgeInsets.fromLTRB(hPad, sh * 0.06, hPad, sh * 0.04),
@@ -219,7 +222,7 @@ class _GroupRoundInviteScreenState extends State<GroupRoundInviteScreen> {
                                   fontWeight: FontWeight.w600)),
                         ),
                       ),
-                    ] else if (!alreadyJoined && !declined) ...[
+                    ] else if (!alreadyJoined && !declined && !isLateJoin) ...[
                       // Join button
                       GestureDetector(
                         onTap: _joining ? null : () => _join(context, session),
@@ -311,6 +314,102 @@ class _GroupRoundInviteScreenState extends State<GroupRoundInviteScreen> {
                           ],
                         ),
                       ),
+                    ] else if (isLateJoin) ...[
+                      // Join Round button (live scoring)
+                      GestureDetector(
+                        onTap: _joining ? null : () => _join(context, session),
+                        child: Container(
+                          width: double.infinity,
+                          height: (sh * 0.072).clamp(52.0, 64.0),
+                          alignment: Alignment.center,
+                          decoration: ShapeDecoration(
+                            gradient: const LinearGradient(
+                                colors: [Color(0xFF5A9E1F), Color(0xFF8FD44E)]),
+                            shape: SuperellipseShape(
+                                borderRadius: BorderRadius.circular(48)),
+                            shadows: [
+                              BoxShadow(
+                                color: const Color(0xFF5A9E1F).withValues(alpha: 0.4),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              )
+                            ],
+                          ),
+                          child: _joining
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2.5, color: Colors.white))
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(Icons.sports_golf_rounded,
+                                        color: Colors.white, size: 22),
+                                    const SizedBox(width: 10),
+                                    Text('Join Round',
+                                        style: TextStyle(
+                                            fontFamily: 'Nunito',
+                                            color: Colors.white,
+                                            fontSize: (sw * 0.046).clamp(15.0, 19.0),
+                                            fontWeight: FontWeight.w700)),
+                                  ],
+                                ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Upload Scorecard button
+                      GestureDetector(
+                        onTap: _joining ? null : () => _lateJoin(context, session),
+                        child: Container(
+                          width: double.infinity,
+                          height: (sh * 0.064).clamp(48.0, 58.0),
+                          alignment: Alignment.center,
+                          decoration: ShapeDecoration(
+                            color: c.fieldBg,
+                            shape: SuperellipseShape(
+                              borderRadius: BorderRadius.circular(48),
+                              side: BorderSide(color: c.accentBorder),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.upload_file_rounded,
+                                  color: c.accent, size: 20),
+                              const SizedBox(width: 8),
+                              Text('Upload Scorecard',
+                                  style: TextStyle(
+                                      fontFamily: 'Nunito',
+                                      color: c.accent,
+                                      fontSize: (sw * 0.040).clamp(14.0, 17.0),
+                                      fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Decline button
+                      GestureDetector(
+                        onTap: () => _decline(context),
+                        child: Container(
+                          width: double.infinity,
+                          height: (sh * 0.064).clamp(48.0, 58.0),
+                          alignment: Alignment.center,
+                          decoration: ShapeDecoration(
+                            color: c.fieldBg,
+                            shape: SuperellipseShape(
+                              borderRadius: BorderRadius.circular(48),
+                              side: BorderSide(color: c.fieldBorder),
+                            ),
+                          ),
+                          child: Text('Decline',
+                              style: TextStyle(
+                                  color: c.tertiaryText,
+                                  fontSize: (sw * 0.040).clamp(14.0, 17.0),
+                                  fontWeight: FontWeight.w600)),
+                        ),
+                      ),
                     ] else ...[
                       Text('You declined this invite.',
                           style: TextStyle(
@@ -352,10 +451,11 @@ class _GroupRoundInviteScreenState extends State<GroupRoundInviteScreen> {
         context,
         MaterialPageRoute(
           builder: (_) => ScorecardScreen(
-            roundId:    roundId,
-            courseName: session.courseName,
-            totalHoles: session.totalHoles,
-            sessionId:  widget.sessionId,
+            roundId:        roundId,
+            courseName:     session.courseName,
+            totalHoles:     session.totalHoles,
+            sessionId:      widget.sessionId,
+            preloadedHoles: session.holes.isNotEmpty ? session.holes : null,
           ),
         ),
       );
@@ -367,6 +467,27 @@ class _GroupRoundInviteScreenState extends State<GroupRoundInviteScreen> {
   Future<void> _decline(BuildContext context) async {
     await GroupRoundService.declineInvite(widget.sessionId);
     if (mounted) Navigator.pop(context);
+  }
+
+  Future<void> _lateJoin(BuildContext context, GroupRound session) async {
+    setState(() => _joining = true);
+    try {
+      final latest = await GroupRoundService.fetchSession(widget.sessionId);
+      if (latest == null || latest.status == 'cancelled') {
+        if (mounted) setState(() => _joining = false);
+        return;
+      }
+      if (!mounted) return;
+      setState(() => _joining = false);
+      if (!context.mounted) return;
+      await showScorecardImportFlow(
+        context,
+        sessionId: widget.sessionId,
+        session: session,
+      );
+    } catch (_) {
+      if (mounted) setState(() => _joining = false);
+    }
   }
 
   Widget _infoRow(AppColors c, double body, double label, IconData icon,

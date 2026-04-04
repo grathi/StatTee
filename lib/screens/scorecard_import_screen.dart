@@ -4,13 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
+import '../models/group_round.dart';
 import '../models/hole_score.dart';
 import '../models/round.dart';
 import '../models/scorecard_import_data.dart';
+import '../services/group_round_service.dart';
 import '../services/places_service.dart';
 import '../services/round_service.dart';
 import '../services/scorecard_ocr_service.dart';
 import '../theme/app_theme.dart';
+import 'group_round_results_screen.dart';
 import 'round_detail_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -19,7 +22,11 @@ import 'round_detail_screen.dart';
 
 /// Shows a bottom sheet to pick gallery or camera, runs OCR, then pushes
 /// [ScorecardImportScreen] on success.  Call from any screen.
-Future<void> showScorecardImportFlow(BuildContext context) async {
+Future<void> showScorecardImportFlow(
+  BuildContext context, {
+  String? sessionId,
+  GroupRound? session,
+}) async {
   final source = await showModalBottomSheet<ImageSource>(
     context: context,
     backgroundColor: Colors.transparent,
@@ -58,7 +65,11 @@ Future<void> showScorecardImportFlow(BuildContext context) async {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ScorecardImportScreen(data: data),
+        builder: (_) => ScorecardImportScreen(
+          data: data,
+          sessionId: sessionId,
+          session: session,
+        ),
       ),
     );
   } on ScorecardNotDetectedException catch (e) {
@@ -384,7 +395,14 @@ class _OcrLoadingDialog extends StatelessWidget {
 
 class ScorecardImportScreen extends StatefulWidget {
   final ScorecardImportData data;
-  const ScorecardImportScreen({super.key, required this.data});
+  final String? sessionId;
+  final GroupRound? session;
+  const ScorecardImportScreen({
+    super.key,
+    required this.data,
+    this.sessionId,
+    this.session,
+  });
 
   @override
   State<ScorecardImportScreen> createState() =>
@@ -425,15 +443,17 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
   void initState() {
     super.initState();
     final d = widget.data;
-    _courseNameCtrl = TextEditingController(text: d.courseName);
+    final sess = widget.session;
+    _courseNameCtrl = TextEditingController(
+        text: d.courseName.isNotEmpty ? d.courseName : (sess?.courseName ?? ''));
     _ratingCtrl = TextEditingController(
-        text: d.courseRating?.toString() ?? '');
-    _slopeCtrl =
-        TextEditingController(text: d.slopeRating?.toString() ?? '');
+        text: d.courseRating?.toString() ?? sess?.courseRating?.toString() ?? '');
+    _slopeCtrl = TextEditingController(
+        text: d.slopeRating?.toString() ?? sess?.slopeRating?.toString() ?? '');
     _holes = List.from(d.holes);
     _roundDate = d.roundDate;
     _totalHoles = d.totalHoles;
-    _locationText = d.courseLocation;
+    _locationText = d.courseLocation.isNotEmpty ? d.courseLocation : (sess?.courseLocation ?? '');
     _courseNameCtrl.addListener(_onCourseNameChanged);
   }
 
@@ -659,6 +679,56 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
       final rating = double.tryParse(_ratingCtrl.text);
       final slope = int.tryParse(_slopeCtrl.text);
 
+      final holeScores = _holes
+          .map((h) => HoleScore(
+                hole: h.hole,
+                par: h.par,
+                score: h.score,
+                putts: 0,
+                fairwayHit: false,
+                gir: false,
+              ))
+          .toList();
+
+      // ── Group round path ────────────────────────────────────────────────
+      if (widget.sessionId != null && widget.session != null) {
+        final sess = widget.session!;
+        final roundId = await RoundService.startRound(
+          courseName:     courseName.isEmpty ? sess.courseName : courseName,
+          courseLocation: location.isEmpty ? sess.courseLocation : location,
+          totalHoles:     _totalHoles,
+          courseRating:   rating ?? sess.courseRating,
+          slopeRating:    slope ?? sess.slopeRating,
+        );
+        await GroupRoundService.joinSession(widget.sessionId!, roundId);
+        await RoundService.saveAllHoleScores(roundId, holeScores);
+        await RoundService.completeRound(roundId);
+        final totalScore = _holes.fold(0, (s, h) => s + h.score);
+        final effectiveRating = rating ?? sess.courseRating;
+        final scoreDiff = effectiveRating != null
+            ? (totalScore - effectiveRating).toDouble()
+            : 0.0;
+        await GroupRoundService.reportCompletion(
+          widget.sessionId!,
+          roundId:    roundId,
+          totalScore: totalScore,
+          scoreDiff:  scoreDiff,
+        );
+        if (!mounted) return;
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) => GroupRoundResultsScreen(
+              sessionId:  widget.sessionId!,
+              myRoundId:  roundId,
+              courseName: courseName.isEmpty ? sess.courseName : courseName,
+            ),
+          ),
+          (route) => route.isFirst,
+        );
+        return;
+      }
+
+      // ── Normal import path ───────────────────────────────────────────────
       final roundId = await RoundService.startRound(
         courseName: courseName.isEmpty ? 'Imported Round' : courseName,
         courseLocation: location,
@@ -667,19 +737,7 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
         slopeRating: slope,
       );
 
-      await RoundService.saveAllHoleScores(
-        roundId,
-        _holes
-            .map((h) => HoleScore(
-                  hole: h.hole,
-                  par: h.par,
-                  score: h.score,
-                  putts: 0,
-                  fairwayHit: false,
-                  gir: false,
-                ))
-            .toList(),
-      );
+      await RoundService.saveAllHoleScores(roundId, holeScores);
 
       // Backdate round to the user-selected date
       await FirebaseFirestore.instance

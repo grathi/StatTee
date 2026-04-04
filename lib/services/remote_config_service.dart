@@ -12,7 +12,7 @@ class RemoteConfigService {
   static Future<void> init() async {
     if (_initialised) return;
     await _rc.setConfigSettings(RemoteConfigSettings(
-      fetchTimeout:      const Duration(seconds: 10),
+      fetchTimeout:         const Duration(seconds: 10),
       minimumFetchInterval: const Duration(hours: 12),
     ));
     // Default keeps the app functional the very first time before fetch succeeds

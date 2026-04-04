@@ -1144,10 +1144,9 @@ class _ScorecardScreenState extends State<ScorecardScreen>
 
 
   Widget _buildHoleHeroCard(AppColors c, {Key? key}) {
-    final holeData = (widget.preloadedHoles != null &&
-            _currentHole <= widget.preloadedHoles!.length)
-        ? widget.preloadedHoles![_currentHole - 1]
-        : null;
+    final holeData = widget.preloadedHoles
+        ?.where((h) => h.hole == _currentHole)
+        .firstOrNull;
     final hasYds = holeData != null && holeData.yardage > 0;
     final hPad = (_sw * 0.055).clamp(18.0, 26.0);
 
