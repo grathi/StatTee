@@ -21,6 +21,7 @@ import '../widgets/golf_animations.dart';
 import '../services/onboarding_service.dart';
 import 'round_summary_screen.dart';
 import 'group_round_results_screen.dart';
+import '../widgets/live_leaderboard_sheet.dart';
 
 class ScorecardScreen extends StatefulWidget {
   final String roundId;
@@ -294,6 +295,15 @@ class _ScorecardScreenState extends State<ScorecardScreen>
         final nextHole = _currentHole + 1;
         // Persist the current hole position so the round can be resumed.
         unawaited(RoundService.saveCurrentHole(widget.roundId, nextHole));
+        // Push live score to group session leaderboard.
+        if (widget.sessionId != null) {
+          final liveDiff = _saved.fold(0, (s, h) => s + h.diff);
+          unawaited(GroupRoundService.updateLiveScore(
+            widget.sessionId!,
+            liveScore: liveDiff,
+            holesCompleted: _saved.length,
+          ));
+        }
         _resetForHole(nextHole);
       }
     } catch (e) {
@@ -1065,80 +1075,108 @@ class _ScorecardScreenState extends State<ScorecardScreen>
   // ── Next / Complete button ─────────────────────────────────────────────────
   Widget _buildNextButton(AppColors c) {
     final label = _isLastHole ? 'Finish Round' : 'Next Hole';
-    return Padding(
-      padding: EdgeInsets.fromLTRB(_hPad, 0, _hPad, (_sh * 0.025).clamp(16.0, 28.0)),
-      child: GestureDetector(
-        onTap: _isSaving ? null : _saveAndAdvance,
-        child: AnimatedBuilder(
-          animation: _shimmerCtrl,
-          builder: (_, child) {
-            return Container(
-              height: (_sh * 0.068).clamp(52.0, 64.0),
-              decoration: ShapeDecoration(
-                gradient: LinearGradient(
-                  colors: [c.accent, c.accent.withValues(alpha: 0.75)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                shape: SuperellipseShape(borderRadius: BorderRadius.circular(40)),
-                shadows: [
-                  BoxShadow(
-                    color: c.accent.withValues(alpha: 0.35),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
+    final btnHeight = (_sh * 0.068).clamp(52.0, 64.0);
+
+    final mainButton = GestureDetector(
+      onTap: _isSaving ? null : _saveAndAdvance,
+      child: AnimatedBuilder(
+        animation: _shimmerCtrl,
+        builder: (_, child) {
+          return Container(
+            height: btnHeight,
+            decoration: ShapeDecoration(
+              gradient: LinearGradient(
+                colors: [c.accent, c.accent.withValues(alpha: 0.75)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              child: ClipPath(
-                clipper: _SuperellipseClipper(radius: 40),
-                child: Stack(
-                  children: [
-                    // Shimmer sweep
-                    Positioned.fill(
-                      child: FractionalTranslation(
-                        translation: Offset(_shimmerCtrl.value * 2.5 - 0.75, 0),
-                        child: Transform(
-                          transform: Matrix4.skewX(-0.3),
-                          child: Container(
-                            width: 60,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.white.withValues(alpha: 0.0),
-                                  Colors.white.withValues(alpha: 0.22),
-                                  Colors.white.withValues(alpha: 0.0),
-                                ],
-                              ),
+              shape: SuperellipseShape(borderRadius: BorderRadius.circular(40)),
+              shadows: [
+                BoxShadow(
+                  color: c.accent.withValues(alpha: 0.35),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: ClipPath(
+              clipper: _SuperellipseClipper(radius: 40),
+              child: Stack(
+                children: [
+                  // Shimmer sweep
+                  Positioned.fill(
+                    child: FractionalTranslation(
+                      translation: Offset(_shimmerCtrl.value * 2.5 - 0.75, 0),
+                      child: Transform(
+                        transform: Matrix4.skewX(-0.3),
+                        child: Container(
+                          width: 60,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.white.withValues(alpha: 0.0),
+                                Colors.white.withValues(alpha: 0.22),
+                                Colors.white.withValues(alpha: 0.0),
+                              ],
                             ),
                           ),
                         ),
                       ),
                     ),
-                    Center(
-                      child: _isSaving
-                          ? const SizedBox(
-                              width: 22, height: 22,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2.5,
-                                  valueColor: AlwaysStoppedAnimation(Colors.white)))
-                          : Text(
-                              label,
-                              style: const TextStyle(
-                                color:      Colors.white,
-                                fontFamily: 'Nunito',
-                                fontSize:   17,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.3,
-                              ),
+                  ),
+                  Center(
+                    child: _isSaving
+                        ? const SizedBox(
+                            width: 22, height: 22,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                valueColor: AlwaysStoppedAnimation(Colors.white)))
+                        : Text(
+                            label,
+                            style: const TextStyle(
+                              color:      Colors.white,
+                              fontFamily: 'Nunito',
+                              fontSize:   17,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.3,
                             ),
-                    ),
-                  ],
-                ),
+                          ),
+                  ),
+                ],
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
+    );
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(_hPad, 0, _hPad, (_sh * 0.025).clamp(16.0, 28.0)),
+      child: widget.sessionId != null
+          ? Row(
+              children: [
+                // Leaderboard button
+                GestureDetector(
+                  onTap: () => showLiveLeaderboard(context, widget.sessionId!),
+                  child: Container(
+                    width: btnHeight,
+                    height: btnHeight,
+                    decoration: ShapeDecoration(
+                      color: c.accentBg,
+                      shape: SuperellipseShape(
+                        borderRadius: BorderRadius.circular(40),
+                        side: BorderSide(color: c.accentBorder),
+                      ),
+                    ),
+                    child: Icon(Icons.leaderboard_rounded, color: c.accent, size: 22),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // Next Hole / Finish Round button (takes remaining width)
+                Expanded(child: mainButton),
+              ],
+            )
+          : mainButton,
     );
   }
 
@@ -2161,6 +2199,7 @@ class _HoleMiniMap extends StatelessWidget {
     );
   }
 }
+
 
 class _HolePainter extends CustomPainter {
   final int par;

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
 
 import '../models/round.dart';
+import '../services/group_round_service.dart';
 import '../services/round_service.dart';
 import '../screens/scorecard_screen.dart';
 import '../theme/app_theme.dart';
@@ -16,7 +17,17 @@ class ResumeRoundCard extends StatelessWidget {
 
   // ── Resume ────────────────────────────────────────────────────────────────
 
-  void _resume(BuildContext context) {
+  void _resume(BuildContext context) async {
+    // Prefer the sessionId stored on the round doc. For rounds created before
+    // this field existed (or for invited players whose round was created before
+    // the fix), fall back to querying groupRounds for an active session that
+    // references this round.
+    String? sessionId = round.sessionId;
+    if (sessionId == null && round.id != null) {
+      sessionId = await GroupRoundService.findSessionIdForRound(round.id!);
+    }
+
+    if (!context.mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -28,6 +39,7 @@ class ResumeRoundCard extends StatelessWidget {
           savedScores: round.scores,
           lat: round.lat,
           lng: round.lng,
+          sessionId: sessionId,
         ),
       ),
     );

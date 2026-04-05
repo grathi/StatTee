@@ -367,21 +367,6 @@ class _StartRoundScreenState extends State<StartRoundScreen>
       List<GolfApiHole>? holes = _selectedApiTee?.effectiveHoles
           ?? (_selectedFirestoreTee != null ? CourseService.toGolfApiHoles(_selectedFirestoreTee!) : null);
 
-      final roundId = await RoundService.startRound(
-        courseName:     courseName,
-        courseLocation: courseLocation,
-        totalHoles:     _holes,
-        courseRating:   courseRating,
-        slopeRating:    slopeRating,
-        weather:        null,
-        isPractice:     widget.isPractice,
-        tournamentId:   widget.tournamentId,
-        lat:            _selectedLat ?? _userPosition?.latitude ?? _customLat,
-        lng:            _selectedLng ?? _userPosition?.longitude ?? _customLng,
-      );
-
-      if (mounted) CloudSyncPulse.show(context);
-
       if (holes == null) {
         final courseDetail = await GolfCourseApiService.findBestMatch(
           courseName,
@@ -399,7 +384,8 @@ class _StartRoundScreenState extends State<StartRoundScreen>
         }
       }
 
-      // Create group session if friends were invited
+      // Create group session BEFORE the round so sessionId can be stored on the round.
+      // This ensures the round is resumable as a group round after a crash/close.
       String? sessionId;
       final invitees = _acceptedFriends
           .where((f) => _invitedUids.contains(f.uid))
@@ -414,6 +400,25 @@ class _StartRoundScreenState extends State<StartRoundScreen>
           holes:          holes ?? [],
           invitees:       invitees,
         );
+      }
+
+      final roundId = await RoundService.startRound(
+        courseName:     courseName,
+        courseLocation: courseLocation,
+        totalHoles:     _holes,
+        courseRating:   courseRating,
+        slopeRating:    slopeRating,
+        weather:        null,
+        isPractice:     widget.isPractice,
+        tournamentId:   widget.tournamentId,
+        lat:            _selectedLat ?? _userPosition?.latitude ?? _customLat,
+        lng:            _selectedLng ?? _userPosition?.longitude ?? _customLng,
+        sessionId:      sessionId,
+      );
+
+      if (mounted) CloudSyncPulse.show(context);
+
+      if (sessionId != null) {
         await GroupRoundService.joinSession(sessionId, roundId);
       }
 

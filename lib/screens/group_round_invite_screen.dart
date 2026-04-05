@@ -7,6 +7,7 @@ import '../services/round_service.dart';
 import '../theme/app_theme.dart';
 import 'scorecard_import_screen.dart';
 import 'scorecard_screen.dart';
+import '../widgets/live_leaderboard_sheet.dart';
 
 class GroupRoundInviteScreen extends StatefulWidget {
   const GroupRoundInviteScreen({super.key, required this.sessionId});
@@ -291,28 +292,53 @@ class _GroupRoundInviteScreenState extends State<GroupRoundInviteScreen> {
                         ),
                       ),
                     ] else if (alreadyJoined) ...[
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: ShapeDecoration(
-                          color: c.accentBg,
-                          shape: SuperellipseShape(
-                            borderRadius: BorderRadius.circular(20),
-                            side: BorderSide(color: c.accentBorder),
+                      Row(
+                        children: [
+                          // Leaderboard button
+                          GestureDetector(
+                            onTap: () => showLiveLeaderboard(context, widget.sessionId),
+                            child: Container(
+                              width: (sh * 0.072).clamp(52.0, 64.0),
+                              height: (sh * 0.072).clamp(52.0, 64.0),
+                              decoration: ShapeDecoration(
+                                color: c.accentBg,
+                                shape: SuperellipseShape(
+                                  borderRadius: BorderRadius.circular(40),
+                                  side: BorderSide(color: c.accentBorder),
+                                ),
+                              ),
+                              child: Icon(Icons.leaderboard_rounded, color: c.accent, size: 22),
+                            ),
                           ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.check_circle_rounded,
-                                color: c.accent, size: body * 1.2),
-                            const SizedBox(width: 8),
-                            Text("You've joined this round",
-                                style: TextStyle(
-                                    color: c.accent,
-                                    fontSize: body,
-                                    fontWeight: FontWeight.w700)),
-                          ],
-                        ),
+                          const SizedBox(width: 10),
+                          // Joined status pill
+                          Expanded(
+                            child: Container(
+                              height: (sh * 0.072).clamp(52.0, 64.0),
+                              decoration: ShapeDecoration(
+                                color: c.accentBg,
+                                shape: SuperellipseShape(
+                                  borderRadius: BorderRadius.circular(48),
+                                  side: BorderSide(color: c.accentBorder),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.check_circle_rounded,
+                                      color: c.accent, size: body * 1.2),
+                                  const SizedBox(width: 8),
+                                  Text("You've joined this round",
+                                      style: TextStyle(
+                                          fontFamily: 'Nunito',
+                                          color: c.accent,
+                                          fontSize: (sw * 0.036).clamp(13.0, 15.0),
+                                          fontWeight: FontWeight.w700)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ] else if (isLateJoin) ...[
                       // Join Round button (live scoring)
@@ -444,6 +470,7 @@ class _GroupRoundInviteScreenState extends State<GroupRoundInviteScreen> {
         totalHoles:   session.totalHoles,
         courseRating: session.courseRating,
         slopeRating:  session.slopeRating,
+        sessionId:    widget.sessionId,
       );
       await GroupRoundService.joinSession(widget.sessionId, roundId);
       if (!mounted) return;

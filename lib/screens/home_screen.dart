@@ -1541,8 +1541,13 @@ class _HomeTabState extends State<_HomeTab>
               itemCount: allCards.length,
               separatorBuilder: (context, index) => const SizedBox(width: 12),
               itemBuilder: (context, i) => GestureDetector(
-                onTap: () {
+                onTap: () async {
                   if (allCards[i].isActive && activeRound != null) {
+                    String? sessionId = activeRound.sessionId;
+                    if (sessionId == null && activeRound.id != null) {
+                      sessionId = await GroupRoundService.findSessionIdForRound(activeRound.id!);
+                    }
+                    if (!context.mounted) return;
                     Navigator.push(context, MaterialPageRoute(
                       builder: (_) => ScorecardScreen(
                         roundId: activeRound.id!,
@@ -1552,6 +1557,7 @@ class _HomeTabState extends State<_HomeTab>
                         savedScores: activeRound.scores,
                         lat: activeRound.lat,
                         lng: activeRound.lng,
+                        sessionId: sessionId,
                       ),
                     ));
                   }
@@ -2129,7 +2135,7 @@ class _HomeTabState extends State<_HomeTab>
           Skeletonizer(
             enabled: _loadingNearby,
             child: SizedBox(
-              height: (_sh * 0.165).clamp(130.0, 160.0),
+              height: (_sh * 0.215).clamp(162.0, 182.0),
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: EdgeInsets.symmetric(horizontal: _hPad),
@@ -2206,9 +2212,34 @@ class _HomeTabState extends State<_HomeTab>
 
   Widget _buildNearbyCourseCard(GolfCourseDetail course, AppColors c) {
     final cardW = (_sw * 0.60).clamp(200.0, 260.0);
+    final pad   = (_sw * 0.04).clamp(12.0, 18.0);
+    final playBadge = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: ShapeDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF5A9E1F), Color(0xFF7BC344)],
+        ),
+        shape: SuperellipseShape(borderRadius: BorderRadius.circular(40)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.sports_golf_rounded, color: Colors.white, size: 11),
+          const SizedBox(width: 3),
+          Text(
+            'Play',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: _labelSize * 0.9,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+
     return GestureDetector(
       onTap: () {
-        // Open Start Round with this course pre-filled
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -2224,6 +2255,7 @@ class _HomeTabState extends State<_HomeTab>
       },
       child: Container(
         width: cardW,
+        clipBehavior: Clip.antiAlias,
         decoration: ShapeDecoration(
           gradient: LinearGradient(colors: c.cardGradient, begin: Alignment.topCenter, end: Alignment.bottomCenter),
           shape: SuperellipseShape(
@@ -2231,86 +2263,86 @@ class _HomeTabState extends State<_HomeTab>
           ),
           shadows: c.cardShadow,
         ),
-        padding: EdgeInsets.all((_sw * 0.04).clamp(12.0, 18.0)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              children: [
-                Container(
-                  width: (_sw * 0.10).clamp(34.0, 42.0),
-                  height: (_sw * 0.10).clamp(34.0, 42.0),
-                  decoration: ShapeDecoration(
-                    color: c.accentBg,
-                    shape: SuperellipseShape(
-                      borderRadius: BorderRadius.circular(20), side: BorderSide(color: c.accentBorder),
-                    ),
-                  ),
-                  child: Icon(Icons.golf_course_rounded,
-                      color: c.accent,
-                      size: (_sw * 0.05).clamp(16.0, 22.0)),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
-                  decoration: ShapeDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF5A9E1F), Color(0xFF7BC344)],
-                    ),
-                    shape: SuperellipseShape(
-                      borderRadius: BorderRadius.circular(40),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.sports_golf_rounded,
-                          color: Colors.white, size: 11),
-                      const SizedBox(width: 3),
-                      Text(
-                        'Play',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: _labelSize * 0.9,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const Spacer(),
-            Text(
-              course.name,
-              style: TextStyle(fontFamily: 'Nunito',
-                color: c.primaryText,
-                fontSize: _bodySize,
-                fontWeight: FontWeight.w700,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (course.address.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Row(
+            // ── Banner image ────────────────────────────────────────────
+            if (course.photoUrl != null)
+              Stack(
                 children: [
-                  Icon(Icons.location_on_rounded,
-                      color: c.tertiaryText, size: _labelSize),
-                  const SizedBox(width: 2),
-                  Expanded(
-                    child: Text(
-                      course.address,
-                      style: TextStyle(
-                          color: c.tertiaryText, fontSize: _labelSize),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  Image.network(
+                    course.photoUrl!,
+                    width: cardW,
+                    height: 80,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: cardW,
+                      height: 80,
+                      color: c.accentBg,
+                      child: Icon(Icons.golf_course_rounded,
+                          color: c.accent, size: 36),
                     ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: playBadge,
                   ),
                 ],
+              )
+            else
+              Stack(
+                children: [
+                  Container(
+                    width: cardW,
+                    height: 80,
+                    color: c.accentBg,
+                    child: Icon(Icons.golf_course_rounded,
+                        color: c.accent, size: 36),
+                  ),
+                  Positioned(top: 8, right: 8, child: playBadge),
+                ],
               ),
-            ],
+            // ── Name + address ──────────────────────────────────────────
+            Padding(
+              padding: EdgeInsets.fromLTRB(pad, pad * 0.7, pad, pad * 0.8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    course.name,
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      color: c.primaryText,
+                      fontSize: _bodySize,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (course.address.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.location_on_rounded,
+                            color: c.tertiaryText, size: _labelSize),
+                        const SizedBox(width: 2),
+                        Expanded(
+                          child: Text(
+                            course.address,
+                            style: TextStyle(
+                                color: c.tertiaryText, fontSize: _labelSize),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ],
         ),
       ),

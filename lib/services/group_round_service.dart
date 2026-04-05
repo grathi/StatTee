@@ -96,6 +96,21 @@ class GroupRoundService {
     });
   }
 
+  // ── Live score update (called after each hole) ────────────────────────────
+
+  /// Pushes the current player's live score + holes completed after each hole.
+  /// This is what powers the in-round leaderboard for other players.
+  static Future<void> updateLiveScore(
+    String sessionId, {
+    required int liveScore,
+    required int holesCompleted,
+  }) async {
+    await _db.collection('groupRounds').doc(sessionId).update({
+      'players.$_uid.liveScore': liveScore,
+      'players.$_uid.holesCompleted': holesCompleted,
+    });
+  }
+
   // ── Report completion ──────────────────────────────────────────────────────
 
   /// Called when a player finishes their round. Writes score + checks if all done.
@@ -154,5 +169,23 @@ class GroupRoundService {
     final doc = await _db.collection('groupRounds').doc(sessionId).get();
     if (!doc.exists) return null;
     return GroupRound.fromFirestore(doc);
+  }
+
+  // ── Recover sessionId for a round (fallback for old/migrated rounds) ──────
+
+  /// Searches active/waiting groupRounds where this user has a matching roundId.
+  /// Used when the round doc was created before sessionId was persisted.
+  static Future<String?> findSessionIdForRound(String roundId) async {
+    final snap = await _db
+        .collection('groupRounds')
+        .where('players.$_uid.roundId', isEqualTo: roundId)
+        .limit(1)
+        .get();
+    if (snap.docs.isEmpty) return null;
+    final session = GroupRound.fromFirestore(snap.docs.first);
+    if (session.status == 'cancelled' || session.status == 'completed') {
+      return null;
+    }
+    return snap.docs.first.id;
   }
 }

@@ -10,6 +10,10 @@ class GroupRoundPlayer {
   final String? roundId;
   final int? totalScore;
   final double? scoreDiff;
+  /// Strokes relative to par so far (live, updated hole-by-hole).
+  final int? liveScore;
+  /// Number of holes completed (0–18, live).
+  final int holesCompleted;
 
   const GroupRoundPlayer({
     required this.uid,
@@ -19,6 +23,8 @@ class GroupRoundPlayer {
     this.roundId,
     this.totalScore,
     this.scoreDiff,
+    this.liveScore,
+    this.holesCompleted = 0,
   });
 
   factory GroupRoundPlayer.fromMap(String uid, Map<String, dynamic> data) {
@@ -30,6 +36,8 @@ class GroupRoundPlayer {
       roundId: data['roundId'] as String?,
       totalScore: (data['totalScore'] as num?)?.toInt(),
       scoreDiff: (data['scoreDiff'] as num?)?.toDouble(),
+      liveScore: (data['liveScore'] as num?)?.toInt(),
+      holesCompleted: (data['holesCompleted'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -40,6 +48,8 @@ class GroupRoundPlayer {
         if (roundId != null) 'roundId': roundId,
         if (totalScore != null) 'totalScore': totalScore,
         if (scoreDiff != null) 'scoreDiff': scoreDiff,
+        if (liveScore != null) 'liveScore': liveScore,
+        'holesCompleted': holesCompleted,
       };
 }
 

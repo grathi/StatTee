@@ -103,7 +103,15 @@ class _GolfWorldMapState extends State<GolfWorldMap>
     if (_geocoding) return;
     setState(() => _geocoding = true);
 
-    final uncached = rounds
+    // Rounds that already have GPS coords stored — use them directly.
+    final withCoords = rounds.where((r) => r.lat != null && r.lng != null).toList();
+
+    // Rounds without GPS coords — geocode their location string.
+    final needsGeocode = rounds
+        .where((r) => r.lat == null || r.lng == null)
+        .toList();
+
+    final uncached = needsGeocode
         .map((r) => r.courseLocation.trim())
         .where((loc) => loc.isNotEmpty && !_geoCache.containsKey(loc.toLowerCase()))
         .toSet()
@@ -125,7 +133,22 @@ class _GolfWorldMapState extends State<GolfWorldMap>
     }
 
     final placed = <_PlacedRound>[];
-    for (final round in rounds) {
+
+    // Add GPS-precise rounds first.
+    for (final round in withCoords) {
+      if (round.id == null) continue;
+      placed.add(_PlacedRound(
+        round: round,
+        lat: round.lat!,
+        lng: round.lng!,
+        geoLabel: round.courseLocation.isNotEmpty
+            ? round.courseLocation.split(',').take(2).join(',').trim()
+            : round.courseName,
+      ));
+    }
+
+    // Add geocoded rounds (fallback for old data).
+    for (final round in needsGeocode) {
       if (round.id == null) continue;
       final key = round.courseLocation.trim().toLowerCase();
       final geo = _geoCache[key];
@@ -138,6 +161,9 @@ class _GolfWorldMapState extends State<GolfWorldMap>
         ));
       }
     }
+
+    // Sort by most recent first so _placedRounds.first == latest round.
+    placed.sort((a, b) => b.round.startedAt.compareTo(a.round.startedAt));
 
     if (!mounted) return;
     setState(() {

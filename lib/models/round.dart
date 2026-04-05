@@ -26,6 +26,8 @@ class Round {
   /// course when a round is resumed (not just when first started).
   final double? lat;
   final double? lng;
+  /// Group round session this round belongs to. Null for solo rounds.
+  final String? sessionId;
 
   const Round({
     this.id,
@@ -45,6 +47,7 @@ class Round {
     this.currentHole = 1,
     this.lat,
     this.lng,
+    this.sessionId,
   });
 
   // ── Computed stats ──────────────────────────────────────────────────────
@@ -110,6 +113,7 @@ class Round {
         'currentHole': currentHole,
         if (lat != null) 'lat': lat,
         if (lng != null) 'lng': lng,
+        if (sessionId != null) 'sessionId': sessionId,
       };
 
   factory Round.fromFirestore(DocumentSnapshot doc) {
@@ -141,6 +145,7 @@ class Round {
       currentHole: (d['currentHole'] as num?)?.toInt() ?? 1,
       lat: (d['lat'] as num?)?.toDouble(),
       lng: (d['lng'] as num?)?.toDouble(),
+      sessionId: d['sessionId'] as String?,
     );
   }
 
@@ -157,6 +162,7 @@ class Round {
     int? currentHole,
     double? lat,
     double? lng,
+    String? sessionId,
   }) =>
       Round(
         id: id ?? this.id,
@@ -176,5 +182,6 @@ class Round {
         currentHole: currentHole ?? this.currentHole,
         lat: lat ?? this.lat,
         lng: lng ?? this.lng,
+        sessionId: sessionId ?? this.sessionId,
       );
 }

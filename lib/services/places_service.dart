@@ -15,6 +15,19 @@ String get _apiKey {
   return Platform.isAndroid ? _androidKey : _iosKey;
 }
 
+/// Builds a Place Photo URL from a photo_reference string.
+String _photoUrl(String ref, {int maxWidth = 400}) =>
+    'https://maps.googleapis.com/maps/api/place/photo'
+    '?maxwidth=$maxWidth&photo_reference=$ref&key=$_apiKey';
+
+/// Extracts the first photo URL from a Places API result map, or null.
+String? _firstPhotoUrl(Map<String, dynamic> r) {
+  final photos = r['photos'] as List<dynamic>?;
+  if (photos == null || photos.isEmpty) return null;
+  final ref = (photos.first as Map<String, dynamic>)['photo_reference'] as String?;
+  return ref == null ? null : _photoUrl(ref);
+}
+
 /// Normalises any Google address string to "City, State" format.
 /// Works with both `vicinity` ("4501 Main St, San Jose") and
 /// `formatted_address` ("4501 Main St, San Jose, CA 94566, USA").
@@ -55,6 +68,7 @@ class GolfCourseDetail {
   final String address;
   final double? lat;
   final double? lng;
+  final String? photoUrl;
 
   const GolfCourseDetail({
     required this.placeId,
@@ -62,6 +76,7 @@ class GolfCourseDetail {
     required this.address,
     this.lat,
     this.lng,
+    this.photoUrl,
   });
 }
 
@@ -289,6 +304,7 @@ class PlacesService {
               address: _shortAddress(r['formatted_address'] as String? ?? r['vicinity'] as String? ?? ''),
               lat: (geo?['lat'] as num?)?.toDouble(),
               lng: (geo?['lng'] as num?)?.toDouble(),
+              photoUrl: _firstPhotoUrl(r as Map<String, dynamic>),
             );
           })
           .toList();
@@ -371,6 +387,7 @@ class PlacesService {
           address: _shortAddress(r['vicinity'] as String? ?? r['formatted_address'] as String? ?? ''),
           lat: (geo?['lat'] as num?)?.toDouble(),
           lng: (geo?['lng'] as num?)?.toDouble(),
+          photoUrl: _firstPhotoUrl(r as Map<String, dynamic>),
         );
       }).toList();
     } catch (_) {
@@ -387,7 +404,7 @@ class PlacesService {
       '/maps/api/place/details/json',
       {
         'place_id': placeId,
-        'fields': 'name,formatted_address,geometry',
+        'fields': 'name,formatted_address,geometry,photos',
         'key': _apiKey,
       },
     );
@@ -405,6 +422,7 @@ class PlacesService {
         address: result['formatted_address'] as String? ?? '',
         lat: (geo?['lat'] as num?)?.toDouble(),
         lng: (geo?['lng'] as num?)?.toDouble(),
+        photoUrl: _firstPhotoUrl(result),
       );
     } catch (_) {
       return null;

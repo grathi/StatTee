@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:superellipse_shape/superellipse_shape.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 
@@ -209,11 +210,12 @@ class _SignUpScreenState extends State<SignUpScreen>
             icon: Container(
               width: (_sw * 0.095).clamp(34.0, 44.0),
               height: (_sw * 0.095).clamp(34.0, 44.0),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
+              decoration: ShapeDecoration(
                 color: c.iconContainerBg,
-                border:
-                    Border.all(color: c.iconContainerBorder),
+                shape: SuperellipseShape(
+                  borderRadius: BorderRadius.circular(22),
+                  side: BorderSide(color: c.iconContainerBorder),
+                ),
               ),
               child: Icon(
                 Icons.arrow_back_ios_new_rounded,
@@ -231,11 +233,17 @@ class _SignUpScreenState extends State<SignUpScreen>
     final c = AppColors.of(context);
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(
-        color: c.cardBg,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: c.cardBorder, width: 1),
-        boxShadow: c.cardShadow,
+      decoration: ShapeDecoration(
+        gradient: LinearGradient(
+          colors: c.cardGradient,
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        shape: SuperellipseShape(
+          borderRadius: BorderRadius.circular(48),
+          side: BorderSide(color: c.cardBorder),
+        ),
+        shadows: c.cardShadow,
       ),
       padding: EdgeInsets.all(_cardPad),
       child: Form(
@@ -328,7 +336,6 @@ class _SignUpScreenState extends State<SignUpScreen>
 
   Widget _buildCardHeader() {
     final c = AppColors.of(context);
-    final iconSize = (_sw * 0.11).clamp(38.0, 52.0);
     return Row(
       children: [
         Column(
@@ -336,10 +343,11 @@ class _SignUpScreenState extends State<SignUpScreen>
           children: [
             Text(
               'Create Account',
-              style: TextStyle(fontFamily: 'Nunito',
+              style: TextStyle(
+                fontFamily: 'Nunito',
                 color: c.primaryText,
                 fontSize: _headingSize,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
             Text(
@@ -434,32 +442,30 @@ class _SignUpScreenState extends State<SignUpScreen>
   InputDecoration _inputDecoration(
       String label, IconData icon, Widget? suffixIcon) {
     final c = AppColors.of(context);
+    final radius = BorderRadius.circular(20);
     return InputDecoration(
       labelText: label,
-      labelStyle: TextStyle(
-          color: c.fieldLabel, fontSize: _bodySize * 0.9),
-      prefixIcon:
-          Icon(icon, color: c.fieldIcon, size: _bodySize * 1.3),
+      labelStyle: TextStyle(color: c.fieldLabel, fontSize: _bodySize * 0.9),
+      prefixIcon: Icon(icon, color: c.fieldIcon, size: _bodySize * 1.3),
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: c.fieldBg,
       errorStyle: const TextStyle(color: Color(0xFFFF6B6B), fontSize: 12),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: radius,
         borderSide: BorderSide(color: c.fieldBorder),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: radius,
         borderSide: BorderSide(color: c.accent, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: radius,
         borderSide: const BorderSide(color: Color(0xFFFF6B6B)),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide:
-            const BorderSide(color: Color(0xFFFF6B6B), width: 1.5),
+        borderRadius: radius,
+        borderSide: const BorderSide(color: Color(0xFFFF6B6B), width: 1.5),
       ),
       contentPadding: EdgeInsets.symmetric(
         horizontal: 16,
@@ -483,36 +489,38 @@ class _SignUpScreenState extends State<SignUpScreen>
   }
 
   Widget _buildPrimaryButton() {
-    return SizedBox(
-      height: _buttonHeight,
-      child: ElevatedButton(
-        onPressed: _isLoading ? null : _signUp,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF5A9E1F),
-          foregroundColor: Colors.white,
-          disabledBackgroundColor:
-              const Color(0xFF5A9E1F).withValues(alpha: 0.5),
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14)),
-          elevation: 0,
+    return GestureDetector(
+      onTap: _isLoading ? null : _signUp,
+      child: Container(
+        height: _buttonHeight,
+        decoration: ShapeDecoration(
+          gradient: LinearGradient(
+            colors: _isLoading
+                ? [const Color(0xFF5A9E1F).withValues(alpha: 0.5), const Color(0xFF7BC344).withValues(alpha: 0.5)]
+                : const [Color(0xFF5A9E1F), Color(0xFF7BC344)],
+          ),
+          shape: SuperellipseShape(borderRadius: BorderRadius.circular(40)),
         ),
-        child: _isLoading
-            ? SizedBox(
-                width: _bodySize * 1.4,
-                height: _bodySize * 1.4,
-                child: const CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation(Colors.white),
+        child: Center(
+          child: _isLoading
+              ? SizedBox(
+                  width: _bodySize * 1.4,
+                  height: _bodySize * 1.4,
+                  child: const CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation(Colors.white),
+                  ),
+                )
+              : Text(
+                  'Create Account',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: _bodySize,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
                 ),
-              )
-            : Text(
-                'Create Account',
-                style: TextStyle(
-                  fontSize: _bodySize,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
-                ),
-              ),
+        ),
       ),
     );
   }
@@ -520,16 +528,16 @@ class _SignUpScreenState extends State<SignUpScreen>
   Widget _buildError(String message) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
+      decoration: ShapeDecoration(
         color: const Color(0xFFFF6B6B).withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-            color: const Color(0xFFFF6B6B).withValues(alpha: 0.30)),
+        shape: SuperellipseShape(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(color: const Color(0xFFFF6B6B).withValues(alpha: 0.30)),
+        ),
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline,
-              color: Color(0xFFFF6B6B), size: 16),
+          const Icon(Icons.error_outline, color: Color(0xFFFF6B6B), size: 16),
           const SizedBox(width: 8),
           Expanded(
             child: Text(

@@ -3,6 +3,7 @@ import 'package:superellipse_shape/superellipse_shape.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../models/round.dart';
 import '../services/round_service.dart';
+import '../services/group_round_service.dart';
 import '../theme/app_theme.dart';
 import 'scorecard_import_screen.dart';
 import '../widgets/shimmer_widgets.dart';
@@ -90,16 +91,28 @@ class _RoundsScreenState extends State<RoundsScreen> {
                               return Padding(
                                 padding: EdgeInsets.fromLTRB(hPad, 0, hPad, sh * 0.016),
                                 child: GestureDetector(
-                                  onTap: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => ScorecardScreen(
-                                        roundId: active.id!,
-                                        courseName: active.courseName,
-                                        totalHoles: active.totalHoles,
+                                  onTap: () async {
+                                    String? sessionId = active.sessionId;
+                                    if (sessionId == null && active.id != null) {
+                                      sessionId = await GroupRoundService.findSessionIdForRound(active.id!);
+                                    }
+                                    if (!context.mounted) return;
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => ScorecardScreen(
+                                          roundId: active.id!,
+                                          courseName: active.courseName,
+                                          totalHoles: active.totalHoles,
+                                          initialHole: active.currentHole,
+                                          savedScores: active.scores,
+                                          lat: active.lat,
+                                          lng: active.lng,
+                                          sessionId: sessionId,
+                                        ),
                                       ),
-                                    ),
-                                  ),
+                                    );
+                                  },
                                   child: Container(
                                     width: double.infinity,
                                     decoration: ShapeDecoration(
