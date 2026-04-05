@@ -127,7 +127,7 @@ class _TeeStatsAppState extends State<TeeStatsApp> {
 
   /// Minimum time the app must be in the background before smart notifications
   /// are re-evaluated on resume. Prevents firing when users briefly switch apps.
-  static const _minBackgroundDuration = Duration(minutes: 30);
+  static const _minBackgroundDuration = Duration(minutes: 10);
 
   @override
   void initState() {
@@ -136,6 +136,19 @@ class _TeeStatsAppState extends State<TeeStatsApp> {
       onPause:  _onAppPause,
       onResume: _onAppResume,
     );
+    // Evaluate on cold start so events like abandoned rounds and upcoming
+    // tee times are surfaced the first time the user opens the app.
+    _maybeEvaluateOnColdStart();
+  }
+
+  Future<void> _maybeEvaluateOnColdStart() async {
+    // Wait for the app to settle and auth to be ready.
+    await Future.delayed(const Duration(seconds: 3));
+    if (FirebaseAuth.instance.currentUser == null) return;
+    try {
+      final ctx = await SmartNotificationService.buildContext();
+      await SmartNotificationService.evaluate(ctx);
+    } catch (_) {}
   }
 
   void _onAppPause() {

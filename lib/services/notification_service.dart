@@ -158,26 +158,62 @@ class NotificationService {
     );
   }
 
-  // ── Round Reminder (scheduled 1 h before a tee time) ─────────────────────
+  // ── Round Reminder (OS-scheduled, works when app is closed) ──────────────
+  //
+  // Schedules two alerts per tee time: 1 hour before and 15 minutes before.
+  // Uses a teeTimeId-derived ID so multiple tee times don't overwrite each
+  // other, and re-scheduling the same tee time is idempotent.
 
-  static Future<void> scheduleRoundReminder(DateTime teeTime, String courseName) async {
-    final reminderTime = teeTime.subtract(const Duration(hours: 1));
-    if (reminderTime.isBefore(DateTime.now())) return;
+  static int _teeTimeNotifId(String teeTimeId, int slot) =>
+      5000 + (teeTimeId.hashCode.abs() % 900) * 2 + slot;
 
-    final tzTime = tz.TZDateTime.from(reminderTime, tz.local);
-    await _plugin.zonedSchedule(
-      kNotifRoundReminder,
-      '⛳ Tee time in 1 hour!',
-      'Get ready for your round at $courseName.',
-      tzTime,
-      _details(payload: 'home'),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-    );
+  static Future<void> scheduleRoundReminder(
+    DateTime teeTime,
+    String courseName, {
+    String teeTimeId = '',
+  }) async {
+    final now = DateTime.now();
+
+    // 1-hour reminder
+    final oneHour = teeTime.subtract(const Duration(hours: 1));
+    if (oneHour.isAfter(now)) {
+      await _plugin.zonedSchedule(
+        _teeTimeNotifId(teeTimeId, 0),
+        '⛳ Tee time in 1 hour!',
+        'Get ready for your round at $courseName.',
+        tz.TZDateTime.from(oneHour, tz.local),
+        _details(payload: 'home'),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+    }
+
+    // 15-minute reminder
+    final fifteenMin = teeTime.subtract(const Duration(minutes: 15));
+    if (fifteenMin.isAfter(now)) {
+      await _plugin.zonedSchedule(
+        _teeTimeNotifId(teeTimeId, 1),
+        '⛳ Tee time in 15 minutes!',
+        'Head to the first tee at $courseName.',
+        tz.TZDateTime.from(fifteenMin, tz.local),
+        _details(payload: 'home'),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+    }
   }
 
-  static Future<void> cancelRoundReminder() => _plugin.cancel(kNotifRoundReminder);
+  static Future<void> cancelRoundReminder([String teeTimeId = '']) async {
+    if (teeTimeId.isEmpty) {
+      // Legacy: cancel the old single-ID reminder
+      await _plugin.cancel(kNotifRoundReminder);
+    } else {
+      await _plugin.cancel(_teeTimeNotifId(teeTimeId, 0));
+      await _plugin.cancel(_teeTimeNotifId(teeTimeId, 1));
+    }
+  }
 
   // ── Streak Reminder ───────────────────────────────────────────────────────
 

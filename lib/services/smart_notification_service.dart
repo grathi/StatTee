@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/smart_notification.dart';
 import '../models/smart_notification_context.dart';
 import 'notification_service.dart';
@@ -27,13 +28,12 @@ class SmartNotificationService {
   static final _firestore = FirebaseFirestore.instance;
   static final _auth      = FirebaseAuth.instance;
 
-  // ── Cooldown tracking (in-memory, resets on cold start) ──────────────────
+  // ── Cooldown tracking (persisted to SharedPreferences) ───────────────────
 
   /// Minimum gap between any two evaluate() calls (regardless of type).
-  static const _resumeCooldown = Duration(minutes: 30);
+  static const _resumeCooldown = Duration(minutes: 15);
 
-  /// Per-type minimum gap — prevents the same notification firing twice
-  /// in a short session even if the user backgrounds/foregrounds frequently.
+  /// Per-type minimum gap — prevents the same notification firing twice.
   static const Map<SmartNotificationType, Duration> _typeCooldowns = {
     SmartNotificationType.performanceTrend: Duration(hours: 24),
     SmartNotificationType.weaknessPractice: Duration(hours: 12),
@@ -41,8 +41,30 @@ class SmartNotificationService {
     SmartNotificationType.teeTimeReminder:  Duration(minutes: 30),
   };
 
-  static DateTime? _lastEvaluatedAt;
-  static final Map<SmartNotificationType, DateTime> _lastFiredAt = {};
+  static const _kLastEvaluated   = 'sn_last_evaluated';
+  static const _kLastFiredPrefix = 'sn_last_fired_';
+
+  static Future<DateTime?> _getLastEvaluated() async {
+    final prefs = await SharedPreferences.getInstance();
+    final ms = prefs.getInt(_kLastEvaluated);
+    return ms != null ? DateTime.fromMillisecondsSinceEpoch(ms) : null;
+  }
+
+  static Future<void> _setLastEvaluated(DateTime t) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_kLastEvaluated, t.millisecondsSinceEpoch);
+  }
+
+  static Future<DateTime?> _getLastFired(SmartNotificationType type) async {
+    final prefs = await SharedPreferences.getInstance();
+    final ms = prefs.getInt('$_kLastFiredPrefix${type.key}');
+    return ms != null ? DateTime.fromMillisecondsSinceEpoch(ms) : null;
+  }
+
+  static Future<void> _setLastFired(SmartNotificationType type, DateTime t) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('$_kLastFiredPrefix${type.key}', t.millisecondsSinceEpoch);
+  }
 
   // ── Public entry point ───────────────────────────────────────────────────
 
@@ -54,11 +76,12 @@ class SmartNotificationService {
       SmartNotificationContext ctx) async {
     // Global cooldown — don't evaluate at all if called too recently.
     final now = DateTime.now();
-    if (_lastEvaluatedAt != null &&
-        now.difference(_lastEvaluatedAt!) < _resumeCooldown) {
+    final lastEvaluated = await _getLastEvaluated();
+    if (lastEvaluated != null &&
+        now.difference(lastEvaluated) < _resumeCooldown) {
       return null;
     }
-    _lastEvaluatedAt = now;
+    await _setLastEvaluated(now);
 
     final candidates = _buildCandidates(ctx);
     if (candidates.isEmpty) return null;
@@ -69,7 +92,7 @@ class SmartNotificationService {
     // Pick the highest-priority candidate that is not in its cooldown window.
     SmartNotification? best;
     for (final c in candidates) {
-      final lastFired = _lastFiredAt[c.type];
+      final lastFired = await _getLastFired(c.type);
       final cooldown  = _typeCooldowns[c.type] ?? const Duration(hours: 6);
       if (lastFired == null || now.difference(lastFired) >= cooldown) {
         best = c;
@@ -81,7 +104,7 @@ class SmartNotificationService {
     // Enrich wording through AI text generator
     final enriched = await _AITextGenerator.enrich(best, ctx);
 
-    _lastFiredAt[enriched.type] = now;
+    await _setLastFired(enriched.type, now);
     await _persist(enriched);
     await _fireLocal(enriched);
     return enriched;
@@ -165,6 +188,20 @@ class SmartNotificationService {
     final activity = await _buildActivityData(uid);
     final performance = await _buildPerformanceData(uid);
     final teeTimes = await _fetchUpcomingTeeTimes(uid);
+
+    // Schedule OS-level tee time reminders so they fire even when the app
+    // is closed. Re-scheduling the same tee time is idempotent (same IDs).
+    if (prefs['teeTimeReminder'] ?? true) {
+      for (final tt in teeTimes) {
+        try {
+          await NotificationService.scheduleRoundReminder(
+            tt.scheduledAt,
+            tt.courseName,
+            teeTimeId: tt.id,
+          );
+        } catch (_) {}
+      }
+    }
 
     return SmartNotificationContext(
       activity: activity,
