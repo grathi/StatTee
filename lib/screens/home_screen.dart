@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geolocator/geolocator.dart';
 import '../models/hole_score.dart';
@@ -136,7 +137,13 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    return Stack(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ),
+      child: Stack(
       children: [
         Scaffold(
           extendBody: true,
@@ -182,6 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onComplete: () => setState(() => _showTour = false),
           ),
       ],
+    ),
     );
   }
 

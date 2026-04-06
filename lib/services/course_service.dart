@@ -4,11 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import '../models/course_model.dart';
 import 'golf_course_api_service.dart';
+import 'remote_config_service.dart';
 
 class CourseService {
   static final _db = FirebaseFirestore.instance;
-
-  static const _geminiApiKey = 'AIzaSyBguAtzXEWKXkyrw5L2Us3iCnWPi-49uss';
 
   static const _extractionPrompt = '''
 Extract golf scorecard data from this image.
@@ -80,7 +79,7 @@ Rules:
   ) async {
     final model = GenerativeModel(
       model:  'gemini-2.5-flash',
-      apiKey: _geminiApiKey,
+      apiKey: RemoteConfigService.geminiApiKey,
     );
     final response = await model.generateContent([
       Content.multi([
