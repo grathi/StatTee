@@ -165,7 +165,7 @@ class _SmallWeatherCardState extends State<SmallWeatherCard> {
             // 3. Dark overlay for text contrast
             Positioned.fill(
               child: ColoredBox(
-                color: Colors.black.withValues(alpha: 0.28),
+                color: Colors.black.withValues(alpha: 0.40),
               ),
             ),
             // 4. Content
@@ -216,6 +216,12 @@ class _SmallWeatherCardState extends State<SmallWeatherCard> {
                   color: color,
                   fontSize: label,
                   fontWeight: FontWeight.w600,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black.withValues(alpha: 0.55),
+                      blurRadius: 6,
+                    ),
+                  ],
                 ),
               ),
             ],

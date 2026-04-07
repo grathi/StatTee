@@ -867,19 +867,27 @@ class _HomeTabState extends State<_HomeTab>
                     bottom: false,
                     child: FadeTransition(
                       opacity: _fadeAnim,
-                      child: Column(
-                        children: [
-                          _buildHeader(c),
-                          Expanded(
-                            child: RefreshIndicator(
-                              onRefresh: _loadNearbyCourses,
-                              color: const Color(0xFF5A9E1F),
-                              backgroundColor: Colors.white,
-                              displacement: 20,
-                              child: SingleChildScrollView(
-                              controller: _scrollCtrl,
-                              physics: const AlwaysScrollableScrollPhysics(
-                                  parent: BouncingScrollPhysics()),
+                      child: RefreshIndicator(
+                        onRefresh: _loadNearbyCourses,
+                        color: const Color(0xFF5A9E1F),
+                        backgroundColor: Colors.white,
+                        displacement: 20,
+                        child: CustomScrollView(
+                          controller: _scrollCtrl,
+                          physics: const AlwaysScrollableScrollPhysics(
+                              parent: BouncingScrollPhysics()),
+                          slivers: [
+                            SliverAppBar(
+                              backgroundColor: Colors.transparent,
+                              surfaceTintColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              floating: true,
+                              snap: true,
+                              automaticallyImplyLeading: false,
+                              toolbarHeight: _sh * 0.030 + (_sw * 0.115).clamp(40.0, 52.0),
+                              flexibleSpace: _buildHeader(c),
+                            ),
+                            SliverToBoxAdapter(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -933,11 +941,10 @@ class _HomeTabState extends State<_HomeTab>
                                   SizedBox(height: _sh * 0.14),
                                 ],
                               ),
-                            ),
-                            ),  // RefreshIndicator
-                          ),
-                        ],
-                      ),
+                            ),  // SliverToBoxAdapter
+                          ],  // slivers
+                        ),  // CustomScrollView
+                      ),  // RefreshIndicator
                     ),
                   ),
                 );
@@ -1236,7 +1243,7 @@ class _HomeTabState extends State<_HomeTab>
     );
   }
   Widget _buildTopCarousel(Round? activeRound) {
-    final cardHeight = (_sh * 0.215).clamp(160.0, 215.0);
+    final cardHeight = (_sh * 0.210).clamp(150.0, 210.0);
     final hasActive  = activeRound != null;
     final pageCount  = hasActive ? 2 : 1;
 
@@ -1305,135 +1312,20 @@ class _HomeTabState extends State<_HomeTab>
 
   // ── Start Round CTA (shown only when no active round) ─────────────────────
   Widget _buildStartRoundCTA(Round? activeRound) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: _hPad),
-      child: GestureDetector(
-        onTap: () => Navigator.push(context, MaterialPageRoute(
-          builder: (_) => StartRoundScreen(
-            initialPosition: _userPosition,
-            initialCustomLat: _customLat,
-            initialCustomLng: _customLng,
-            initialLocation: _locationName,
-          ),
-        )),
-        child: Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: ShapeDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF1A3A08), Color(0xFF3D6E14), Color(0xFF5A9E1F)],
-              stops: [0.0, 0.55, 1.0],
-            ),
-            shape: SuperellipseShape(borderRadius: BorderRadius.circular(48)),
-            shadows: [
-              BoxShadow(
-                color: const Color(0xFF5A9E1F).withValues(alpha: 0.45),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: ClipSuperellipse(
-                  cornerRadius: 40,
-                  child: CustomPaint(painter: _CourseSilhouettePainter()),
-                ),
-              ),
-              Positioned.fill(
-                child: ClipSuperellipse(
-                  cornerRadius: 40,
-                  child: Image.asset(
-                    'assets/hero.png',
-                    fit: BoxFit.cover,
-                    alignment: Alignment.centerRight,
-                  ),
-                ),
-              ),
-              Positioned.fill(
-                child: ClipSuperellipse(
-                  cornerRadius: 40,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                        colors: [
-                          Colors.black.withValues(alpha: 0.55),
-                          Colors.transparent,
-                        ],
-                        stops: const [0.0, 0.60],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  (_sw * 0.058).clamp(18.0, 26.0),
-                  (_sw * 0.058).clamp(18.0, 26.0),
-                  (_sw * 0.058).clamp(18.0, 26.0),
-                  (_sw * 0.058).clamp(18.0, 26.0),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: ShapeDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        shape: SuperellipseShape(
-                          borderRadius: BorderRadius.circular(40),
-                        ),
-                      ),
-                      child: Text(
-                        context.l10n.homeReadyToPlay,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          fontSize: _labelSize,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: _sh * 0.012),
-                    Text(
-                      context.l10n.homeStartRound,
-                      style: TextStyle(
-                        fontFamily: 'Nunito',
-                        color: Colors.white,
-                        fontSize: (_sw * 0.075).clamp(26.0, 34.0),
-                        fontWeight: FontWeight.w800,
-                        height: 1.1,
-                      ),
-                    ),
-                    SizedBox(height: _sh * 0.006),
-                    Row(
-                      children: [
-                        Text(
-                          context.l10n.homeTapToTeeOff,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.7),
-                            fontSize: _bodySize * 0.875,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Icon(Icons.arrow_forward_rounded,
-                            color: Colors.white.withValues(alpha: 0.7),
-                            size: _bodySize),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+    return HeroActionCard(
+      hPad: _hPad,
+      sw: _sw,
+      sh: _sh,
+      labelSize: _labelSize,
+      bodySize: _bodySize,
+      onTap: () => Navigator.push(context, MaterialPageRoute(
+        builder: (_) => StartRoundScreen(
+          initialPosition: _userPosition,
+          initialCustomLat: _customLat,
+          initialCustomLng: _customLng,
+          initialLocation: _locationName,
         ),
-      ),
+      )),
     );
   }
 
@@ -3214,6 +3106,147 @@ class _TournamentPickerInlineState extends State<_TournamentPickerInline> {
   }
 }
 
+// ── HeroActionCard — Start Round hero card ──────────────────────────────────
+
+class HeroActionCard extends StatelessWidget {
+  final double hPad;
+  final double sw;
+  final double sh;
+  final double labelSize;
+  final double bodySize;
+  final VoidCallback onTap;
+
+  const HeroActionCard({
+    super.key,
+    required this.hPad,
+    required this.sw,
+    required this.sh,
+    required this.labelSize,
+    required this.bodySize,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final innerPad = (sw * 0.058).clamp(18.0, 26.0);
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: hPad),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: ShapeDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF1A3A08), Color(0xFF3D6E14), Color(0xFF5A9E1F)],
+              stops: [0.0, 0.55, 1.0],
+            ),
+            shape: SuperellipseShape(borderRadius: BorderRadius.circular(48)),
+            shadows: [
+              BoxShadow(
+                color: const Color(0xFF5A9E1F).withValues(alpha: 0.45),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: ClipSuperellipse(
+                  cornerRadius: 40,
+                  child: CustomPaint(painter: _CourseSilhouettePainter()),
+                ),
+              ),
+              Positioned.fill(
+                child: ClipSuperellipse(
+                  cornerRadius: 40,
+                  child: Image.asset(
+                    'assets/hero.png',
+                    fit: BoxFit.cover,
+                    alignment: Alignment.centerRight,
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: ClipSuperellipse(
+                  cornerRadius: 40,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.55),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.60],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.all(innerPad),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: ShapeDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        shape: SuperellipseShape(borderRadius: BorderRadius.circular(40)),
+                      ),
+                      child: Text(
+                        context.l10n.homeReadyToPlay,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: labelSize,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: sh * 0.012),
+                    Text(
+                      context.l10n.homeStartRound,
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        color: Colors.white,
+                        fontSize: (sw * 0.075).clamp(26.0, 34.0),
+                        fontWeight: FontWeight.w800,
+                        height: 1.1,
+                      ),
+                    ),
+                    SizedBox(height: sh * 0.006),
+                    Row(
+                      children: [
+                        Text(
+                          context.l10n.homeTapToTeeOff,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: bodySize * 0.875,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Icon(Icons.arrow_forward_rounded,
+                            color: Colors.white.withValues(alpha: 0.7),
+                            size: bodySize),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ── Painters ────────────────────────────────────────────────────────────────
 
 class _CourseSilhouettePainter extends CustomPainter {
@@ -3369,16 +3402,16 @@ class _NewsHCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
-      child: ClipPath(
-        clipper: ShapeBorderClipper(
-          shape: SuperellipseShape(borderRadius: BorderRadius.circular(48)),
+      child: Container(
+        width: width,
+        decoration: ShapeDecoration(
+          color: c.cardBg,
+          shape: SuperellipseShape(borderRadius: BorderRadius.circular(48), side: BorderSide(color: c.cardBorder)),
+          shadows: c.cardShadow,
         ),
-        child: Container(
-          width: width,
-          decoration: ShapeDecoration(
-            color: c.cardBg,
-            shape: SuperellipseShape(borderRadius: BorderRadius.circular(48), side: BorderSide(color: c.cardBorder)),
-            shadows: c.cardShadow,
+        child: ClipPath(
+          clipper: ShapeBorderClipper(
+            shape: SuperellipseShape(borderRadius: BorderRadius.circular(48)),
           ),
           child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -3468,8 +3501,8 @@ class _NewsHCard extends StatelessWidget {
             ),
           ],
         ),
-        ),  // Container
-      ),    // ClipPath
+        ),  // ClipPath
+      ),    // Container
     );
   }
 

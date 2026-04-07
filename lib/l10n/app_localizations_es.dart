@@ -933,6 +933,38 @@ class AppLocalizationsEs extends AppLocalizations {
   String get statsBetterThanAvg => 'Mejor que\nel promedio';
 
   @override
+  String get statsPressureScore => 'Puntuación de Presión';
+
+  @override
+  String get statsPressureResilience => 'Resiliencia';
+
+  @override
+  String statsPressureUnlockHint(int count) {
+    return 'Juega $count ronda(s) más para desbloquear tu perfil mental';
+  }
+
+  @override
+  String get statsPressureOpeningHole => 'Hoyo Inicial';
+
+  @override
+  String get statsPressureBirdieHangover => 'Resaca del Birdie';
+
+  @override
+  String get statsPressureBackNine => 'Caída en el 10-18';
+
+  @override
+  String get statsPressureFinishingStretch => 'Tramo Final';
+
+  @override
+  String get statsPressureThreePutt => 'Three-Putt en Presión';
+
+  @override
+  String get statsPressureTopDrill => 'Ejercicio Clave';
+
+  @override
+  String get statsPressureInsufficientData => 'Datos insuficientes';
+
+  @override
   String get tournamentNoTournaments => 'Sin torneos aún';
 
   @override

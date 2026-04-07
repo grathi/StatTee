@@ -1101,7 +1101,8 @@ class _ScorecardScreenState extends State<ScorecardScreen>
               ],
             ),
             child: ClipPath(
-              clipper: _SuperellipseClipper(radius: 40),
+              clipper: ShapeBorderClipper(
+                  shape: SuperellipseShape(borderRadius: BorderRadius.circular(40))),
               child: Stack(
                 children: [
                   // Shimmer sweep
@@ -1202,7 +1203,8 @@ class _ScorecardScreenState extends State<ScorecardScreen>
         shadows: c.cardShadow,
       ),
       child: ClipPath(
-        clipper: _SuperellipseClipper(radius: 28),
+        clipper: ShapeBorderClipper(
+            shape: SuperellipseShape(borderRadius: BorderRadius.circular(28))),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

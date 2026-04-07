@@ -920,6 +920,38 @@ class AppLocalizationsHi extends AppLocalizations {
   String get statsBetterThanAvg => 'औसत से\nbेहतर';
 
   @override
+  String get statsPressureScore => 'प्रेशर स्कोर';
+
+  @override
+  String get statsPressureResilience => 'लचीलापन';
+
+  @override
+  String statsPressureUnlockHint(int count) {
+    return 'अपना मानसिक प्रोफ़ाइल अनलॉक करने के लिए $count राउंड और खेलें';
+  }
+
+  @override
+  String get statsPressureOpeningHole => 'पहला होल';
+
+  @override
+  String get statsPressureBirdieHangover => 'बर्डी हैंगओवर';
+
+  @override
+  String get statsPressureBackNine => 'बैक नाइन गिरावट';
+
+  @override
+  String get statsPressureFinishingStretch => 'अंतिम होल';
+
+  @override
+  String get statsPressureThreePutt => 'थ्री-पुट टाइमिंग';
+
+  @override
+  String get statsPressureTopDrill => 'मुख्य अभ्यास';
+
+  @override
+  String get statsPressureInsufficientData => 'कम डेटा';
+
+  @override
   String get tournamentNoTournaments => 'अभी तक कोई टूर्नामेंट नहीं';
 
   @override

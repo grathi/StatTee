@@ -399,6 +399,22 @@
   "statsPutting": "Putting",
   "statsBetterThanAvg": "Better\nthan avg",
 
+  "statsPressureScore": "Pressure Score",
+  "statsPressureResilience": "Resilience",
+  "statsPressureUnlockHint": "Play {count} more round(s) to unlock your mental game profile",
+  "@statsPressureUnlockHint": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "statsPressureOpeningHole": "Opening Hole",
+  "statsPressureBirdieHangover": "Birdie Hangover",
+  "statsPressureBackNine": "Back-Nine Decay",
+  "statsPressureFinishingStretch": "Finishing Stretch",
+  "statsPressureThreePutt": "Three-Putt Timing",
+  "statsPressureTopDrill": "Top Drill",
+  "statsPressureInsufficientData": "Low data",
+
   "tournamentNoTournaments": "No tournaments yet",
   "tournamentCreateInstructions": "Tap \"New Tournament\" to create one,\nthen start rounds to score for the tournament.",
   "tournamentNew": "New Tournament",

@@ -12,6 +12,7 @@ import '../widgets/shimmer_widgets.dart';
 import '../widgets/tip_banner.dart';
 import '../services/onboarding_service.dart';
 import '../utils/l10n_extension.dart';
+import '../widgets/pressure_score_card.dart';
 
 class StatsScreen extends StatelessWidget {
   const StatsScreen({super.key});
@@ -91,6 +92,8 @@ class StatsScreen extends StatelessWidget {
                                 _buildScoringTrend(context, c, sw, sh, rounds),
                                 SizedBox(height: sh * 0.022),
                                 _buildStrokesGained(context, c, sw, sh, rounds),
+                                SizedBox(height: sh * 0.022),
+                                PressureScoreCard(rounds: rounds),
                                 SizedBox(height: sh * 0.022),
                                 if (_hasClubData(rounds)) ...[
                                   _buildClubStats(context, c, sw, sh, rounds),

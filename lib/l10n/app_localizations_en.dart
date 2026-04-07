@@ -921,6 +921,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statsBetterThanAvg => 'Better\nthan avg';
 
   @override
+  String get statsPressureScore => 'Pressure Score';
+
+  @override
+  String get statsPressureResilience => 'Resilience';
+
+  @override
+  String statsPressureUnlockHint(int count) {
+    return 'Play $count more round(s) to unlock your mental game profile';
+  }
+
+  @override
+  String get statsPressureOpeningHole => 'Opening Hole';
+
+  @override
+  String get statsPressureBirdieHangover => 'Birdie Hangover';
+
+  @override
+  String get statsPressureBackNine => 'Back-Nine Decay';
+
+  @override
+  String get statsPressureFinishingStretch => 'Finishing Stretch';
+
+  @override
+  String get statsPressureThreePutt => 'Three-Putt Timing';
+
+  @override
+  String get statsPressureTopDrill => 'Top Drill';
+
+  @override
+  String get statsPressureInsufficientData => 'Low data';
+
+  @override
   String get tournamentNoTournaments => 'No tournaments yet';
 
   @override

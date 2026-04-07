@@ -1748,6 +1748,66 @@ abstract class AppLocalizations {
   /// **'Better\nthan avg'**
   String get statsBetterThanAvg;
 
+  /// No description provided for @statsPressureScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Pressure Score'**
+  String get statsPressureScore;
+
+  /// No description provided for @statsPressureResilience.
+  ///
+  /// In en, this message translates to:
+  /// **'Resilience'**
+  String get statsPressureResilience;
+
+  /// No description provided for @statsPressureUnlockHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Play {count} more round(s) to unlock your mental game profile'**
+  String statsPressureUnlockHint(int count);
+
+  /// No description provided for @statsPressureOpeningHole.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening Hole'**
+  String get statsPressureOpeningHole;
+
+  /// No description provided for @statsPressureBirdieHangover.
+  ///
+  /// In en, this message translates to:
+  /// **'Birdie Hangover'**
+  String get statsPressureBirdieHangover;
+
+  /// No description provided for @statsPressureBackNine.
+  ///
+  /// In en, this message translates to:
+  /// **'Back-Nine Decay'**
+  String get statsPressureBackNine;
+
+  /// No description provided for @statsPressureFinishingStretch.
+  ///
+  /// In en, this message translates to:
+  /// **'Finishing Stretch'**
+  String get statsPressureFinishingStretch;
+
+  /// No description provided for @statsPressureThreePutt.
+  ///
+  /// In en, this message translates to:
+  /// **'Three-Putt Timing'**
+  String get statsPressureThreePutt;
+
+  /// No description provided for @statsPressureTopDrill.
+  ///
+  /// In en, this message translates to:
+  /// **'Top Drill'**
+  String get statsPressureTopDrill;
+
+  /// No description provided for @statsPressureInsufficientData.
+  ///
+  /// In en, this message translates to:
+  /// **'Low data'**
+  String get statsPressureInsufficientData;
+
   /// No description provided for @tournamentNoTournaments.
   ///
   /// In en, this message translates to:

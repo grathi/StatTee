@@ -399,6 +399,17 @@
   "statsPutting": "Putting",
   "statsBetterThanAvg": "Meilleur\nque la moyenne",
 
+  "statsPressureScore": "Score de Pression",
+  "statsPressureResilience": "Résilience",
+  "statsPressureUnlockHint": "Jouez {count} partie(s) de plus pour débloquer votre profil mental",
+  "statsPressureOpeningHole": "1er Trou",
+  "statsPressureBirdieHangover": "Gueule de Bois Birdie",
+  "statsPressureBackNine": "Déclin Retour 9",
+  "statsPressureFinishingStretch": "Derniers Trous",
+  "statsPressureThreePutt": "Timing 3 Putts",
+  "statsPressureTopDrill": "Exercice Clé",
+  "statsPressureInsufficientData": "Données insuffisantes",
+
   "tournamentNoTournaments": "Aucun tournoi pour l'instant",
   "tournamentCreateInstructions": "Appuyez sur \"Nouveau tournoi\" pour en créer un,\npuis démarrez des parties pour scorer dans le tournoi.",
   "tournamentNew": "Nouveau tournoi",

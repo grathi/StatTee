@@ -930,6 +930,38 @@ class AppLocalizationsDe extends AppLocalizations {
   String get statsBetterThanAvg => 'Besser als\ndurchschnittlich';
 
   @override
+  String get statsPressureScore => 'Druck-Score';
+
+  @override
+  String get statsPressureResilience => 'Resilienz';
+
+  @override
+  String statsPressureUnlockHint(int count) {
+    return 'Spiele $count weitere Runde(n), um dein mentales Spielerprofil freizuschalten';
+  }
+
+  @override
+  String get statsPressureOpeningHole => 'Startloch';
+
+  @override
+  String get statsPressureBirdieHangover => 'Birdie-Kater';
+
+  @override
+  String get statsPressureBackNine => 'Rückseiten-Abfall';
+
+  @override
+  String get statsPressureFinishingStretch => 'Schlusslöcher';
+
+  @override
+  String get statsPressureThreePutt => 'Drei-Putt-Timing';
+
+  @override
+  String get statsPressureTopDrill => 'Top-Übung';
+
+  @override
+  String get statsPressureInsufficientData => 'Wenig Daten';
+
+  @override
   String get tournamentNoTournaments => 'Noch keine Turniere';
 
   @override

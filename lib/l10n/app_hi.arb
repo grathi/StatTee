@@ -399,6 +399,17 @@
   "statsPutting": "पटिंग",
   "statsBetterThanAvg": "औसत से\nbेहतर",
 
+  "statsPressureScore": "प्रेशर स्कोर",
+  "statsPressureResilience": "लचीलापन",
+  "statsPressureUnlockHint": "अपना मानसिक प्रोफ़ाइल अनलॉक करने के लिए {count} राउंड और खेलें",
+  "statsPressureOpeningHole": "पहला होल",
+  "statsPressureBirdieHangover": "बर्डी हैंगओवर",
+  "statsPressureBackNine": "बैक नाइन गिरावट",
+  "statsPressureFinishingStretch": "अंतिम होल",
+  "statsPressureThreePutt": "थ्री-पुट टाइमिंग",
+  "statsPressureTopDrill": "मुख्य अभ्यास",
+  "statsPressureInsufficientData": "कम डेटा",
+
   "tournamentNoTournaments": "अभी तक कोई टूर्नामेंट नहीं",
   "tournamentCreateInstructions": "एक बनाने के लिए \"नया टूर्नामेंट\" टैप करें,\nफिर टूर्नामेंट के लिए स्कोर करने हेतु राउंड शुरू करें।",
   "tournamentNew": "नया टूर्नामेंट",
