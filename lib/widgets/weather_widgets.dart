@@ -5,38 +5,28 @@ import '../services/weather_service.dart';
 import '../theme/app_theme.dart';
 
 // ---------------------------------------------------------------------------
-// Icon helpers
+// Custom weather image helpers
 // ---------------------------------------------------------------------------
 
-/// Maps a weather condition string + OWM icon code to a Material icon.
-IconData _conditionIcon(String condition, [String iconCode = '']) {
-  final lower = condition.toLowerCase();
-  final isNight = iconCode.endsWith('n');
+const _ghBase = 'https://cdn.jsdelivr.net/gh/grathi/stattee_profile_pic@main/';
 
-  if (lower.contains('thunder')) return Icons.thunderstorm_rounded;
+/// Maps a condition string to the custom weather image URL.
+String _conditionImageUrl(String condition) {
+  final lower = condition.toLowerCase();
   if (lower.contains('rain') || lower.contains('shower') || lower.contains('drizzle')) {
-    return Icons.grain_rounded;
+    return '${_ghBase}lighrain.png';
   }
-  if (lower.contains('snow') || lower.contains('sleet') || lower.contains('flurr')) {
-    return Icons.ac_unit_rounded;
+  if (lower.contains('partly')) return '${_ghBase}partialcloud.png';
+  if (lower.contains('mostly') || lower.contains('overcast') ||
+      lower.contains('broken') || lower.contains('scattered') ||
+      lower.contains('few cloud')) {
+    return lower.contains('overcast')
+        ? '${_ghBase}overcast.png'
+        : '${_ghBase}mostlycloud.png';
   }
-  if (lower.contains('fog') || lower.contains('mist') || lower.contains('haze')) {
-    return Icons.blur_on_rounded;
-  }
-  if (lower.contains('smoke') || lower.contains('dust') || lower.contains('ash') || lower.contains('sand')) {
-    return Icons.blur_on_rounded;
-  }
-  if (lower.contains('tornado') || lower.contains('squall')) {
-    return Icons.tornado_rounded;
-  }
-  if (lower.contains('partly') || lower.contains('mostly')) {
-    return isNight ? Icons.nights_stay_rounded : Icons.cloud_queue_rounded;
-  }
-  if (lower.contains('overcast') || lower.contains('cloud') || lower.contains('broken') || lower.contains('scattered') || lower.contains('few cloud')) {
-    return Icons.cloud_rounded;
-  }
-  // Clear / sunny — use moon for night
-  return isNight ? Icons.nights_stay_rounded : Icons.wb_sunny_rounded;
+  if (lower.contains('cloud')) return '${_ghBase}mostlycloud.png';
+  // Clear / Sunny
+  return '${_ghBase}sunny.png';
 }
 
 Color _conditionColor(String condition) {
@@ -45,14 +35,10 @@ Color _conditionColor(String condition) {
   if (lower.contains('rain') || lower.contains('shower') || lower.contains('drizzle')) {
     return const Color(0xFF64B5F6);
   }
-  if (lower.contains('snow') || lower.contains('sleet')) {
-    return const Color(0xFF90CAF9);
-  }
-  if (lower.contains('fog') || lower.contains('mist')) return const Color(0xFFB0BEC5);
-  if (lower.contains('partly') || lower.contains('cloud')) {
-    return const Color(0xFF80DEEA);
-  }
-  return const Color(0xFFFFD54F); // sunny / clear
+  if (lower.contains('snow') || lower.contains('sleet')) return const Color(0xFF90CAF9);
+  if (lower.contains('fog')  || lower.contains('mist'))  return const Color(0xFFB0BEC5);
+  if (lower.contains('partly') || lower.contains('cloud')) return const Color(0xFF80DEEA);
+  return const Color(0xFFFFD54F);
 }
 
 // ---------------------------------------------------------------------------
@@ -74,14 +60,13 @@ class _SmallWeatherCardState extends State<SmallWeatherCard> {
   bool _loading = true;
   bool _error = false;
 
-  // Coords used for the last completed fetch
   double? _lastFetchedLat;
   double? _lastFetchedLng;
 
   @override
   void initState() {
     super.initState();
-    _fetch(); // Always fetch on init; null coords → WeatherService uses IP fallback
+    _fetch();
   }
 
   @override
@@ -95,14 +80,11 @@ class _SmallWeatherCardState extends State<SmallWeatherCard> {
     final prevLng = _lastFetchedLng;
 
     if (prevLat == null || prevLng == null) {
-      // Previous fetch used IP-based (null) coords — now we have real coords
       setState(() { _loading = true; _error = false; });
       _fetch();
       return;
     }
 
-    // Re-fetch when user explicitly picks a new location (>0.05° ≈ ~5 km).
-    // Ignores GPS precision drift which is typically < 0.001°.
     if (newLat == null || newLng == null) return;
     final latDiff = (newLat - prevLat).abs();
     final lngDiff = (newLng - prevLng).abs();
@@ -133,105 +115,142 @@ class _SmallWeatherCardState extends State<SmallWeatherCard> {
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: hPad),
-      child: Container(
-        decoration: ShapeDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF0F3460), Color(0xFF16213E), Color(0xFF1A2A4A)],
-            stops: [0.0, 0.5, 1.0],
-          ),
-          shape: SuperellipseShape(borderRadius: BorderRadius.circular(32)),
-          shadows: [
-            BoxShadow(
-              color: const Color(0xFF0F3460).withValues(alpha: 0.30),
-              blurRadius: 20,
-              offset: const Offset(0, 6),
+      child: _loading
+          ? _buildLoadingSkeleton(c, sw)
+          : _error || _weather == null
+              ? _buildErrorCard(c, sw)
+              : _buildCard(c, sw, _weather!),
+    );
+  }
+
+  Widget _buildCard(AppColors c, double sw, WeatherNow w) {
+    final color   = _conditionColor(w.condition);
+    final label   = (sw * 0.030).clamp(11.0, 13.0);
+    final imgUrl  = _conditionImageUrl(w.condition);
+    final shape   = SuperellipseShape(borderRadius: BorderRadius.circular(32));
+    final vPad    = (sw * 0.038).clamp(12.0, 16.0);
+    final hPadIn  = (sw * 0.052).clamp(14.0, 20.0);
+
+    // Solid fallback color so card is always visible before image loads
+    final fallback = HSLColor.fromColor(color)
+        .withLightness(0.28)
+        .withSaturation(0.45)
+        .toColor();
+
+    return DecoratedBox(
+      decoration: ShapeDecoration(shape: shape, shadows: c.cardShadow),
+      child: ClipPath(
+        clipper: ShapeBorderClipper(shape: shape),
+        child: Stack(
+          children: [
+            // 1. Solid fallback — always visible
+            Positioned.fill(child: ColoredBox(color: fallback)),
+            // 2. Background image — jsDelivr CDN for fast loading
+            Positioned.fill(
+              child: Image.network(
+                imgUrl,
+                fit: BoxFit.cover,
+                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                  if (wasSynchronouslyLoaded || frame != null) return child;
+                  return Shimmer.fromColors(
+                    baseColor:      Colors.white.withValues(alpha: 0.10),
+                    highlightColor: Colors.white.withValues(alpha: 0.25),
+                    period: const Duration(milliseconds: 1200),
+                    child: const ColoredBox(color: Colors.white),
+                  );
+                },
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ),
+            ),
+            // 3. Dark overlay for text contrast
+            Positioned.fill(
+              child: ColoredBox(
+                color: Colors.black.withValues(alpha: 0.28),
+              ),
+            ),
+            // 4. Content
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: hPadIn, vertical: vPad),
+              child: _buildContent(c, sw, w, color, label),
             ),
           ],
         ),
-        padding: EdgeInsets.symmetric(
-          horizontal: (sw * 0.052).clamp(14.0, 20.0),
-          vertical: (sw * 0.038).clamp(12.0, 16.0),
-        ),
-        child: _loading
-            ? _buildSkeleton(c)
-            : _error || _weather == null
-                ? _buildError(c, sw)
-                : _buildContent(c, sw, _weather!),
       ),
     );
   }
 
-  Widget _buildContent(AppColors c, double sw, WeatherNow w) {
-    final label    = (sw * 0.030).clamp(11.0, 13.0);
-    final iconSize = (sw * 0.122).clamp(42.0, 52.0);
-    final icon     = _conditionIcon(w.condition, w.iconCode);
-    final color    = _conditionColor(w.condition);
-
-    return Stack(
-      clipBehavior: Clip.none,
+  Widget _buildContent(AppColors c, double sw, WeatherNow w, Color color, double label) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // ── Background decorative icon ─────────────────────────────────────
-        Positioned(
-          right: -8,
-          top: -14,
-          child: Icon(
-            icon,
-            size: (sw * 0.38).clamp(120.0, 150.0),
-            color: color.withValues(alpha: 0.07),
+        // ── Left: temp + condition + summary ──────────────────────────────
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                w.tempLabel,
+                style: TextStyle(
+                  fontFamily: 'Nunito',
+                  color: Colors.white,
+                  fontSize: (sw * 0.060).clamp(20.0, 26.0),
+                  fontWeight: FontWeight.w800,
+                  height: 1.1,
+                ),
+              ),
+              Text(
+                w.condition,
+                maxLines: 2,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.85),
+                  fontSize: label,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                w.conditionSummary,
+                maxLines: 2,
+                style: TextStyle(
+                  color: color,
+                  fontSize: label,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ),
 
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // ── Left: weather icon ────────────────────────────────────────
-            Container(
-              width: iconSize,
-              height: iconSize,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-                border: Border.all(color: color.withValues(alpha: 0.30)),
-              ),
-              child: Icon(icon, color: color, size: iconSize * 0.50),
-            ),
-            SizedBox(width: (sw * 0.030).clamp(8.0, 14.0)),
+        SizedBox(width: (sw * 0.020).clamp(6.0, 10.0)),
 
-            // ── Centre: temp + condition + summary ────────────────────────
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        // ── Right: wind ───────────────────────────────────────────────────
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: (sw * 0.022).clamp(7.0, 10.0),
+                vertical: 4,
+              ),
+              decoration: ShapeDecoration(
+                color: Colors.white.withValues(alpha: 0.18),
+                shape: SuperellipseShape(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(color: Colors.white.withValues(alpha: 0.25)),
+                ),
+              ),
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  Icon(Icons.air_rounded,
+                      color: Colors.white.withValues(alpha: 0.90), size: label),
+                  const SizedBox(width: 4),
                   Text(
-                    w.tempLabel,
+                    w.windLabel,
                     style: TextStyle(
-                      fontFamily: 'Nunito',
                       color: Colors.white,
-                      fontSize: (sw * 0.060).clamp(20.0, 26.0),
-                      fontWeight: FontWeight.w800,
-                      height: 1.1,
-                    ),
-                  ),
-                  Text(
-                    w.condition,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.65),
-                      fontSize: label,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    w.conditionSummary,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: color.withValues(alpha: 0.90),
                       fontSize: label,
                       fontWeight: FontWeight.w600,
                     ),
@@ -239,52 +258,13 @@ class _SmallWeatherCardState extends State<SmallWeatherCard> {
                 ],
               ),
             ),
-
-            SizedBox(width: (sw * 0.020).clamp(6.0, 10.0)),
-
-            // ── Right: wind ───────────────────────────────────────────────
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: (sw * 0.022).clamp(7.0, 10.0),
-                    vertical: 4,
-                  ),
-                  decoration: ShapeDecoration(
-                    color: Colors.white.withValues(alpha: 0.08),
-                    shape: SuperellipseShape(
-                      borderRadius: BorderRadius.circular(20),
-                      side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.air_rounded,
-                          color: const Color(0xFF80DEEA), size: label),
-                      const SizedBox(width: 4),
-                      Text(
-                        w.windLabel,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.85),
-                          fontSize: label,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  'Today',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.40),
-                    fontSize: label * 0.88,
-                  ),
-                ),
-              ],
+            const SizedBox(height: 5),
+            Text(
+              'Today',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.60),
+                fontSize: label * 0.88,
+              ),
             ),
           ],
         ),
@@ -292,103 +272,108 @@ class _SmallWeatherCardState extends State<SmallWeatherCard> {
     );
   }
 
-  Widget _buildSkeleton(AppColors c) {
-    // Mirrors _buildContent layout exactly:
-    // [circle icon] [temp block + condition line] [wind pill + "Today"]
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final sw       = MediaQuery.of(context).size.width;
-        final iconSize = (sw * 0.122).clamp(42.0, 52.0);
-        final tempH    = (sw * 0.060).clamp(20.0, 26.0) * 1.1; // matches font size × height
-        final labelH   = (sw * 0.030).clamp(11.0, 13.0);
+  Widget _buildLoadingSkeleton(AppColors c, double sw) {
+    final tempH  = (sw * 0.060).clamp(20.0, 26.0) * 1.1;
+    final labelH = (sw * 0.030).clamp(11.0, 13.0);
+    final vPad   = (sw * 0.038).clamp(12.0, 16.0);
+    final shape  = SuperellipseShape(borderRadius: BorderRadius.circular(32));
 
-        return Shimmer.fromColors(
-          baseColor:      Colors.white.withValues(alpha: 0.08),
-          highlightColor: Colors.white.withValues(alpha: 0.20),
-          period: const Duration(milliseconds: 1400),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Left: circular weather icon placeholder
-              _sBox(iconSize, iconSize, circular: true),
-              SizedBox(width: (sw * 0.030).clamp(8.0, 14.0)),
-
-              // Centre: temp + condition + summary
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Temp label (large) + condition text (inline)
-                    Row(
+    return DecoratedBox(
+      decoration: ShapeDecoration(shape: shape, shadows: c.cardShadow),
+      child: ClipPath(
+        clipper: ShapeBorderClipper(shape: shape),
+        child: ColoredBox(
+          color: c.cardBg,
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: (sw * 0.052).clamp(14.0, 20.0),
+              vertical: vPad,
+            ),
+            child: Shimmer.fromColors(
+              baseColor:      c.cardBorder.withValues(alpha: 0.50),
+              highlightColor: c.cardBorder.withValues(alpha: 0.95),
+              period: const Duration(milliseconds: 1400),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        _sBox((sw * 0.18).clamp(60.0, 80.0), tempH),
-                        const SizedBox(width: 8),
-                        _sBox((sw * 0.22).clamp(70.0, 100.0), labelH),
+                        _sBox(c, (sw * 0.18).clamp(60.0, 80.0), tempH),
+                        const SizedBox(height: 6),
+                        _sBox(c, double.infinity, labelH),
+                        const SizedBox(height: 4),
+                        _sBox(c, (sw * 0.55).clamp(140.0, 200.0), labelH),
+                        const SizedBox(height: 6),
+                        _sBox(c, double.infinity, labelH),
+                        const SizedBox(height: 4),
+                        _sBox(c, (sw * 0.45).clamp(120.0, 170.0), labelH),
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    // Summary line
-                    _sBox((sw * 0.32).clamp(100.0, 140.0), labelH),
-                  ],
-                ),
-              ),
-
-              SizedBox(width: (sw * 0.020).clamp(6.0, 10.0)),
-
-              // Right: wind pill + "Today" label
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Wind pill
-                  _sBox((sw * 0.20).clamp(64.0, 84.0), labelH + 8,
-                      radius: 20),
-                  const SizedBox(height: 6),
-                  // "Today" label
-                  _sBox((sw * 0.10).clamp(32.0, 44.0), labelH * 0.88),
+                  ),
+                  SizedBox(width: (sw * 0.020).clamp(6.0, 10.0)),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _sBox(c, (sw * 0.16).clamp(52.0, 72.0), labelH + 8, radius: 20),
+                      const SizedBox(height: 6),
+                      _sBox(c, (sw * 0.10).clamp(32.0, 44.0), labelH * 0.88),
+                    ],
+                  ),
                 ],
               ),
-            ],
+            ),
           ),
-        );
-      },
-    );
-  }
-
-  /// Solid shimmer placeholder block — colour applied by Shimmer.fromColors above.
-  Widget _sBox(double w, double h,
-      {bool circular = false, double radius = 6}) {
-    return Container(
-      width: w,
-      height: h,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: circular ? null : BorderRadius.circular(radius),
-        shape: circular ? BoxShape.circle : BoxShape.rectangle,
+        ),
       ),
     );
   }
 
-  Widget _buildError(AppColors c, double sw) {
-    final label = (sw * 0.030).clamp(11.0, 13.0);
-    return Row(
-      children: [
-        Icon(Icons.cloud_off_rounded,
-            color: Colors.white.withValues(alpha: 0.40), size: 24),
-        const SizedBox(width: 10),
-        Text(
-          'Weather unavailable',
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.50),
-            fontSize: label,
-          ),
-        ),
-      ],
+  Widget _sBox(AppColors c, double w, double h, {double radius = 6}) {
+    return Container(
+      width: w,
+      height: h,
+      decoration: BoxDecoration(
+        color: c.cardBorder,
+        borderRadius: BorderRadius.circular(radius),
+      ),
     );
   }
 
-
+  Widget _buildErrorCard(AppColors c, double sw) {
+    final label = (sw * 0.030).clamp(11.0, 13.0);
+    return Container(
+      decoration: ShapeDecoration(
+        color: c.cardBg,
+        shape: SuperellipseShape(
+          borderRadius: BorderRadius.circular(32),
+          side: BorderSide(color: c.cardBorder, width: 1),
+        ),
+        shadows: c.cardShadow,
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: (sw * 0.052).clamp(14.0, 20.0),
+        vertical: (sw * 0.038).clamp(12.0, 16.0),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.cloud_off_rounded,
+              color: c.secondaryText, size: 24),
+          const SizedBox(width: 10),
+          Text(
+            'Weather unavailable',
+            style: TextStyle(
+              color: c.secondaryText,
+              fontSize: label,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -428,8 +413,8 @@ class _RoundWeatherTopBarState extends State<RoundWeatherTopBar> {
 
   @override
   Widget build(BuildContext context) {
-    final c   = AppColors.of(context);
-    final sw  = MediaQuery.of(context).size.width;
+    final c     = AppColors.of(context);
+    final sw    = MediaQuery.of(context).size.width;
     final label = (sw * 0.030).clamp(11.0, 13.0);
 
     if (_loading) {
@@ -446,8 +431,8 @@ class _RoundWeatherTopBarState extends State<RoundWeatherTopBar> {
     final w = _weather;
     if (w == null) return const SizedBox.shrink();
 
-    final icon  = _conditionIcon(w.condition, w.iconCode);
-    final color = _conditionColor(w.condition);
+    final color   = _conditionColor(w.condition);
+    final imgUrl  = _conditionImageUrl(w.condition);
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -471,7 +456,16 @@ class _RoundWeatherTopBarState extends State<RoundWeatherTopBar> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: label * 1.15),
+          ClipOval(
+            child: Image.network(
+              imgUrl,
+              width: label * 1.4,
+              height: label * 1.4,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) =>
+                  Icon(Icons.wb_sunny_rounded, color: color, size: label * 1.15),
+            ),
+          ),
           SizedBox(width: (sw * 0.012).clamp(4.0, 5.0)),
           Text(
             w.tempLabel,
@@ -482,31 +476,25 @@ class _RoundWeatherTopBarState extends State<RoundWeatherTopBar> {
               fontWeight: FontWeight.w700,
             ),
           ),
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: (sw * 0.017).clamp(5.0, 7.0),
-              ),
-              child: Text(
-                '|',
-                style: TextStyle(
-                  color: c.divider,
-                  fontSize: label,
-                ),
-              ),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: (sw * 0.017).clamp(5.0, 7.0)),
+            child: Text(
+              '|',
+              style: TextStyle(color: c.divider, fontSize: label),
             ),
-            Icon(Icons.air_rounded,
-                color: const Color(0xFF64B5F6), size: label * 1.1),
-            SizedBox(width: (sw * 0.01).clamp(3.0, 4.0)),
-            Text(
-              w.windLabel,
-              style: TextStyle(
-                color: c.secondaryText,
-                fontSize: label,
-                fontWeight: FontWeight.w600,
-              ),
+          ),
+          Icon(Icons.air_rounded, color: const Color(0xFF64B5F6), size: label * 1.1),
+          SizedBox(width: (sw * 0.01).clamp(3.0, 4.0)),
+          Text(
+            w.windLabel,
+            style: TextStyle(
+              color: c.secondaryText,
+              fontSize: label,
+              fontWeight: FontWeight.w600,
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -516,7 +504,6 @@ class _RoundWeatherTopBarState extends State<RoundWeatherTopBar> {
 // ---------------------------------------------------------------------------
 
 class RoundConditionsCard extends StatefulWidget {
-  /// Pass existing WeatherData from the round so no network call is needed.
   final WeatherData? existingWeather;
 
   const RoundConditionsCard({super.key, this.existingWeather});
@@ -543,18 +530,19 @@ class _RoundConditionsCardState extends State<RoundConditionsCard> {
 
   @override
   Widget build(BuildContext context) {
-    final c   = AppColors.of(context);
-    final sw  = MediaQuery.of(context).size.width;
-    final sh  = MediaQuery.of(context).size.height;
+    final c     = AppColors.of(context);
+    final sw    = MediaQuery.of(context).size.width;
+    final sh    = MediaQuery.of(context).size.height;
     final body  = (sw * 0.036).clamp(13.0, 16.0);
     final label = (sw * 0.030).clamp(11.0, 13.0);
 
     if (_loading) return _buildSkeleton(c, sw, sh);
     if (_summary == null) return const SizedBox.shrink();
 
-    final s     = _summary!;
-    final icon  = _conditionIcon(s.dominantCondition);
-    final color = _conditionColor(s.dominantCondition);
+    final s      = _summary!;
+    final color  = _conditionColor(s.dominantCondition);
+    final imgUrl = _conditionImageUrl(s.dominantCondition);
+    final iconSize = body * 1.6;
 
     return Container(
       decoration: ShapeDecoration(
@@ -580,7 +568,14 @@ class _RoundConditionsCardState extends State<RoundConditionsCard> {
                   shape: BoxShape.circle,
                   border: Border.all(color: color.withValues(alpha: 0.25)),
                 ),
-                child: Icon(icon, color: color, size: 16),
+                child: ClipOval(
+                  child: Image.network(
+                    imgUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        Icon(Icons.wb_sunny_rounded, color: color, size: 16),
+                  ),
+                ),
               ),
               const SizedBox(width: 10),
               Text(
@@ -620,6 +615,7 @@ class _RoundConditionsCardState extends State<RoundConditionsCard> {
                 lbl: label,
               ),
               SizedBox(width: (sw * 0.030).clamp(8.0, 14.0)),
+              // Conditions chip — weather image as the icon
               Expanded(
                 flex: 2,
                 child: Container(
@@ -637,7 +633,17 @@ class _RoundConditionsCardState extends State<RoundConditionsCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(icon, color: color, size: body),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: Image.network(
+                          imgUrl,
+                          width: iconSize,
+                          height: iconSize,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              Icon(Icons.wb_sunny_rounded, color: color, size: iconSize),
+                        ),
+                      ),
                       const SizedBox(height: 4),
                       Text(
                         s.dominantCondition,
@@ -681,8 +687,7 @@ class _RoundConditionsCardState extends State<RoundConditionsCard> {
             ),
             child: Row(
               children: [
-                Icon(Icons.info_outline_rounded,
-                    color: c.accent, size: label * 1.1),
+                Icon(Icons.info_outline_rounded, color: c.accent, size: label * 1.1),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -801,7 +806,7 @@ class _RoundConditionsCardState extends State<RoundConditionsCard> {
 }
 
 // ---------------------------------------------------------------------------
-// TeeTimeWeatherPreview — forecast slot widget (reusable standalone)
+// TeeTimeWeatherPreview — forecast slot widget
 // ---------------------------------------------------------------------------
 
 class TeeTimeWeatherPreview extends StatelessWidget {
@@ -815,8 +820,8 @@ class TeeTimeWeatherPreview extends StatelessWidget {
     final sw    = MediaQuery.of(context).size.width;
     final body  = (sw * 0.036).clamp(13.0, 16.0);
     final label = (sw * 0.030).clamp(11.0, 13.0);
-    final icon  = _conditionIcon(forecast.condition, forecast.iconCode);
-    final color = _conditionColor(forecast.condition);
+    final color  = _conditionColor(forecast.condition);
+    final imgUrl = _conditionImageUrl(forecast.condition);
 
     final hour = forecast.time.hour;
     final ampm = hour < 12 ? 'AM' : 'PM';
@@ -847,7 +852,17 @@ class TeeTimeWeatherPreview extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Icon(icon, color: color, size: body * 1.4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              imgUrl,
+              width: body * 1.6,
+              height: body * 1.6,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) =>
+                  Icon(Icons.wb_sunny_rounded, color: color, size: body * 1.4),
+            ),
+          ),
           const SizedBox(height: 6),
           Text(
             forecast.tempLabel,
@@ -871,3 +886,4 @@ class TeeTimeWeatherPreview extends StatelessWidget {
     );
   }
 }
+

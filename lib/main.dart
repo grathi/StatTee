@@ -2,6 +2,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'l10n/app_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
@@ -33,6 +36,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  appLocaleNotifier.value = await _loadSavedLocale();
   await FirebaseAppCheck.instance.activate(
     androidProvider: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
     appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.deviceCheck,
@@ -110,6 +114,43 @@ void _scheduleStreakReminderIfNeeded() async {
 }
 
 // ---------------------------------------------------------------------------
+// Global locale notifier — used by the in-app language picker
+// ---------------------------------------------------------------------------
+const List<Locale> kSupportedLocales = [
+  Locale('en'),
+  Locale('es'),
+  Locale('fr'),
+  Locale('de'),
+  Locale('hi'),
+];
+
+const Map<String, String> kLocaleLabels = {
+  'en': '🇬🇧 English',
+  'es': '🇪🇸 Español',
+  'fr': '🇫🇷 Français',
+  'de': '🇩🇪 Deutsch',
+  'hi': '🇮🇳 हिन्दी',
+};
+
+const String _kLocaleKey = 'app_locale';
+
+final ValueNotifier<Locale> appLocaleNotifier = ValueNotifier(const Locale('en'));
+
+/// Persists the selected locale to SharedPreferences.
+Future<void> saveLocale(String languageCode) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString(_kLocaleKey, languageCode);
+  appLocaleNotifier.value = Locale(languageCode);
+}
+
+/// Loads the previously saved locale (falls back to 'en').
+Future<Locale> _loadSavedLocale() async {
+  final prefs = await SharedPreferences.getInstance();
+  final code  = prefs.getString(_kLocaleKey) ?? 'en';
+  return Locale(code);
+}
+
+// ---------------------------------------------------------------------------
 // App root
 // ---------------------------------------------------------------------------
 class TeeStatsApp extends StatefulWidget {
@@ -180,12 +221,22 @@ class _TeeStatsAppState extends State<TeeStatsApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return ValueListenableBuilder<Locale>(
+      valueListenable: appLocaleNotifier,
+      builder: (context, locale, _) => MaterialApp(
       title: 'TeeStats',
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
       theme: AppTheme.light,
       themeMode: ThemeMode.light,
+      locale: locale,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: kSupportedLocales,
       // Cap system text scale at 1.15× — prevents accessibility "Large Text"
       // from inflating fonts past the clamp() layout boundaries.
       builder: (context, child) => MediaQuery.withClampedTextScaling(
@@ -194,6 +245,7 @@ class _TeeStatsAppState extends State<TeeStatsApp> {
         child: child!,
       ),
       home: const AuthGate(),
+      ),
     );
   }
 }

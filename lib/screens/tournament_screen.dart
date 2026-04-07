@@ -6,6 +6,7 @@ import '../models/round.dart';
 import '../services/tournament_service.dart';
 import '../services/round_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/l10n_extension.dart';
 
 class TournamentScreen extends StatelessWidget {
   const TournamentScreen({super.key});
@@ -32,7 +33,7 @@ class TournamentScreen extends StatelessWidget {
             }
 
             if (tournaments.isEmpty) {
-              return _buildEmpty(c, sw, sh);
+              return _buildEmpty(context, c, sw, sh);
             }
 
             return ListView.separated(
@@ -40,7 +41,7 @@ class TournamentScreen extends StatelessWidget {
               itemCount: tournaments.length + 1,
               separatorBuilder: (_, __) => SizedBox(height: sh * 0.012),
               itemBuilder: (ctx, i) {
-                if (i == 0) return _buildWorkflowBanner(c, sw, sh);
+                if (i == 0) return _buildWorkflowBanner(context, c, sw, sh);
                 return _TournamentCard(
                     tournament: tournaments[i - 1], c: c, sw: sw, sh: sh);
               },
@@ -54,7 +55,7 @@ class TournamentScreen extends StatelessWidget {
           bottom: sh * 0.024,
           child: _TournFab(
             icon: Icons.emoji_events_rounded,
-            label: 'New Tournament',
+            label: context.l10n.tournamentNew,
             color: const Color(0xFF4F46E5),
             onPressed: () => _showCreateSheet(context, c, sw, sh),
             c: c,
@@ -64,7 +65,7 @@ class TournamentScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildWorkflowBanner(AppColors c, double sw, double sh) {
+  Widget _buildWorkflowBanner(BuildContext context, AppColors c, double sw, double sh) {
     final label = (sw * 0.030).clamp(11.0, 13.0);
     return Container(
       decoration: ShapeDecoration(
@@ -84,7 +85,7 @@ class TournamentScreen extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Create a tournament first, then use the ＋ FAB on the home screen to start a tournament round.',
+              context.l10n.tournamentStartInstructions,
               style: TextStyle(
                   color: const Color(0xFFFFB74D), fontSize: label * 0.9),
             ),
@@ -94,7 +95,7 @@ class TournamentScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildEmpty(AppColors c, double sw, double sh) {
+  Widget _buildEmpty(BuildContext context, AppColors c, double sw, double sh) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -103,7 +104,7 @@ class TournamentScreen extends StatelessWidget {
               color: c.tertiaryText, size: (sw * 0.16).clamp(54.0, 72.0)),
           SizedBox(height: sh * 0.016),
           Text(
-            'No tournaments yet',
+            context.l10n.tournamentNoTournaments,
             style: TextStyle(
                 color: c.secondaryText,
                 fontSize: (sw * 0.042).clamp(15.0, 18.0),
@@ -111,7 +112,7 @@ class TournamentScreen extends StatelessWidget {
           ),
           SizedBox(height: sh * 0.008),
           Text(
-            'Tap "New Tournament" to create one,\nthen start rounds to score for the tournament.',
+            context.l10n.tournamentCreateInstructions,
             textAlign: TextAlign.center,
             style: TextStyle(
                 color: c.tertiaryText,
@@ -153,17 +154,17 @@ class _TournamentCard extends StatelessWidget {
         return await showDialog<bool>(
           context: context,
           builder: (_) => AlertDialog(
-            title: const Text('Delete Tournament?'),
+            title: Text(context.l10n.tournamentDeleteTitle),
             content: Text(
-                'Remove "${tournament.name}"? The rounds themselves will not be deleted.'),
+                context.l10n.tournamentDeleteConfirm(tournament.name)),
             actions: [
               TextButton(
                   onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Cancel')),
+                  child: Text(context.l10n.cancel)),
               TextButton(
                   onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Delete',
-                      style: TextStyle(color: Color(0xFFE53935)))),
+                  child: Text(context.l10n.delete,
+                      style: const TextStyle(color: Color(0xFFE53935)))),
             ],
           ),
         ) ?? false;
@@ -228,7 +229,7 @@ class _TournamentCard extends StatelessWidget {
                     ),
                     SizedBox(height: 2),
                     Text(
-                      '${tournament.roundIds.length} round${tournament.roundIds.length == 1 ? '' : 's'} · ${_formatDate(tournament.createdAt)}',
+                      '${context.l10n.tournamentRoundsCount(tournament.roundIds.length)} · ${_formatDate(tournament.createdAt)}',
                       style: TextStyle(color: c.secondaryText, fontSize: label),
                     ),
                   ],
@@ -313,7 +314,7 @@ class _TournamentDetailScreen extends StatelessWidget {
                                   c, sw, sh,
                                   _diffLabel(rounds.fold(
                                       0, (s, r) => s + r.scoreDiff)),
-                                  'vs Par', body, label,
+                                  context.l10n.tournamentVsPar, body, label,
                                   color: rounds.fold(
                                               0, (s, r) => s + r.scoreDiff) <=
                                           0
@@ -323,11 +324,11 @@ class _TournamentDetailScreen extends StatelessWidget {
                               _summaryTile(
                                   c, sw, sh,
                                   '${rounds.length}',
-                                  'Rounds', body, label),
+                                  context.l10n.tournamentRoundsLabel, body, label),
                             ],
                           ),
                           SizedBox(height: sh * 0.026),
-                          Text('Round by Round',
+                          Text(context.l10n.tournamentRoundByRound,
                               style: TextStyle(fontFamily: 'Nunito',
                                   color: c.primaryText,
                                   fontSize: body * 1.1,
@@ -430,7 +431,7 @@ class _TournamentDetailScreen extends StatelessWidget {
                                           fontSize: label,
                                           fontWeight: FontWeight.w700),
                                     ),
-                                    Text('running',
+                                    Text(context.l10n.tournamentRunning,
                                         style: TextStyle(
                                             color: c.tertiaryText,
                                             fontSize: label * 0.8)),
@@ -535,7 +536,7 @@ class _CreateTournamentSheetState extends State<_CreateTournamentSheet> {
             ),
           ),
           const SizedBox(height: 20),
-          Text('New Tournament',
+          Text(context.l10n.tournamentNew,
               style: TextStyle(fontFamily: 'Nunito',
                   color: c.primaryText,
                   fontSize: (sw * 0.052).clamp(18.0, 22.0),
@@ -548,7 +549,7 @@ class _CreateTournamentSheetState extends State<_CreateTournamentSheet> {
           SizedBox(height: sh * 0.022),
 
           // Name field
-          Text('Tournament Name', style: TextStyle(
+          Text(context.l10n.tournamentNameLabel, style: TextStyle(
               color: c.secondaryText, fontSize: label, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           Container(
@@ -564,7 +565,7 @@ class _CreateTournamentSheetState extends State<_CreateTournamentSheet> {
               style: TextStyle(color: c.primaryText, fontSize: body),
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
-                hintText: 'e.g. Club Championship 2026',
+                hintText: context.l10n.tournamentNameHint,
                 hintStyle: TextStyle(color: c.tertiaryText, fontSize: body),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -596,7 +597,7 @@ class _CreateTournamentSheetState extends State<_CreateTournamentSheet> {
                         width: 20, height: 20,
                         child: CircularProgressIndicator(
                             color: Colors.white, strokeWidth: 2))
-                    : Text('Create Tournament',
+                    : Text(context.l10n.tournamentCreate,
                         style: TextStyle(
                             fontFamily: 'Nunito',
                             fontSize: body,

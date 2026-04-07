@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models/shot_position.dart';
+import '../utils/l10n_extension.dart';
 
 // ── ShotTrackerScreen ─────────────────────────────────────────────────────────
 
@@ -731,10 +732,10 @@ class _ShotTrackerScreenState extends State<ShotTrackerScreen>
                             ),
                             Text(
                               _shots.isEmpty
-                                  ? 'Tap the map to mark the tee'
+                                  ? context.l10n.shotTrackerTapToMark
                                   : _shots.length == 1
-                                      ? 'Tee marked · tap to track shots'
-                                      : '${_shots.length - 1} shot${_shots.length - 1 == 1 ? '' : 's'} from tee',
+                                      ? context.l10n.shotTrackerTeeMarked
+                                      : context.l10n.shotTrackerShotsFromTee(_shots.length - 1),
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.75),
                                 fontSize: label,
@@ -783,14 +784,14 @@ class _ShotTrackerScreenState extends State<ShotTrackerScreen>
                           _distanceChip(
                             icon: Icons.flag_rounded,
                             iconColor: const Color(0xFFFFCC00),
-                            label: '$pinYds yds to pin',
+                            label: context.l10n.shotTrackerDistToPin('$pinYds'),
                           ),
                         // Distance of the last shot (between last 2 markers)
                         if (lastShotYds != null)
                           _distanceChip(
                             icon: Icons.straighten_rounded,
                             iconColor: Colors.white,
-                            label: 'Last shot: $lastShotYds yds',
+                            label: context.l10n.shotTrackerLastShot('$lastShotYds'),
                           ),
                       ],
                     ),
@@ -890,7 +891,7 @@ class _ShotTrackerScreenState extends State<ShotTrackerScreen>
                                     color: Colors.white, size: 16),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'Undo',
+                                  context.l10n.shotTrackerUndo,
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: body,
@@ -936,8 +937,8 @@ class _ShotTrackerScreenState extends State<ShotTrackerScreen>
                               const SizedBox(width: 6),
                               Text(
                                 _shots.isEmpty
-                                    ? 'Finish Hole'
-                                    : 'Finish Hole  (${_shots.length - 1} shots)',
+                                    ? context.l10n.shotTrackerFinishHole
+                                    : context.l10n.shotTrackerFinishHoleWithCount(_shots.length - 1),
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: body,
@@ -973,9 +974,9 @@ class _ShotTrackerScreenState extends State<ShotTrackerScreen>
                         children: [
                           _PulsingDot(color: const Color(0xFF4285F4)),
                           const SizedBox(width: 8),
-                          const Text(
-                            'Acquiring GPS…',
-                            style: TextStyle(
+                          Text(
+                            context.l10n.shotTrackerAcquiringGPS,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
@@ -1150,7 +1151,7 @@ class _GreenArrivalSheet extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Nice approach!',
+                      context.l10n.shotTrackerNiceApproach,
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: body * 1.1,
@@ -1159,9 +1160,12 @@ class _GreenArrivalSheet extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'You\'re on the green — '
-                      '${shotCount > 0 ? '$shotCount shot${shotCount == 1 ? '' : 's'} tracked. ' : ''}'
-                      'Ready to log putts for Hole $holeNumber?',
+                      context.l10n.shotTrackerOnGreen(
+                        shotCount > 0
+                            ? '$shotCount shot${shotCount == 1 ? '' : 's'} tracked. '
+                            : '',
+                        holeNumber,
+                      ),
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.70),
                         fontSize: label,
@@ -1191,7 +1195,7 @@ class _GreenArrivalSheet extends StatelessWidget {
                           color: Colors.white.withValues(alpha: 0.15)),
                     ),
                     child: Text(
-                      'Not yet',
+                      context.l10n.shotTrackerNotYet,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.75),
@@ -1224,7 +1228,7 @@ class _GreenArrivalSheet extends StatelessWidget {
                       ],
                     ),
                     child: Text(
-                      'Log putts for Hole $holeNumber',
+                      context.l10n.shotTrackerLogPutts(holeNumber),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white,

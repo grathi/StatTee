@@ -11,6 +11,7 @@ import '../theme/app_theme.dart';
 import '../widgets/shimmer_widgets.dart';
 import '../widgets/tip_banner.dart';
 import '../services/onboarding_service.dart';
+import '../utils/l10n_extension.dart';
 
 class StatsScreen extends StatelessWidget {
   const StatsScreen({super.key});
@@ -61,8 +62,8 @@ class StatsScreen extends StatelessWidget {
                 ),
                 SliverToBoxAdapter(
                   child: TipBanner(
-                    title: 'Your Stats Hub',
-                    body: 'Play more rounds to unlock trend charts, strokes gained and score distribution analysis.',
+                    title: context.l10n.statsHub,
+                    body: context.l10n.statsPlayMoreRounds,
                     hasSeenFn: OnboardingService.hasSeenStatsTip,
                     markSeenFn: OnboardingService.markStatsTipSeen,
                   ),
@@ -76,27 +77,27 @@ class StatsScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               SizedBox(height: sh * 0.024),
-                              _buildHandicapCard(c, sw, sh, isLoading ? AppStats.empty : stats),
+                              _buildHandicapCard(context, c, sw, sh, isLoading ? AppStats.empty : stats),
                               SizedBox(height: sh * 0.022),
                               if (!isLoading && rounds.length >= 3) ...[
                                 _buildHandicapTrend(context, c, sw, sh, rounds),
                                 SizedBox(height: sh * 0.022),
                               ],
-                              _buildOverviewGrid(c, sw, sh, isLoading ? AppStats.empty : stats),
+                              _buildOverviewGrid(context, c, sw, sh, isLoading ? AppStats.empty : stats),
                               SizedBox(height: sh * 0.022),
                               if (!isLoading && rounds.isNotEmpty) ...[
-                                _buildScoreDistribution(c, sw, sh, rounds),
+                                _buildScoreDistribution(context, c, sw, sh, rounds),
                                 SizedBox(height: sh * 0.022),
-                                _buildScoringTrend(c, sw, sh, rounds),
+                                _buildScoringTrend(context, c, sw, sh, rounds),
                                 SizedBox(height: sh * 0.022),
-                                _buildStrokesGained(c, sw, sh, rounds),
+                                _buildStrokesGained(context, c, sw, sh, rounds),
                                 SizedBox(height: sh * 0.022),
                                 if (_hasClubData(rounds)) ...[
-                                  _buildClubStats(c, sw, sh, rounds),
+                                  _buildClubStats(context, c, sw, sh, rounds),
                                   SizedBox(height: sh * 0.022),
                                 ],
                               ],
-                              _buildDetailedStats(c, sw, sh, isLoading ? AppStats.empty : stats),
+                              _buildDetailedStats(context, c, sw, sh, isLoading ? AppStats.empty : stats),
                             ],
                           ),
                         ),
@@ -112,7 +113,7 @@ class StatsScreen extends StatelessWidget {
   }
 
   // ── Handicap card ─────────────────────────────────────────────────────────
-  Widget _buildHandicapCard(AppColors c, double sw, double sh, AppStats stats) {
+  Widget _buildHandicapCard(BuildContext context, AppColors c, double sw, double sh, AppStats stats) {
     final body = (sw * 0.036).clamp(13.0, 16.0);
     final label = (sw * 0.030).clamp(11.0, 13.0);
     final hasData = stats.totalRounds > 0;
@@ -144,7 +145,7 @@ class StatsScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Handicap Index',
+                  context.l10n.statsHandicapIndex,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.65),
                     fontSize: label,
@@ -170,8 +171,8 @@ class StatsScreen extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       hasData
-                          ? 'Based on ${stats.totalRounds} round${stats.totalRounds == 1 ? '' : 's'}'
-                          : 'Complete rounds to calculate',
+                          ? context.l10n.statsBasedOnRounds(stats.totalRounds)
+                          : context.l10n.statsCompleteToCalculate,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.6),
                         fontSize: label,
@@ -190,19 +191,19 @@ class StatsScreen extends StatelessWidget {
   }
 
   // ── Overview 2x2 grid ─────────────────────────────────────────────────────
-  Widget _buildOverviewGrid(AppColors c, double sw, double sh, AppStats stats) {
+  Widget _buildOverviewGrid(BuildContext context, AppColors c, double sw, double sh, AppStats stats) {
     final hasData = stats.totalRounds > 0;
     final items = [
-      _OverviewItem('Avg Score', stats.avgScoreLabel, Icons.trending_up_rounded,
+      _OverviewItem(context.l10n.statsAvgScore, stats.avgScoreLabel, Icons.trending_up_rounded,
           const Color(0xFF8FD44E)),
       _OverviewItem(
-          'Best Round',
+          context.l10n.statsBestRound,
           hasData ? '${stats.bestRoundScore}' : '-',
           Icons.emoji_events_rounded,
           const Color(0xFFFFB74D)),
-      _OverviewItem('Total Rounds', '${stats.totalRounds}',
+      _OverviewItem(context.l10n.statsTotalRounds, '${stats.totalRounds}',
           Icons.sports_golf_rounded, const Color(0xFF64B5F6)),
-      _OverviewItem('Total Birdies', '${stats.totalBirdies}',
+      _OverviewItem(context.l10n.statsTotalBirdies, '${stats.totalBirdies}',
           Icons.flag_rounded, const Color(0xFF6DBD35)),
     ];
     return GridView.count(
@@ -295,7 +296,7 @@ class StatsScreen extends StatelessWidget {
 
   // ── Score distribution ────────────────────────────────────────────────────
   Widget _buildScoreDistribution(
-      AppColors c, double sw, double sh, List<Round> rounds) {
+      BuildContext context, AppColors c, double sw, double sh, List<Round> rounds) {
     final body = (sw * 0.036).clamp(13.0, 16.0);
     final label = (sw * 0.030).clamp(11.0, 13.0);
 
@@ -311,11 +312,11 @@ class StatsScreen extends StatelessWidget {
     if (total == 0) return const SizedBox.shrink();
 
     final items = [
-      _DistItem('Eagles', eagles, total, const Color(0xFFFFD700)),
-      _DistItem('Birdies', birdies, total, const Color(0xFF8FD44E)),
-      _DistItem('Pars', pars, total, const Color(0xFF64B5F6)),
-      _DistItem('Bogeys', bogeys, total, const Color(0xFFFFB74D)),
-      _DistItem('Double+', doubles, total, const Color(0xFFFF6B6B)),
+      _DistItem(context.l10n.statsEagles, eagles, total, const Color(0xFFFFD700)),
+      _DistItem(context.l10n.statsBirdies, birdies, total, const Color(0xFF8FD44E)),
+      _DistItem(context.l10n.statsPars, pars, total, const Color(0xFF64B5F6)),
+      _DistItem(context.l10n.statsBogeys, bogeys, total, const Color(0xFFFFB74D)),
+      _DistItem(context.l10n.statsDoublePlus, doubles, total, const Color(0xFFFF6B6B)),
     ];
 
     // Dominant category (highest count)
@@ -339,7 +340,7 @@ class StatsScreen extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Score Distribution',
+                  context.l10n.statsScoreDistribution,
                   style: TextStyle(fontFamily: 'Nunito',
                     color: c.primaryText,
                     fontSize: body,
@@ -502,7 +503,7 @@ class StatsScreen extends StatelessWidget {
 
   // ── Scoring trend (last 10) ───────────────────────────────────────────────
   Widget _buildScoringTrend(
-      AppColors c, double sw, double sh, List<Round> rounds) {
+      BuildContext context, AppColors c, double sw, double sh, List<Round> rounds) {
     final body = (sw * 0.036).clamp(13.0, 16.0);
     final label = (sw * 0.030).clamp(11.0, 13.0);
     final recent = rounds.take(10).toList().reversed.toList();
@@ -522,7 +523,7 @@ class StatsScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Score vs Par (Last ${recent.length} Rounds)',
+            context.l10n.statsScoreVsPar(recent.length),
             style: TextStyle(fontFamily: 'Nunito',
               color: c.primaryText,
               fontSize: body,
@@ -546,7 +547,7 @@ class StatsScreen extends StatelessWidget {
           SizedBox(height: sh * 0.008),
           Center(
             child: Text(
-              'Oldest → Most Recent',
+              context.l10n.statsOldestToRecent,
               style:
                   TextStyle(color: c.tertiaryText, fontSize: label * 0.85),
             ),
@@ -587,7 +588,7 @@ class StatsScreen extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    'Handicap Trend',
+                    context.l10n.statsHandicapTrend,
                     style: TextStyle(fontFamily: 'Nunito',
                         color: c.primaryText,
                         fontSize: body,
@@ -606,7 +607,7 @@ class StatsScreen extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        'Goal: $goal',
+                        context.l10n.statsGoal(goal.toString()),
                         style: TextStyle(
                             color: const Color(0xFFFFB74D),
                             fontSize: label,
@@ -638,7 +639,7 @@ class StatsScreen extends StatelessWidget {
                     style: TextStyle(color: c.tertiaryText, fontSize: label * 0.9),
                   ),
                   Text(
-                    'Latest: ${data.last.toStringAsFixed(1)}',
+                    context.l10n.statsLatest(data.last.toStringAsFixed(1)),
                     style: TextStyle(
                         color: c.accent,
                         fontSize: label,
@@ -654,20 +655,20 @@ class StatsScreen extends StatelessWidget {
   }
 
   // ── Detailed stats ────────────────────────────────────────────────────────
-  Widget _buildDetailedStats(AppColors c, double sw, double sh, AppStats stats) {
+  Widget _buildDetailedStats(BuildContext context, AppColors c, double sw, double sh, AppStats stats) {
     final body = (sw * 0.036).clamp(13.0, 16.0);
     final hasData = stats.totalRounds > 0;
 
     final rows = [
-      _StatRow('Fairways Hit', hasData ? '${stats.fairwaysHitPct.toStringAsFixed(1)}%' : '-',
+      _StatRow(context.l10n.statsFairwaysHit, hasData ? '${stats.fairwaysHitPct.toStringAsFixed(1)}%' : '-',
           Icons.straighten_rounded, const Color(0xFF6DBD35),
           pctValue: hasData ? stats.fairwaysHitPct : null),
-      _StatRow('Greens in Regulation', hasData ? '${stats.girPct.toStringAsFixed(1)}%' : '-',
+      _StatRow(context.l10n.statsGIR, hasData ? '${stats.girPct.toStringAsFixed(1)}%' : '-',
           Icons.flag_rounded, const Color(0xFF64B5F6),
           pctValue: hasData ? stats.girPct : null),
-      _StatRow('Avg Putts / Hole', hasData ? stats.avgPutts.toStringAsFixed(2) : '-',
+      _StatRow(context.l10n.statsAvgPuttsPerHole, hasData ? stats.avgPutts.toStringAsFixed(2) : '-',
           Icons.sports_golf_rounded, const Color(0xFFFFB74D)),
-      _StatRow('Total Birdies', '${stats.totalBirdies}',
+      _StatRow(context.l10n.statsTotalBirdies, '${stats.totalBirdies}',
           Icons.emoji_events_rounded, const Color(0xFF8FD44E)),
     ];
 
@@ -755,7 +756,7 @@ class StatsScreen extends StatelessWidget {
       rounds.any((r) => r.scores.any((h) => h.club != null));
 
   // ── Club Distance Tracker ─────────────────────────────────────────────────
-  Widget _buildClubStats(AppColors c, double sw, double sh, List<Round> rounds) {
+  Widget _buildClubStats(BuildContext context, AppColors c, double sw, double sh, List<Round> rounds) {
     final body = (sw * 0.036).clamp(13.0, 16.0);
     final label = (sw * 0.030).clamp(11.0, 13.0);
 
@@ -790,7 +791,7 @@ class StatsScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Club Stats',
+            context.l10n.statsClubStats,
             style: TextStyle(fontFamily: 'Nunito',
               color: c.primaryText,
               fontSize: body,
@@ -799,19 +800,19 @@ class StatsScreen extends StatelessWidget {
           ),
           SizedBox(height: sh * 0.006),
           Text(
-            'Score vs par & avg putts per club',
+            context.l10n.statsClubStatsSubtitle,
             style: TextStyle(color: c.tertiaryText, fontSize: label * 0.88),
           ),
           SizedBox(height: sh * 0.016),
           // Header
           Row(children: [
             SizedBox(width: (sw * 0.22).clamp(72.0, 90.0),
-                child: Text('Club', style: TextStyle(color: c.tertiaryText, fontSize: label * 0.88))),
-            Expanded(child: Text('Holes', textAlign: TextAlign.center,
+                child: Text(context.l10n.statsClub, style: TextStyle(color: c.tertiaryText, fontSize: label * 0.88))),
+            Expanded(child: Text(context.l10n.statsHoles, textAlign: TextAlign.center,
                 style: TextStyle(color: c.tertiaryText, fontSize: label * 0.88))),
-            Expanded(child: Text('Avg ±Par', textAlign: TextAlign.center,
+            Expanded(child: Text(context.l10n.statsAvgPlusMinus, textAlign: TextAlign.center,
                 style: TextStyle(color: c.tertiaryText, fontSize: label * 0.88))),
-            Expanded(child: Text('Avg Putts', textAlign: TextAlign.center,
+            Expanded(child: Text(context.l10n.statsAvgPutts, textAlign: TextAlign.center,
                 style: TextStyle(color: c.tertiaryText, fontSize: label * 0.88))),
           ]),
           Divider(color: c.divider, height: sh * 0.02),
@@ -861,16 +862,16 @@ class StatsScreen extends StatelessWidget {
   }
 
   // ── Strokes Gained ────────────────────────────────────────────────────────
-  Widget _buildStrokesGained(AppColors c, double sw, double sh, List<Round> rounds) {
+  Widget _buildStrokesGained(BuildContext context, AppColors c, double sw, double sh, List<Round> rounds) {
     final body = (sw * 0.036).clamp(13.0, 16.0);
     final label = (sw * 0.030).clamp(11.0, 13.0);
     final sg = StrokesGainedService.calculate(rounds);
 
     final categories = [
-      _SgItem('Off the Tee', sg.offTee, Icons.sports_golf_rounded, const Color(0xFF64B5F6)),
-      _SgItem('Approach', sg.approach, Icons.flag_rounded, const Color(0xFF6DBD35)),
-      _SgItem('Around Green', sg.aroundGreen, Icons.golf_course_rounded, const Color(0xFFFFB74D)),
-      _SgItem('Putting', sg.putting, Icons.sports_rounded, const Color(0xFF8FD44E)),
+      _SgItem(context.l10n.statsOffTheTee, sg.offTee, Icons.sports_golf_rounded, const Color(0xFF64B5F6)),
+      _SgItem(context.l10n.statsApproach, sg.approach, Icons.flag_rounded, const Color(0xFF6DBD35)),
+      _SgItem(context.l10n.statsAroundGreen, sg.aroundGreen, Icons.golf_course_rounded, const Color(0xFFFFB74D)),
+      _SgItem(context.l10n.statsPutting, sg.putting, Icons.sports_rounded, const Color(0xFF8FD44E)),
     ];
     final maxAbs = categories.map((i) => i.value.abs()).fold(0.0, (a, b) => a > b ? a : b);
     final barScale = maxAbs == 0 ? 1.0 : maxAbs;
@@ -892,7 +893,7 @@ class StatsScreen extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Strokes Gained',
+                  context.l10n.statsStrokesGained,
                   style: TextStyle(fontFamily: 'Nunito',
                     color: c.primaryText,
                     fontSize: body,
@@ -923,7 +924,7 @@ class StatsScreen extends StatelessWidget {
           ),
           SizedBox(height: sh * 0.006),
           Text(
-            'vs scratch golfer baseline',
+            context.l10n.statsVsScratch,
             style: TextStyle(color: c.tertiaryText, fontSize: label * 0.88),
           ),
           SizedBox(height: sh * 0.018),
@@ -1084,7 +1085,7 @@ class _HandicapRing extends StatelessWidget {
                 ),
               ),
               Text(
-                'Better\nthan avg',
+                context.l10n.statsBetterThanAvg,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.6),

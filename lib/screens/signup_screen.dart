@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/l10n_extension.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -91,15 +92,15 @@ class _SignUpScreenState extends State<SignUpScreen>
   String _friendlyError(String code) {
     switch (code) {
       case 'email-already-in-use':
-        return 'An account with this email already exists.';
+        return context.l10n.signupErrorAccountExists;
       case 'invalid-email':
-        return 'Please enter a valid email address.';
+        return context.l10n.signupErrorInvalidEmail;
       case 'weak-password':
-        return 'Password must be at least 6 characters.';
+        return context.l10n.signupErrorWeakPassword;
       case 'operation-not-allowed':
-        return 'Email sign-up is not enabled.';
+        return context.l10n.signupErrorNotEnabled;
       default:
-        return 'Something went wrong. Please try again.';
+        return context.l10n.profileSomethingWrong;
     }
   }
 
@@ -255,25 +256,25 @@ class _SignUpScreenState extends State<SignUpScreen>
             SizedBox(height: _fieldSpacing * 1.4),
             _buildTextField(
               controller: _nameController,
-              label: 'Full Name',
+              label: context.l10n.signupFullName,
               icon: Icons.person_outline_rounded,
               textInputAction: TextInputAction.next,
               validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Enter your name';
+                if (v == null || v.trim().isEmpty) return context.l10n.signupEnterYourName;
                 return null;
               },
             ),
             SizedBox(height: _fieldSpacing),
             _buildTextField(
               controller: _emailController,
-              label: 'Email',
+              label: context.l10n.signupEmail,
               icon: Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
               validator: (v) {
-                if (v == null || v.isEmpty) return 'Enter your email';
+                if (v == null || v.isEmpty) return context.l10n.loginEnterYourEmail;
                 if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) {
-                  return 'Enter a valid email';
+                  return context.l10n.loginEnterValidEmail;
                 }
                 return null;
               },
@@ -281,7 +282,7 @@ class _SignUpScreenState extends State<SignUpScreen>
             SizedBox(height: _fieldSpacing),
             _buildTextField(
               controller: _passwordController,
-              label: 'Password',
+              label: context.l10n.signupPassword,
               icon: Icons.lock_outline,
               obscure: _obscurePassword,
               textInputAction: TextInputAction.next,
@@ -292,15 +293,15 @@ class _SignUpScreenState extends State<SignUpScreen>
                     setState(() => _obscurePassword = !_obscurePassword),
               ),
               validator: (v) {
-                if (v == null || v.isEmpty) return 'Enter a password';
-                if (v.length < 6) return 'Minimum 6 characters';
+                if (v == null || v.isEmpty) return context.l10n.signupEnterPassword;
+                if (v.length < 6) return context.l10n.signupMinimumChars;
                 return null;
               },
             ),
             SizedBox(height: _fieldSpacing),
             _buildTextField(
               controller: _confirmController,
-              label: 'Confirm Password',
+              label: context.l10n.signupConfirmPassword,
               icon: Icons.lock_outline,
               obscure: _obscureConfirm,
               textInputAction: TextInputAction.done,
@@ -311,9 +312,9 @@ class _SignUpScreenState extends State<SignUpScreen>
                     setState(() => _obscureConfirm = !_obscureConfirm),
               ),
               validator: (v) {
-                if (v == null || v.isEmpty) return 'Confirm your password';
+                if (v == null || v.isEmpty) return context.l10n.signupConfirmYourPassword;
                 if (v != _passwordController.text) {
-                  return 'Passwords do not match';
+                  return context.l10n.signupPasswordsDoNotMatch;
                 }
                 return null;
               },
@@ -342,7 +343,7 @@ class _SignUpScreenState extends State<SignUpScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Create Account',
+              context.l10n.signupCreateAccount,
               style: TextStyle(
                 fontFamily: 'Nunito',
                 color: c.primaryText,
@@ -351,7 +352,7 @@ class _SignUpScreenState extends State<SignUpScreen>
               ),
             ),
             Text(
-              'Join TeeStats today',
+              context.l10n.signupJoinToday,
               style: TextStyle(
                 color: c.secondaryText,
                 fontSize: _bodySize * 0.875,
@@ -372,7 +373,13 @@ class _SignUpScreenState extends State<SignUpScreen>
     if (RegExp(r'[A-Z]').hasMatch(password)) strength++;
     if (RegExp(r'[0-9!@#\$%^&*]').hasMatch(password)) strength++;
 
-    final labels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+    final labels = [
+      '',
+      context.l10n.signupPasswordWeak,
+      context.l10n.signupPasswordFair,
+      context.l10n.signupPasswordGood,
+      context.l10n.signupPasswordStrong,
+    ];
     final colors = [
       Colors.transparent,
       const Color(0xFFFF6B6B),
@@ -402,7 +409,7 @@ class _SignUpScreenState extends State<SignUpScreen>
         ),
         const SizedBox(height: 6),
         Text(
-          'Password strength: ${labels[strength]}',
+          context.l10n.signupPasswordStrength(labels[strength]),
           style: TextStyle(
             color: colors[strength].withValues(alpha: 0.9),
             fontSize: _bodySize * 0.75,
@@ -512,7 +519,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                   ),
                 )
               : Text(
-                  'Create Account',
+                  context.l10n.signupCreateAccount,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: _bodySize,
@@ -558,7 +565,7 @@ class _SignUpScreenState extends State<SignUpScreen>
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          'Already have an account? ',
+          '${context.l10n.signupAlreadyHaveAccount} ',
           style: TextStyle(
             color: c.secondaryText,
             fontSize: _bodySize,
@@ -567,7 +574,7 @@ class _SignUpScreenState extends State<SignUpScreen>
         GestureDetector(
           onTap: () => Navigator.pop(context),
           child: Text(
-            'Sign In',
+            context.l10n.loginSignIn,
             style: TextStyle(
               color: c.accent,
               fontSize: _bodySize,

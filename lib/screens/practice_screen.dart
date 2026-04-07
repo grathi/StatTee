@@ -6,6 +6,7 @@ import '../models/round.dart';
 import '../services/practice_service.dart';
 import '../services/round_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/l10n_extension.dart';
 import 'round_detail_screen.dart';
 
 class PracticeScreen extends StatelessWidget {
@@ -39,7 +40,7 @@ class PracticeScreen extends StatelessWidget {
                 }
 
                 if (sessions.isEmpty && practiceRounds.isEmpty) {
-                  return _buildEmpty(c, sw, sh);
+                  return _buildEmpty(context, c, sw, sh);
                 }
 
                 // Build a unified list of items grouped by month.
@@ -92,7 +93,7 @@ class PracticeScreen extends StatelessWidget {
           bottom: sh * 0.024,
           child: _FabWithLabel(
             icon: Icons.add_rounded,
-            label: 'Log Session',
+            label: context.l10n.practiceLogSession,
             color: const Color(0xFF5A9E1F),
             onPressed: () => _showLogSheet(context, c, sw, sh),
           ),
@@ -101,7 +102,7 @@ class PracticeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildEmpty(AppColors c, double sw, double sh) {
+  Widget _buildEmpty(BuildContext context, AppColors c, double sw, double sh) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -110,7 +111,7 @@ class PracticeScreen extends StatelessWidget {
               color: c.tertiaryText, size: (sw * 0.16).clamp(54.0, 72.0)),
           SizedBox(height: sh * 0.016),
           Text(
-            'No practice sessions yet',
+            context.l10n.practiceNoSessions,
             style: TextStyle(
                 color: c.secondaryText,
                 fontSize: (sw * 0.042).clamp(15.0, 18.0),
@@ -118,7 +119,7 @@ class PracticeScreen extends StatelessWidget {
           ),
           SizedBox(height: sh * 0.008),
           Text(
-            'Start a round to score holes,\nor log range and short-game sessions.',
+            context.l10n.practiceStartInstructions,
             textAlign: TextAlign.center,
             style: TextStyle(
                 color: c.tertiaryText,
@@ -200,7 +201,7 @@ class PracticeScreen extends StatelessWidget {
                           color: const Color(0xFF34D399).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: Text('Scored Round',
+                        child: Text(context.l10n.practiceScoredRound,
                             style: TextStyle(
                                 color: const Color(0xFF34D399),
                                 fontSize: label * 0.85,
@@ -248,17 +249,17 @@ class PracticeScreen extends StatelessWidget {
         return await showDialog<bool>(
           context: context,
           builder: (_) => AlertDialog(
-            title: const Text('Delete Session?'),
-            content: const Text('This practice session will be permanently removed.'),
+            title: Text(context.l10n.practiceDeleteTitle),
+            content: Text(context.l10n.practiceDeleteConfirm),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
+                child: Text(context.l10n.cancel),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('Delete',
-                    style: TextStyle(color: Color(0xFFE53935))),
+                child: Text(context.l10n.delete,
+                    style: const TextStyle(color: Color(0xFFE53935))),
               ),
             ],
           ),
@@ -452,7 +453,7 @@ class _LogSessionSheetState extends State<_LogSessionSheet> {
             ),
           ),
           const SizedBox(height: 20),
-          Text('Log Practice Session',
+          Text(context.l10n.practiceLogTitle,
               style: TextStyle(fontFamily: 'Nunito',
                   color: c.primaryText,
                   fontSize: (sw * 0.052).clamp(18.0, 22.0),
@@ -460,7 +461,7 @@ class _LogSessionSheetState extends State<_LogSessionSheet> {
           SizedBox(height: sh * 0.022),
 
           // Type chips
-          Text('Type', style: TextStyle(
+          Text(context.l10n.practiceType, style: TextStyle(
               color: c.secondaryText, fontSize: label, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           Wrap(
@@ -494,15 +495,15 @@ class _LogSessionSheetState extends State<_LogSessionSheet> {
           // Balls + Duration row
           Row(
             children: [
-              Expanded(child: _numField(label, body, 'Balls hit', _balls, (v) => setState(() => _balls = v))),
+              Expanded(child: _numField(label, body, context.l10n.practiceBallsHit, _balls, (v) => setState(() => _balls = v))),
               const SizedBox(width: 12),
-              Expanded(child: _numField(label, body, 'Duration (min)', _duration, (v) => setState(() => _duration = v), step: 15)),
+              Expanded(child: _numField(label, body, context.l10n.practiceDuration, _duration, (v) => setState(() => _duration = v), step: 15)),
             ],
           ),
           SizedBox(height: sh * 0.018),
 
           // Notes
-          Text('Notes (optional)', style: TextStyle(
+          Text(context.l10n.practiceNotes, style: TextStyle(
               color: c.secondaryText, fontSize: label, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           Container(
@@ -518,7 +519,7 @@ class _LogSessionSheetState extends State<_LogSessionSheet> {
               maxLines: 2,
               style: TextStyle(color: c.primaryText, fontSize: body),
               decoration: InputDecoration(
-                hintText: 'What did you work on?',
+                hintText: context.l10n.practiceNotesHint,
                 hintStyle: TextStyle(color: c.tertiaryText, fontSize: body),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.all(12),
@@ -546,7 +547,7 @@ class _LogSessionSheetState extends State<_LogSessionSheet> {
                         width: 20, height: 20,
                         child: CircularProgressIndicator(
                             color: Colors.white, strokeWidth: 2))
-                    : Text('Save Session',
+                    : Text(context.l10n.practiceSave,
                         style: TextStyle(
                             fontFamily: 'Nunito',
                             fontSize: body,

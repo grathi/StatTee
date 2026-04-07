@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/l10n_extension.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -121,12 +122,12 @@ class _LoginScreenState extends State<LoginScreen>
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Reset Password',
+                            Text(ctx.l10n.loginResetPasswordTitle,
                                 style: TextStyle(fontFamily: 'Nunito',
                                     color: c.primaryText,
                                     fontSize: _headingSize * 0.88,
                                     fontWeight: FontWeight.w700)),
-                            Text("We'll send a reset link to your email",
+                            Text(ctx.l10n.loginResetPasswordSubtitle,
                                 style: TextStyle(color: c.secondaryText, fontSize: _bodySize * 0.85)),
                           ],
                         ),
@@ -152,20 +153,20 @@ class _LoginScreenState extends State<LoginScreen>
                               setSheetState(() {
                                 sending = false;
                                 error = e.code == 'user-not-found'
-                                    ? 'No account found with this email.'
+                                    ? ctx.l10n.loginErrorNoAccount
                                     : e.code == 'invalid-email'
-                                        ? 'Please enter a valid email.'
-                                        : 'Something went wrong. Try again.';
+                                        ? ctx.l10n.loginErrorInvalidEmail
+                                        : ctx.l10n.loginErrorSomethingWrong;
                               });
                             }
                           },
                           validator: (v) {
-                            if (v == null || v.isEmpty) return 'Enter your email';
-                            if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) return 'Enter a valid email';
+                            if (v == null || v.isEmpty) return ctx.l10n.loginEnterYourEmail;
+                            if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) return ctx.l10n.loginEnterValidEmail;
                             return null;
                           },
                           decoration: InputDecoration(
-                            labelText: 'Email address',
+                            labelText: 'Email address', // no exact ARB key for "Email address"
                             labelStyle: TextStyle(color: c.fieldLabel, fontSize: _bodySize * 0.9),
                             prefixIcon: Icon(Icons.email_outlined, color: c.fieldIcon, size: _bodySize * 1.3),
                             filled: true,
@@ -227,10 +228,10 @@ class _LoginScreenState extends State<LoginScreen>
                             setSheetState(() {
                               sending = false;
                               error = e.code == 'user-not-found'
-                                  ? 'No account found with this email.'
+                                  ? ctx.l10n.loginErrorNoAccount
                                   : e.code == 'invalid-email'
-                                      ? 'Please enter a valid email.'
-                                      : 'Something went wrong. Try again.';
+                                      ? ctx.l10n.loginErrorInvalidEmail
+                                      : ctx.l10n.loginErrorSomethingWrong;
                             });
                           }
                         },
@@ -250,7 +251,7 @@ class _LoginScreenState extends State<LoginScreen>
                                     width: _bodySize * 1.4, height: _bodySize * 1.4,
                                     child: const CircularProgressIndicator(strokeWidth: 2.5, valueColor: AlwaysStoppedAnimation(Colors.white)),
                                   )
-                                : Text('Send Reset Link',
+                                : Text(ctx.l10n.loginSendResetLink,
                                     style: TextStyle(color: Colors.white, fontSize: _bodySize, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
                           ),
                         ),
@@ -281,10 +282,10 @@ class _LoginScreenState extends State<LoginScreen>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('Reset link sent!',
+                                  Text(ctx.l10n.loginResetLinkSent,
                                       style: TextStyle(color: const Color(0xFF34D399),
                                           fontSize: _bodySize, fontWeight: FontWeight.w600)),
-                                  Text('Check your inbox for ${emailCtrl.text.trim()}',
+                                  Text(ctx.l10n.loginCheckInboxFor(emailCtrl.text.trim()),
                                       style: TextStyle(color: c.secondaryText, fontSize: _bodySize * 0.85)),
                                 ],
                               ),
@@ -304,7 +305,7 @@ class _LoginScreenState extends State<LoginScreen>
                             shape: SuperellipseShape(borderRadius: BorderRadius.circular(40)),
                           ),
                           child: Center(
-                            child: Text('Done',
+                            child: Text(ctx.l10n.done,
                                 style: TextStyle(color: Colors.white, fontSize: _bodySize, fontWeight: FontWeight.w700)),
                           ),
                         ),
@@ -341,18 +342,18 @@ class _LoginScreenState extends State<LoginScreen>
   String _friendlyError(String code) {
     switch (code) {
       case 'user-not-found':
-        return 'No account found with this email.';
+        return context.l10n.loginErrorNoAccount;
       case 'wrong-password':
       case 'invalid-credential':
-        return 'Incorrect email or password.';
+        return context.l10n.loginErrorIncorrectCredentials;
       case 'invalid-email':
-        return 'Please enter a valid email.';
+        return context.l10n.loginErrorInvalidEmail;
       case 'user-disabled':
-        return 'This account has been disabled.';
+        return context.l10n.loginErrorAccountDisabled;
       case 'too-many-requests':
-        return 'Too many attempts. Try again later.';
+        return context.l10n.loginErrorTooManyAttempts;
       default:
-        return 'Something went wrong. Please try again.';
+        return context.l10n.loginErrorTryAgain;
     }
   }
 
@@ -409,7 +410,7 @@ class _LoginScreenState extends State<LoginScreen>
               child: Column(
                 children: [
                   Text(
-                    'TeeStats',
+                    context.l10n.appName,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontFamily: 'Nunito',
@@ -421,7 +422,7 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Play  ·  Track  ·  Improve',
+                    context.l10n.loginTagline,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.black87,
@@ -505,7 +506,7 @@ class _LoginScreenState extends State<LoginScreen>
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Welcome back',
+              context.l10n.loginWelcomeBack,
               style: TextStyle(
                 fontFamily: 'Nunito',
                 color: c.primaryText,
@@ -515,7 +516,7 @@ class _LoginScreenState extends State<LoginScreen>
             ),
             SizedBox(height: _sh * 0.006),
             Text(
-              'Sign in to continue',
+              context.l10n.loginSignInToContinue,
               style: TextStyle(
                 color: c.secondaryText,
                 fontSize: _bodySize * 0.9,
@@ -524,14 +525,14 @@ class _LoginScreenState extends State<LoginScreen>
             SizedBox(height: _fieldSpacing * 1.4),
             _buildTextField(
               controller: _emailController,
-              label: 'Email',
+              label: context.l10n.loginEmail,
               icon: Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
               validator: (v) {
-                if (v == null || v.isEmpty) return 'Enter your email';
+                if (v == null || v.isEmpty) return context.l10n.loginEnterYourEmail;
                 if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) {
-                  return 'Enter a valid email';
+                  return context.l10n.loginEnterValidEmail;
                 }
                 return null;
               },
@@ -539,7 +540,7 @@ class _LoginScreenState extends State<LoginScreen>
             SizedBox(height: _fieldSpacing),
             _buildTextField(
               controller: _passwordController,
-              label: 'Password',
+              label: context.l10n.loginPassword,
               icon: Icons.lock_outline,
               obscure: _obscurePassword,
               textInputAction: TextInputAction.done,
@@ -549,7 +550,7 @@ class _LoginScreenState extends State<LoginScreen>
                 () => setState(() => _obscurePassword = !_obscurePassword),
               ),
               validator: (v) {
-                if (v == null || v.isEmpty) return 'Enter your password';
+                if (v == null || v.isEmpty) return 'Enter your password'; // no exact ARB key
                 return null;
               },
             ),
@@ -559,7 +560,7 @@ class _LoginScreenState extends State<LoginScreen>
               child: GestureDetector(
                 onTap: _showForgotPassword,
                 child: Text(
-                  'Forgot password?',
+                  context.l10n.loginForgotPassword,
                   style: TextStyle(
                     color: c.accent,
                     fontSize: _bodySize * 0.875,
@@ -678,7 +679,7 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                 )
               : Text(
-                  'Sign In',
+                  context.l10n.loginSignIn,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: _bodySize,
@@ -723,7 +724,7 @@ class _LoginScreenState extends State<LoginScreen>
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          "Don't have an account? ",
+          "${context.l10n.loginDontHaveAccount} ",
           style: TextStyle(
             color: c.secondaryText,
             fontSize: _bodySize,
@@ -746,7 +747,7 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
           child: Text(
-            'Sign Up',
+            context.l10n.loginSignUp,
             style: TextStyle(
               color: c.accent,
               fontSize: _bodySize,
@@ -758,5 +759,3 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 }
-
-

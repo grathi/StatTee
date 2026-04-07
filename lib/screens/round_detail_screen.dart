@@ -9,6 +9,7 @@ import '../models/round.dart';
 import '../models/hole_score.dart';
 import '../services/round_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/l10n_extension.dart';
 import '../widgets/weather_widgets.dart';
 import 'shot_tracker_screen.dart' show ShotTrailMapView;
 
@@ -109,7 +110,7 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
               child: const Icon(Icons.delete_outline_rounded, color: red, size: 26),
             ),
             SizedBox(height: sh * 0.020),
-            Text('Delete Round?',
+            Text(context.l10n.roundDetailDeleteTitle,
                 style: TextStyle(
                     fontFamily: 'Nunito',
                     color: c.primaryText,
@@ -117,7 +118,7 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
                     fontWeight: FontWeight.w700)),
             SizedBox(height: sh * 0.008),
             Text(
-              'This will permanently remove your round at ${widget.round.courseName}.',
+              context.l10n.roundDetailDeleteConfirm(widget.round.courseName),
               textAlign: TextAlign.center,
               style: TextStyle(color: c.secondaryText, fontSize: body * 0.9),
             ),
@@ -135,7 +136,7 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14)),
                       ),
-                      child: Text('Cancel',
+                      child: Text(context.l10n.cancel,
                           style: TextStyle(
                               fontSize: body, fontWeight: FontWeight.w600)),
                     ),
@@ -154,7 +155,7 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14)),
                       ),
-                      child: Text('Delete',
+                      child: Text(context.l10n.delete,
                           style: TextStyle(
                               fontFamily: 'Nunito',
                               fontSize: body,
@@ -214,13 +215,13 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
             IconButton(
               icon: Icon(Icons.ios_share_rounded, color: c.accent, size: 22),
               onPressed: _share,
-              tooltip: 'Share scorecard',
+              tooltip: context.l10n.roundDetailShare,
             ),
           IconButton(
             icon: const Icon(Icons.delete_outline_rounded,
                 color: Color(0xFFFF6B6B), size: 22),
             onPressed: _delete,
-            tooltip: 'Delete round',
+            tooltip: context.l10n.roundDetailDelete,
           ),
         ],
       ),
@@ -400,20 +401,20 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _statChip(c, '${round.birdies}', 'Birdies',
+                  _statChip(c, '${round.birdies}', context.l10n.roundsBirdies,
                       const Color(0xFF4CAF82), label),
-                  _statChip(c, '${round.pars}', 'Pars',
+                  _statChip(c, '${round.pars}', context.l10n.roundsPars,
                       const Color(0xFF5A9E1F), label),
-                  _statChip(c, '${round.bogeys}', 'Bogeys',
+                  _statChip(c, '${round.bogeys}', context.l10n.roundsBogeys,
                       const Color(0xFFE53935), label),
-                  _statChip(c, '${round.totalPutts}', 'Putts',
+                  _statChip(c, '${round.totalPutts}', context.l10n.roundsPutts,
                       c.secondaryText, label),
                   _statChip(
                       c,
                       round.fairwaysHitPct > 0
                           ? '${round.fairwaysHitPct.toStringAsFixed(0)}%'
                           : '-',
-                      'FIR',
+                      context.l10n.roundsFIR,
                       c.secondaryText,
                       label),
                 ],
@@ -430,7 +431,7 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
 
             // ── Hole-by-hole scorecard (screenshotted) ─────────────────────
             Text(
-              'Scorecard',
+              context.l10n.roundDetailScorecard,
               style: TextStyle(fontFamily: 'Nunito',
                 color: c.primaryText,
                 fontSize: body * 1.1,
@@ -465,7 +466,7 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
       children: [
         SizedBox(height: _sh * 0.022),
         Text(
-          'Shot Trails',
+          context.l10n.roundDetailShotTrails,
           style: TextStyle(
             fontFamily: 'Nunito',
             color: c.primaryText,
@@ -633,12 +634,12 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
               children: [
-                _headerFlex(1, 'Hole', label, center: true),
-                _headerFlex(1, 'Par', label, center: true),
+                _headerFlex(1, context.l10n.roundDetailHole, label, center: true),
+                _headerFlex(1, context.l10n.roundDetailPar, label, center: true),
                 _headerFlex(1, 'Score', label, center: true),
                 _headerFlex(1, 'Putts', label, center: true),
                 _headerFlex(1, 'FIR', label, center: true),
-                _headerFlex(1, 'GIR', label, center: true),
+                _headerFlex(1, context.l10n.roundDetailGIR, label, center: true),
                 if (hasClub) _headerFlex(2, 'Club', label),
               ],
             ),
@@ -736,7 +737,7 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
             child: Row(
               children: [
-                _dataFlex(1, 'TOT', label, c.tertiaryText, center: true),
+                _dataFlex(1, context.l10n.roundDetailTotal, label, c.tertiaryText, center: true),
                 _dataFlex(1, '${round.totalPar}', label, c.tertiaryText, center: true),
                 Expanded(
                   child: Center(

@@ -15,6 +15,7 @@ import '../services/golf_course_api_service.dart';
 import '../services/course_service.dart';
 import '../models/course_model.dart';
 import 'scorecard_upload_screen.dart';
+import '../utils/l10n_extension.dart';
 
 class StartRoundScreen extends StatefulWidget {
   final String? initialCourseName;
@@ -461,7 +462,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text(context.l10n.startRoundError(e.toString()))),
         );
       }
     } finally {
@@ -572,7 +573,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                         borderRadius: BorderRadius.circular(40),
                       ),
                     ),
-                    child: Text('📍  Pick your course',
+                    child: Text(context.l10n.startRoundPickCourse,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.9),
                         fontSize: _label * 0.9,
@@ -581,7 +582,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                     ),
                   ),
                   SizedBox(height: _sh * 0.007),
-                  Text('Where are\nyou playing?',
+                  Text(context.l10n.startRoundWherePlaying,
                     style: TextStyle(
                       fontFamily: 'Nunito',
                       color: Colors.white,
@@ -591,7 +592,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                     ),
                   ),
                   SizedBox(height: _sh * 0.005),
-                  Text('Search for a nearby golf course',
+                  Text(context.l10n.startRoundSearchHint,
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.70),
                       fontSize: _body * 0.82,
@@ -664,11 +665,11 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                     }
                   },
                   validator: (v) => (v == null || v.trim().isEmpty)
-                      ? 'Enter course name'
+                      ? context.l10n.startRoundEnterCourseName
                       : null,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   decoration: InputDecoration(
-                    labelText: 'Course Name',
+                    labelText: context.l10n.startRoundCourseName,
                     labelStyle:
                         TextStyle(color: c.fieldLabel, fontSize: _body * 0.9),
                     prefixIcon: Icon(Icons.golf_course_rounded,
@@ -747,13 +748,13 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                       child: CircularProgressIndicator(strokeWidth: 2, color: c.accent),
                     ),
                     const SizedBox(width: 10),
-                    Text('Fetching tee data…',
+                    Text(context.l10n.startRoundFetchingTeeData,
                         style: TextStyle(color: c.tertiaryText, fontSize: _label)),
                   ],
                 ),
               )
             else if (_apiCourseDetail != null && _apiCourseDetail!.hasTeeData) ...[
-              _sectionLabel(c, 'SELECT TEE'),
+              _sectionLabel(c, context.l10n.startRoundSelectTee),
               SizedBox(height: _sh * 0.010),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -774,7 +775,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
               SizedBox(height: _sh * 0.018),
             ]
             else if (_firestoreCourse != null && _firestoreCourse!.tees.isNotEmpty) ...[
-              _sectionLabel(c, 'SELECT TEE'),
+              _sectionLabel(c, context.l10n.startRoundSelectTee),
               SizedBox(height: _sh * 0.010),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -834,7 +835,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                     Icon(Icons.info_outline_rounded, size: 15, color: c.tertiaryText),
                     const SizedBox(width: 6),
                     Expanded(
-                      child: Text('No hole data found for this course.',
+                      child: Text(context.l10n.startRoundNoHoleData,
                           style: TextStyle(color: c.tertiaryText, fontSize: _label)),
                     ),
                     GestureDetector(
@@ -860,7 +861,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                           borderRadius: BorderRadius.circular(20),
                           border:       Border.all(color: c.accentBorder),
                         ),
-                        child: Text('Upload Scorecard',
+                        child: Text(context.l10n.startRoundUploadScorecard,
                             style: TextStyle(color: c.accent, fontWeight: FontWeight.w600, fontSize: _label)),
                       ),
                     ),
@@ -869,11 +870,11 @@ class _StartRoundScreenState extends State<StartRoundScreen>
               ),
             ],
 
-            _sectionLabel(c, 'COURSE RATING (OPTIONAL)'),
+            _sectionLabel(c, context.l10n.startRoundCourseRating),
             Padding(
               padding: const EdgeInsets.only(bottom: 3),
               child: Text(
-                'For an accurate USGA Handicap Index',
+                context.l10n.startRoundRatingForHandicap,
                 style: TextStyle(color: c.tertiaryText, fontSize: _label * 0.9),
               ),
             ),
@@ -886,8 +887,8 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     style: TextStyle(color: c.fieldText, fontSize: _body),
                     decoration: InputDecoration(
-                      labelText: 'Course Rating',
-                      hintText: 'e.g. 72.5',
+                      labelText: context.l10n.startRoundCourseRatingLabel,
+                      hintText: context.l10n.startRoundCourseRatingHint,
                       labelStyle: TextStyle(color: c.fieldLabel, fontSize: _body * 0.9),
                       prefixIcon: Icon(Icons.score_rounded, color: c.fieldIcon, size: _body * 1.3),
                       filled: true,
@@ -923,8 +924,8 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                     keyboardType: TextInputType.number,
                     style: TextStyle(color: c.fieldText, fontSize: _body),
                     decoration: InputDecoration(
-                      labelText: 'Slope Rating',
-                      hintText: 'e.g. 113',
+                      labelText: context.l10n.startRoundSlopeRatingLabel,
+                      hintText: context.l10n.startRoundSlopeRatingHint,
                       labelStyle: TextStyle(color: c.fieldLabel, fontSize: _body * 0.9),
                       prefixIcon: Icon(Icons.trending_up_rounded, color: c.fieldIcon, size: _body * 1.3),
                       filled: true,
@@ -948,7 +949,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) return null;
                       final val = int.tryParse(v.trim());
-                      if (val == null || val < 55 || val > 155) return '55–155';
+                      if (val == null || val < 55 || val > 155) return context.l10n.startRoundSlopeError;
                       return null;
                     },
                   ),
@@ -957,7 +958,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
             ),
 
             SizedBox(height: _sh * 0.018),
-            _sectionLabel(c, 'NUMBER OF HOLES'),
+            _sectionLabel(c, context.l10n.startRoundNumberOfHoles),
             SizedBox(height: _sh * 0.010),
             _buildHolesSelector(c),
           ],
@@ -1009,7 +1010,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                     ? Padding(
                         padding: const EdgeInsets.all(16),
                         child: Text(
-                          'No golf courses found nearby',
+                          context.l10n.startRoundNoCoursesFound,
                           style: TextStyle(
                               color: c.secondaryText, fontSize: _label),
                         ),
@@ -1131,7 +1132,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                     ),
                   ),
                   Text(
-                    'Holes',
+                    context.l10n.startRoundHoles,
                     style: TextStyle(
                       color: selected
                           ? Colors.white.withValues(alpha: 0.8)
@@ -1178,7 +1179,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionLabel(c, 'INVITE FRIENDS (MAX 3)'),
+          _sectionLabel(c, context.l10n.startRoundInviteFriends),
           SizedBox(height: _sh * 0.010),
           // ── Search field ────────────────────────────────────────────────
           Container(
@@ -1200,7 +1201,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                     decoration: InputDecoration(
                       isDense: true,
                       border: InputBorder.none,
-                      hintText: 'Search friends…',
+                      hintText: context.l10n.startRoundSearchFriends,
                       hintStyle: TextStyle(color: c.tertiaryText, fontSize: _label),
                     ),
                     onChanged: (v) => setState(() => _friendQuery = v),
@@ -1226,7 +1227,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Text(
-                _friendQuery.isEmpty ? 'No friends yet.' : 'No matches.',
+                _friendQuery.isEmpty ? context.l10n.startRoundNoFriends : context.l10n.startRoundNoMatches,
                 style: TextStyle(color: c.tertiaryText, fontSize: _label),
               ),
             )
@@ -1345,7 +1346,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
           if (_invitedUids.isNotEmpty) ...[
             SizedBox(height: _sh * 0.010),
             Text(
-              '${_invitedUids.length} friend${_invitedUids.length > 1 ? 's' : ''} will be invited',
+              context.l10n.startRoundFriendsInvited(_invitedUids.length),
               style: TextStyle(
                   color: c.accent, fontSize: _label, fontWeight: FontWeight.w600),
             ),
@@ -1411,7 +1412,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                     const Icon(Icons.sports_golf_rounded, size: 22, color: Colors.white),
                     const SizedBox(width: 10),
                     Text(
-                      'Tee Off!',
+                      context.l10n.startRoundTeeOff,
                       style: TextStyle(fontFamily: 'Nunito',
                         fontSize: (_sw * 0.048).clamp(16.0, 20.0),
                         fontWeight: FontWeight.w700,

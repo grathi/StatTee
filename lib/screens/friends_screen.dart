@@ -6,6 +6,7 @@ import '../models/friend_profile.dart';
 import '../services/friends_service.dart';
 import '../services/stats_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/l10n_extension.dart';
 import 'friend_detail_screen.dart';
 
 class FriendsScreen extends StatefulWidget {
@@ -55,7 +56,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
       setState(() {
         _searching = false;
         if (result == null) {
-          _searchError = 'No account found with that email.';
+          _searchError = context.l10n.loginErrorNoAccount;
         } else {
           _searchResult = result;
         }
@@ -64,7 +65,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
       if (!mounted) return;
       setState(() {
         _searching = false;
-        _searchError = 'Something went wrong. Try again.';
+        _searchError = context.l10n.loginErrorSomethingWrong;
       });
     }
   }
@@ -115,7 +116,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      'Friends',
+                      context.l10n.friends,
                       style: TextStyle(
                         fontFamily: 'Nunito',
                         color: c.primaryText,
@@ -141,8 +142,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
                   padding: const EdgeInsets.all(3),
                   child: Row(
                     children: [
-                      _tabBtn(c, body, 'Friends', Icons.people_rounded, 0),
-                      _tabBtn(c, body, 'Leaderboard', Icons.leaderboard_rounded, 1),
+                      _tabBtn(c, body, context.l10n.friends, Icons.people_rounded, 0),
+                      _tabBtn(c, body, context.l10n.friendsLeaderboard, Icons.leaderboard_rounded, 1),
                     ],
                   ),
                 ),
@@ -354,7 +355,7 @@ class _FriendsTab extends StatelessWidget {
             // List or empty state
             Expanded(
               child: (!loading && accepted.isEmpty && pending.isEmpty && !hasSearch)
-                  ? _emptyState(c, body, label)
+                  ? _emptyState(context, c, body, label)
                   : Skeletonizer(
                       enabled: loading,
                       child: ListView(
@@ -362,7 +363,7 @@ class _FriendsTab extends StatelessWidget {
                         padding: EdgeInsets.fromLTRB(hPad, sh * 0.016, hPad, sh * 0.12),
                         children: [
                           if (pending.isNotEmpty) ...[
-                            _sectionLabel(c, label, 'Pending Requests'),
+                            _sectionLabel(context, c, label, context.l10n.friendsPendingRequests),
                             SizedBox(height: sh * 0.008),
                             ...pending.map((f) => _PendingCard(
                                   c: c,
@@ -375,7 +376,7 @@ class _FriendsTab extends StatelessWidget {
                             SizedBox(height: sh * 0.016),
                           ],
                           if (accepted.isNotEmpty) ...[
-                            _sectionLabel(c, label, 'Friends'),
+                            _sectionLabel(context, c, label, context.l10n.friends),
                             SizedBox(height: sh * 0.008),
                             ...accepted.map((f) => _FriendCard(
                                   c: c,
@@ -395,27 +396,27 @@ class _FriendsTab extends StatelessWidget {
     );
   }
 
-  Widget _emptyState(AppColors c, double body, double label) {
+  Widget _emptyState(BuildContext context, AppColors c, double body, double label) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.people_outline_rounded, size: 52, color: c.tertiaryText),
           const SizedBox(height: 12),
-          Text('No friends yet',
+          Text(context.l10n.friendsNoFriendsYet,
               style: TextStyle(
                   color: c.secondaryText,
                   fontSize: body,
                   fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
-          Text('Enter a friend\'s email above to add them',
+          Text(context.l10n.friendsEnterEmail,
               style: TextStyle(color: c.tertiaryText, fontSize: label)),
         ],
       ),
     );
   }
 
-  Widget _sectionLabel(AppColors c, double label, String text) {
+  Widget _sectionLabel(BuildContext context, AppColors c, double label, String text) {
     return Text(text,
         style: TextStyle(
             color: c.tertiaryText,
@@ -468,7 +469,7 @@ class _SearchBar extends StatelessWidget {
               style: TextStyle(color: c.primaryText, fontSize: body),
               decoration: InputDecoration(
                 border: InputBorder.none,
-                hintText: 'Search by email address…',
+                hintText: context.l10n.friendsSearchHint,
                 hintStyle:
                     TextStyle(color: c.tertiaryText, fontSize: body * 0.9),
                 isDense: true,
@@ -500,7 +501,7 @@ class _SearchBar extends StatelessWidget {
                       child: const CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white),
                     )
-                  : Text('Search',
+                  : Text(context.l10n.search,
                       style: TextStyle(
                           color: Colors.white,
                           fontSize: body * 0.85,
@@ -568,16 +569,16 @@ class _SearchResultCard extends StatelessWidget {
     String btnLabel;
     Color  btnColor;
     if (requestSent || pendingSent) {
-      btnLabel = 'Request Sent';
+      btnLabel = context.l10n.friendsRequestSent;
       btnColor = c.tertiaryText;
     } else if (pendingReceived) {
-      btnLabel = 'Accept Request';
+      btnLabel = context.l10n.friendsAcceptRequest;
       btnColor = const Color(0xFF5A9E1F);
     } else if (alreadyFriend) {
-      btnLabel = 'Already Friends';
+      btnLabel = context.l10n.friendsAlreadyFriends;
       btnColor = c.tertiaryText;
     } else {
-      btnLabel = 'Add Friend';
+      btnLabel = context.l10n.friendsAddFriend;
       btnColor = const Color(0xFF5A9E1F);
     }
 
@@ -689,7 +690,7 @@ class _PendingCard extends StatelessWidget {
                         color: c.primaryText,
                         fontSize: body,
                         fontWeight: FontWeight.w700)),
-                Text('Wants to be friends',
+                Text(context.l10n.friendsWantsToBeF,
                     style:
                         TextStyle(color: c.tertiaryText, fontSize: label)),
               ],
@@ -707,7 +708,7 @@ class _PendingCard extends StatelessWidget {
                   side: BorderSide(color: c.fieldBorder),
                 ),
               ),
-              child: Text('Decline',
+              child: Text(context.l10n.decline,
                   style: TextStyle(
                       color: c.tertiaryText,
                       fontSize: label,
@@ -725,7 +726,7 @@ class _PendingCard extends StatelessWidget {
                 shape: SuperellipseShape(
                     borderRadius: BorderRadius.circular(10)),
               ),
-              child: Text('Accept',
+              child: Text(context.l10n.accept,
                   style: TextStyle(
                       color: Colors.white,
                       fontSize: label,
@@ -890,11 +891,11 @@ class _LeaderboardTabState extends State<_LeaderboardTab> {
           padding: EdgeInsets.fromLTRB(hPad, 0, hPad, sh * 0.012),
           child: Row(
             children: [
-              _sortChip(c, label, 'Handicap', 0),
+              _sortChip(c, label, context.l10n.friendsHandicap, 0),
               const SizedBox(width: 8),
-              _sortChip(c, label, 'Avg Score', 1),
+              _sortChip(c, label, context.l10n.friendsAvgScore, 1),
               const SizedBox(width: 8),
-              _sortChip(c, label, 'Birdies', 2),
+              _sortChip(c, label, context.l10n.roundsBirdies, 2),
             ],
           ),
         ),
@@ -923,13 +924,13 @@ class _LeaderboardTabState extends State<_LeaderboardTab> {
                       Icon(Icons.leaderboard_outlined,
                           size: 52, color: c.tertiaryText),
                       const SizedBox(height: 12),
-                      Text('No leaderboard yet',
+                      Text(context.l10n.friendsNoLeaderboard,
                           style: TextStyle(
                               color: c.secondaryText,
                               fontSize: body,
                               fontWeight: FontWeight.w600)),
                       const SizedBox(height: 6),
-                      Text('Add friends to compare scores',
+                      Text(context.l10n.friendsAddToCompare,
                           style: TextStyle(
                               color: c.tertiaryText, fontSize: label)),
                     ],
@@ -1062,7 +1063,7 @@ class _LeaderboardRow extends StatelessWidget {
             _Avatar(url: profile.avatarUrl, name: profile.displayName, size: 38),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(isMe ? 'You' : profile.displayName,
+              child: Text(isMe ? context.l10n.friendsYou : profile.displayName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(

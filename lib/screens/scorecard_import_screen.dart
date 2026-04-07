@@ -13,6 +13,7 @@ import '../services/places_service.dart';
 import '../services/round_service.dart';
 import '../services/scorecard_ocr_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/l10n_extension.dart';
 import 'group_round_results_screen.dart';
 import 'round_detail_screen.dart';
 
@@ -83,7 +84,7 @@ Future<void> showScorecardImportFlow(
     _showErrorDialog(
       context,
       msg.contains('timed out') || msg.contains('SocketException')
-          ? "Couldn't reach the AI service. Check your connection and try again."
+          ? context.l10n.scorecardImportConnectionError
           : msg, // show actual error for debugging
       canEditManually: false,
     );
@@ -129,7 +130,7 @@ void _showErrorDialog(BuildContext context, String message,
             ),
             const SizedBox(height: 16),
             Text(
-              'Unable to Read Scorecard',
+              ctx.l10n.scorecardImportUnableRead,
               style: TextStyle(
                 fontFamily: 'Nunito',
                 color: c.primaryText,
@@ -170,9 +171,9 @@ void _showErrorDialog(BuildContext context, String message,
                   ],
                 ),
                 alignment: Alignment.center,
-                child: const Text(
-                  'Try Again',
-                  style: TextStyle(
+                child: Text(
+                  ctx.l10n.swingAnalyzerTryAgain,
+                  style: const TextStyle(
                     fontFamily: 'Nunito',
                     color: Colors.white,
                     fontSize: 15,
@@ -196,7 +197,7 @@ void _showErrorDialog(BuildContext context, String message,
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  'Cancel',
+                  ctx.l10n.cancel,
                   style: TextStyle(
                     fontFamily: 'Nunito',
                     color: c.primaryText,
@@ -251,22 +252,22 @@ class _SourcePickerSheet extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'How would you like to add your scorecard?',
+            context.l10n.scorecardImportHowToAdd,
             style: TextStyle(color: c.tertiaryText, fontSize: 13),
           ),
           const SizedBox(height: 20),
           _SourceTile(
             icon: Icons.camera_alt_rounded,
-            label: 'Take a Photo',
-            sub: 'Photograph your paper scorecard',
+            label: context.l10n.scorecardImportTakePhoto,
+            sub: context.l10n.scorecardImportPhotoDesc,
             c: c,
             onTap: () => Navigator.pop(context, ImageSource.camera),
           ),
           const SizedBox(height: 10),
           _SourceTile(
             icon: Icons.photo_library_rounded,
-            label: 'Choose from Library',
-            sub: 'Select an existing photo',
+            label: context.l10n.scorecardImportFromLibrary,
+            sub: context.l10n.scorecardImportLibraryDesc,
             c: c,
             onTap: () => Navigator.pop(context, ImageSource.gallery),
           ),
@@ -367,7 +368,7 @@ class _OcrLoadingDialog extends StatelessWidget {
                   color: c.accent, strokeWidth: 2.5),
               const SizedBox(height: 20),
               Text(
-                'Reading your scorecard…',
+                context.l10n.scorecardImportReading,
                 style: TextStyle(
                   fontFamily: 'Nunito',
                   color: c.primaryText,
@@ -377,7 +378,7 @@ class _OcrLoadingDialog extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                'Analysing with AI — this takes a few seconds',
+                context.l10n.scorecardImportAnalyzing,
                 style: TextStyle(color: c.tertiaryText, fontSize: 13),
                 textAlign: TextAlign.center,
               ),
@@ -540,7 +541,7 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
   Future<void> _confirmImport() async {
     if (_courseNameCtrl.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a course name.')),
+        SnackBar(content: Text(context.l10n.scorecardUploadValidation)),
       );
       return;
     }
@@ -583,7 +584,7 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Some Scores Missing',
+                    ctx.l10n.scorecardUploadMissingScores,
                     style: TextStyle(
                       fontFamily: 'Nunito',
                       color: c.primaryText,
@@ -594,7 +595,7 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'A few holes still show 0. They\'ll be saved as 0 strokes — you can edit them after import.',
+                    ctx.l10n.scorecardUploadMissingMsg,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: c.secondaryText,
@@ -626,9 +627,9 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
                         ],
                       ),
                       alignment: Alignment.center,
-                      child: const Text(
-                        'Import Anyway',
-                        style: TextStyle(
+                      child: Text(
+                        ctx.l10n.scorecardUploadImportAnyway,
+                        style: const TextStyle(
                           fontFamily: 'Nunito',
                           color: Colors.white,
                           fontSize: 15,
@@ -653,7 +654,7 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
                       ),
                       alignment: Alignment.center,
                       child: Text(
-                        'Fix First',
+                        ctx.l10n.scorecardUploadFixFirst,
                         style: TextStyle(
                           fontFamily: 'Nunito',
                           color: c.primaryText,
@@ -790,7 +791,7 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Review Scorecard',
+          context.l10n.scorecardUploadReviewTitle,
           style: TextStyle(
             fontFamily: 'Nunito',
             color: c.primaryText,
@@ -813,7 +814,7 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
             TextButton(
               onPressed: _confirmImport,
               child: Text(
-                'Import',
+                context.l10n.scorecardImportButton,
                 style: TextStyle(
                   fontFamily: 'Nunito',
                   color: c.accent,
@@ -864,7 +865,7 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionLabel(c, 'Course'),
+        _sectionLabel(c, context.l10n.scorecardImportCourse),
         const SizedBox(height: 8),
 
         // ── Course name with autocomplete ────────────────────────────────
@@ -889,7 +890,7 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
                 }
               },
               decoration: fieldDecoration.copyWith(
-                hintText: 'Course name',
+                hintText: context.l10n.scorecardImportCourseNameHint,
                 prefixIcon: Icon(Icons.golf_course_rounded,
                     color: c.fieldIcon, size: 18),
                 suffixIcon: _loadingSuggestions
@@ -945,7 +946,7 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
                 child: Text(
                   _locationText.isNotEmpty
                       ? _locationText
-                      : 'Location — search a course above',
+                      : context.l10n.scorecardImportLocationHint,
                   style: TextStyle(
                     color: _locationText.isNotEmpty
                         ? c.fieldText
@@ -970,7 +971,7 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
                     const TextInputType.numberWithOptions(decimal: true),
                 style: TextStyle(color: c.fieldText),
                 decoration:
-                    fieldDecoration.copyWith(hintText: 'Rating'),
+                    fieldDecoration.copyWith(hintText: context.l10n.scorecardUploadRating),
               ),
             ),
             const SizedBox(width: 10),
@@ -980,7 +981,7 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
                 keyboardType: TextInputType.number,
                 style: TextStyle(color: c.fieldText),
                 decoration:
-                    fieldDecoration.copyWith(hintText: 'Slope'),
+                    fieldDecoration.copyWith(hintText: context.l10n.scorecardUploadSlope),
               ),
             ),
             const SizedBox(width: 10),
@@ -1094,7 +1095,7 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
                     ? Padding(
                         padding: const EdgeInsets.all(16),
                         child: Text(
-                          'No golf courses found',
+                          context.l10n.scorecardImportNoCoursesFound,
                           style: TextStyle(
                               color: c.secondaryText, fontSize: 13),
                         ),
@@ -1262,9 +1263,9 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               children: [
-                _headerCell('Hole', flex: 1),
-                _headerCell('Par', flex: 2),
-                _headerCell('Score', flex: 2),
+                _headerCell(context.l10n.roundDetailHole, flex: 1),
+                _headerCell(context.l10n.roundDetailPar, flex: 2),
+                _headerCell(context.l10n.roundSummaryScore, flex: 2),
                 _headerCell('+/-', flex: 1, center: true),
               ],
             ),
@@ -1388,11 +1389,11 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _totalItem(c, 'Par', '$par', c.tertiaryText),
+          _totalItem(c, context.l10n.roundDetailPar, '$par', c.tertiaryText),
           Container(width: 1, height: 28, color: c.divider),
-          _totalItem(c, 'Score', '$score', c.primaryText),
+          _totalItem(c, context.l10n.roundSummaryScore, '$score', c.primaryText),
           Container(width: 1, height: 28, color: c.divider),
-          _totalItem(c, 'vs Par', diffLabel, diffColor),
+          _totalItem(c, context.l10n.roundSummaryVsPar, diffLabel, diffColor),
         ],
       ),
     );

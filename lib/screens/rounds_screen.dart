@@ -13,6 +13,7 @@ import 'scorecard_screen.dart';
 import 'round_detail_screen.dart';
 import 'practice_screen.dart';
 import 'tournament_screen.dart';
+import '../utils/l10n_extension.dart';
 
 class RoundsScreen extends StatefulWidget {
   const RoundsScreen({super.key});
@@ -73,8 +74,8 @@ class _RoundsScreenState extends State<RoundsScreen> {
               child: Column(
                 children: [
                   TipBanner(
-                    title: 'Your Round History',
-                    body: 'All completed rounds are here. Tap any round for a full hole-by-hole breakdown and stats.',
+                    title: context.l10n.roundsHistoryTitle,
+                    body: context.l10n.roundsHistorySubtitle,
                     hasSeenFn: OnboardingService.hasSeenRoundsTip,
                     markSeenFn: OnboardingService.markRoundsTipSeen,
                   ),
@@ -143,7 +144,7 @@ class _RoundsScreenState extends State<RoundsScreen> {
                                                   crossAxisAlignment: CrossAxisAlignment.start,
                                                   children: [
                                                     Text(
-                                                      'Round in Progress',
+                                                      context.l10n.roundsInProgress,
                                                       style: TextStyle(
                                                         color: Colors.white.withValues(alpha: 0.7),
                                                         fontSize: label,
@@ -161,7 +162,7 @@ class _RoundsScreenState extends State<RoundsScreen> {
                                                 ),
                                               ),
                                               Text(
-                                                '${active.holesPlayed}/${active.totalHoles} holes',
+                                                context.l10n.roundsHolesProgress(active.holesPlayed, active.totalHoles),
                                                 style: TextStyle(
                                                   color: Colors.white.withValues(alpha: 0.8),
                                                   fontSize: label,
@@ -284,24 +285,24 @@ class _RoundsScreenState extends State<RoundsScreen> {
                     backgroundColor: c.sheetBg,
                     shape: SuperellipseShape(
                         borderRadius: BorderRadius.circular(40)),
-                    title: Text('Delete Round?',
+                    title: Text(ctx.l10n.roundsDeleteTitle,
                         style: TextStyle(
                             fontFamily: 'Nunito',
                             color: c.primaryText,
                             fontWeight: FontWeight.w700)),
                     content: Text(
-                      'Permanently remove your round at ${r.courseName}?',
+                      ctx.l10n.roundsDeleteConfirm(r.courseName),
                       style: TextStyle(color: c.secondaryText),
                     ),
                     actions: [
                       TextButton(
                           onPressed: () => Navigator.pop(ctx, false),
-                          child: Text('Cancel',
+                          child: Text(ctx.l10n.cancel,
                               style: TextStyle(color: c.secondaryText))),
                       TextButton(
                           onPressed: () => Navigator.pop(ctx, true),
-                          child: const Text('Delete',
-                              style: TextStyle(color: Color(0xFFFF6B6B)))),
+                          child: Text(ctx.l10n.delete,
+                              style: const TextStyle(color: Color(0xFFFF6B6B)))),
                     ],
                   ),
                 );
@@ -346,7 +347,7 @@ class _RoundsScreenState extends State<RoundsScreen> {
               size: (sw * 0.16).clamp(54.0, 72.0)),
           SizedBox(height: sh * 0.016),
           Text(
-            'No rounds yet',
+            context.l10n.roundsNoRoundsYet,
             style: TextStyle(
                 color: c.secondaryText,
                 fontSize: (sw * 0.042).clamp(15.0, 18.0),
@@ -354,7 +355,7 @@ class _RoundsScreenState extends State<RoundsScreen> {
           ),
           SizedBox(height: sh * 0.008),
           Text(
-            'Start your first round from the Home tab',
+            context.l10n.roundsStartFirst,
             textAlign: TextAlign.center,
             style: TextStyle(
                 color: c.tertiaryText,
@@ -365,7 +366,7 @@ class _RoundsScreenState extends State<RoundsScreen> {
             icon: Icon(Icons.document_scanner_rounded,
                 color: c.accent, size: 16),
             label: Text(
-              'or scan a paper scorecard',
+              context.l10n.roundsOrScanScorecard,
               style: TextStyle(
                   color: c.accent,
                   fontSize: (sw * 0.034).clamp(12.0, 15.0)),
@@ -514,15 +515,15 @@ class _RoundCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _miniStat(c, '${round.birdies}',   'Birdies', label, const Color(0xFF8FD44E)),
-              _miniStat(c, '${round.pars}',       'Pars',    label, const Color(0xFF64B5F6)),
-              _miniStat(c, '${round.bogeys}',     'Bogeys',  label, const Color(0xFFFFB74D)),
-              _miniStat(c, '${round.totalPutts}', 'Putts',   label, c.secondaryText),
+              _miniStat(c, '${round.birdies}',   context.l10n.roundsBirdies, label, const Color(0xFF8FD44E)),
+              _miniStat(c, '${round.pars}',       context.l10n.roundsPars,    label, const Color(0xFF64B5F6)),
+              _miniStat(c, '${round.bogeys}',     context.l10n.roundsBogeys,  label, const Color(0xFFFFB74D)),
+              _miniStat(c, '${round.totalPutts}', context.l10n.roundsPutts,   label, c.secondaryText),
               _miniStat(c,
                   round.fairwaysHitPct > 0
                       ? '${round.fairwaysHitPct.toStringAsFixed(0)}%'
                       : '-',
-                  'FIR', label, c.secondaryText),
+                  context.l10n.roundsFIR, label, c.secondaryText),
             ],
           ),
         ],
@@ -650,7 +651,7 @@ class _RoundsHeaderDelegate extends SliverPersistentHeaderDelegate {
   @override
   double get maxExtent => _titleRowH + _tabRowH;
 
-  Widget _tabBtn(String title, IconData icon, int idx) {
+  Widget _tabBtn(BuildContext context, String title, IconData icon, int idx) {
     final sel = tab == idx;
     return Expanded(
       child: GestureDetector(
@@ -703,7 +704,7 @@ class _RoundsHeaderDelegate extends SliverPersistentHeaderDelegate {
         Padding(
           padding: EdgeInsets.fromLTRB(hPad, sh * 0.022, hPad, sh * 0.014),
           child: Text(
-            'My Rounds',
+            context.l10n.roundsMyRounds,
             style: TextStyle(
               fontFamily: 'Nunito',
               color: c.primaryText,
@@ -725,9 +726,9 @@ class _RoundsHeaderDelegate extends SliverPersistentHeaderDelegate {
             padding: const EdgeInsets.all(3),
             child: Row(
               children: [
-                _tabBtn('Rounds',      Icons.golf_course_rounded,  0),
-                _tabBtn('Practice',    Icons.sports_golf_rounded,  1),
-                _tabBtn('Tournaments', Icons.emoji_events_rounded,  2),
+                _tabBtn(context, context.l10n.roundsRoundsTab,      Icons.golf_course_rounded,  0),
+                _tabBtn(context, context.l10n.roundsPracticeTab,    Icons.sports_golf_rounded,  1),
+                _tabBtn(context, context.l10n.roundsTournamentsTab, Icons.emoji_events_rounded,  2),
               ],
             ),
           ),

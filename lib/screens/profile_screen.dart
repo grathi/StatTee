@@ -20,6 +20,7 @@ import '../widgets/play_style_widgets.dart';
 import '../services/play_style_service.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import '../utils/l10n_extension.dart';
 
 const List<String> _kAvatarUrls = [
   'https://cdn.jsdelivr.net/gh/grathi/stattee_profile_pic@v1/avt/1.jpg',
@@ -67,7 +68,7 @@ class ProfileScreen extends StatelessWidget {
             SliverPersistentHeader(
               pinned: true,
               delegate: _StickyTitleDelegate(
-                title: 'Profile',
+                title: context.l10n.profileTitle,
                 topPad: sh * 0.022,
                 hPad: hPad,
                 fontSize: (sw * 0.068).clamp(24.0, 30.0),
@@ -76,8 +77,8 @@ class ProfileScreen extends StatelessWidget {
             ),
             SliverToBoxAdapter(
               child: TipBanner(
-                title: 'Make It Yours',
-                body: 'Set your handicap goal, pick an avatar, and explore your Golf DNA and Play Style.',
+                title: context.l10n.profileSubtitle,
+                body: context.l10n.profileDescription,
                 hasSeenFn: OnboardingService.hasSeenProfileTip,
                 markSeenFn: OnboardingService.markProfileTipSeen,
               ),
@@ -109,7 +110,7 @@ class ProfileScreen extends StatelessWidget {
                             children: [
                               PlayStyleSection(identity: playStyle),
                               SizedBox(height: sh * 0.022),
-                              _buildStatsRow(c, sw, sh, body, label, stats),
+                              _buildStatsRow(context, c, sw, sh, body, label, stats),
                               SizedBox(height: sh * 0.022),
                               _buildAchievementsSection(context, c, sw, sh, body, label, unlocked),
                               SizedBox(height: sh * 0.022),
@@ -123,10 +124,10 @@ class ProfileScreen extends StatelessWidget {
                     SizedBox(height: sh * 0.022),
 
                     // Settings section
-                    _buildSection(c, sw, sh, body, label, 'Account', [
+                    _buildSection(c, sw, sh, body, label, context.l10n.profileAccount, [
                       _MenuItem(
                         icon: Icons.map_rounded,
-                        label: 'Golf Places',
+                        label: context.l10n.profileGolfPlaces,
                         color: const Color(0xFF5A9E1F),
                         onTap: () => Navigator.push(
                           context,
@@ -137,13 +138,13 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       _MenuItem(
                         icon: Icons.person_outline_rounded,
-                        label: 'Edit Profile',
+                        label: context.l10n.profileEditProfile,
                         color: const Color(0xFF5A9E1F),
                         onTap: () => _showEditProfileSheet(context, c, sw, sh, body, label),
                       ),
                       _MenuItem(
                         icon: Icons.notifications_active_rounded,
-                        label: 'Smart Notifications',
+                        label: context.l10n.profileSmartNotifications,
                         color: const Color(0xFF5A9E1F),
                         onTap: () => Navigator.push(
                           context,
@@ -171,9 +172,10 @@ class ProfileScreen extends StatelessWidget {
                         future: PackageInfo.fromPlatform(),
                         builder: (context, snap) {
                           final version = snap.data?.version ?? '1.3.0';
+                          final year = DateTime.now().year.toString();
                           return Column(
                             children: [
-                              Text('TeeStats v$version',
+                              Text(context.l10n.profileVersion(version),
                                 style: TextStyle(
                                   color: c.tertiaryText,
                                   fontSize: label * 0.95,
@@ -181,7 +183,7 @@ class ProfileScreen extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Text('© ${DateTime.now().year} TeeStats. All rights reserved.',
+                              Text(context.l10n.profileCopyright(year),
                                 style: TextStyle(
                                   color: c.tertiaryText.withValues(alpha: 0.6),
                                   fontSize: label * 0.85,
@@ -274,7 +276,7 @@ class ProfileScreen extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        'Golfer',
+                        context.l10n.profileGolfer,
                         style: TextStyle(
                           color: c.accent,
                           fontSize: label * 0.9,
@@ -315,7 +317,7 @@ class ProfileScreen extends StatelessWidget {
           child: Row(
             children: [
               Text(
-                'ACHIEVEMENTS',
+                context.l10n.profileAchievementsSection,
                 style: TextStyle(
                   color: c.tertiaryText,
                   fontSize: label * 0.88,
@@ -404,7 +406,7 @@ class ProfileScreen extends StatelessWidget {
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: Text('OK', style: TextStyle(color: c.accent)),
+                      child: Text(context.l10n.ok, style: TextStyle(color: c.accent)),
                     ),
                   ],
                 ),
@@ -477,12 +479,12 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsRow(AppColors c, double sw, double sh, double body,
+  Widget _buildStatsRow(BuildContext context, AppColors c, double sw, double sh, double body,
       double label, AppStats stats) {
     final tiles = [
-      (value: '${stats.totalRounds}',  lbl: 'Rounds',   color: c.accent,                    icon: Icons.sports_golf_rounded),
-      (value: stats.handicapLabel,     lbl: 'Handicap',  color: const Color(0xFF3B82F6),      icon: Icons.track_changes_rounded),
-      (value: '${stats.totalBirdies}', lbl: 'Birdies',   color: const Color(0xFFF59E0B),      icon: Icons.emoji_events_rounded),
+      (value: '${stats.totalRounds}',  lbl: context.l10n.profileRounds,   color: c.accent,                    icon: Icons.sports_golf_rounded),
+      (value: stats.handicapLabel,     lbl: context.l10n.profileHandicap,  color: const Color(0xFF3B82F6),      icon: Icons.track_changes_rounded),
+      (value: '${stats.totalBirdies}', lbl: context.l10n.profileBirdies,   color: const Color(0xFFF59E0B),      icon: Icons.emoji_events_rounded),
     ];
 
     return Row(
@@ -591,12 +593,12 @@ class ProfileScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Handicap Goal',
+                      Text(context.l10n.profileHandicapGoal,
                           style: TextStyle(color: c.primaryText, fontSize: body)),
                       Text(
                         goal != null
-                            ? 'Target: ${goal.toStringAsFixed(1)}'
-                            : 'Not set — tap to set',
+                            ? context.l10n.profileTargetPrefix(goal.toStringAsFixed(1))
+                            : context.l10n.profileNotSet,
                         style: TextStyle(
                             color: goal != null ? const Color(0xFF6DBD35) : c.tertiaryText,
                             fontSize: label * 0.9),
@@ -646,13 +648,13 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              Text('Handicap Goal',
+              Text(context.l10n.profileHandicapGoal,
                   style: TextStyle(fontFamily: 'Nunito',
                       color: c.primaryText,
                       fontSize: (sw * 0.052).clamp(18.0, 22.0),
                       fontWeight: FontWeight.w700)),
               const SizedBox(height: 4),
-              Text('Set a target handicap index to track on your trend chart.',
+              Text(context.l10n.profileHandicapGoalDesc,
                   style: TextStyle(color: c.secondaryText, fontSize: label)),
               SizedBox(height: sh * 0.032),
               Center(
@@ -696,7 +698,7 @@ class ProfileScreen extends StatelessWidget {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
-                        child: Text('Clear', style: TextStyle(fontSize: body)),
+                        child: Text(context.l10n.profileClear, style: TextStyle(fontSize: body)),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -716,7 +718,7 @@ class ProfileScreen extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         elevation: 0,
                       ),
-                      child: Text('Save Goal',
+                      child: Text(context.l10n.profileSaveGoal,
                           style: TextStyle(
                               fontFamily: 'Nunito',
                               fontSize: body,
@@ -880,7 +882,7 @@ class ProfileScreen extends StatelessWidget {
                     child: Icon(Icons.person_rounded, color: c.accent, size: 22),
                   ),
                   const SizedBox(width: 14),
-                  Text('Edit Profile',
+                  Text(context.l10n.profileEditProfile,
                     style: TextStyle(fontFamily: 'Nunito',
                       color: c.primaryText,
                       fontSize: (sw * 0.052).clamp(18.0, 22.0),
@@ -902,7 +904,7 @@ class ProfileScreen extends StatelessWidget {
                         validator: (v) =>
                             (v == null || v.trim().isEmpty) ? 'Enter your name' : null,
                         decoration: InputDecoration(
-                          labelText: 'Display Name',
+                          labelText: context.l10n.profileDisplayName,
                           labelStyle: TextStyle(color: c.fieldLabel, fontSize: body * 0.9),
                           prefixIcon: Icon(Icons.badge_outlined, color: c.fieldIcon, size: body * 1.3),
                           filled: true,
@@ -933,7 +935,7 @@ class ProfileScreen extends StatelessWidget {
                         readOnly: true,
                         style: TextStyle(color: c.tertiaryText, fontSize: body),
                         decoration: InputDecoration(
-                          labelText: 'Email',
+                          labelText: context.l10n.loginEmail,
                           labelStyle: TextStyle(color: c.fieldLabel, fontSize: body * 0.9),
                           prefixIcon: Icon(Icons.email_outlined, color: c.fieldIcon, size: body * 1.3),
                           filled: true,
@@ -983,7 +985,7 @@ class ProfileScreen extends StatelessWidget {
                             child: CircularProgressIndicator(
                                 strokeWidth: 2, color: Colors.white),
                           )
-                        : Text('Save Changes',
+                        : Text(context.l10n.profileSaveChanges,
                             style: TextStyle(
                               color: Colors.white,
                               fontFamily: 'Nunito',
@@ -1048,14 +1050,14 @@ class ProfileScreen extends StatelessWidget {
                 child: Icon(Icons.logout_rounded, color: c.accent, size: 26),
               ),
               SizedBox(height: sh * 0.020),
-              Text('Sign Out?',
+              Text(context.l10n.profileSignOutTitle,
                   style: TextStyle(
                       fontFamily: 'Nunito',
                       color: c.primaryText,
                       fontSize: (sw * 0.052).clamp(18.0, 22.0),
                       fontWeight: FontWeight.w700)),
               SizedBox(height: sh * 0.008),
-              Text('You will be returned to the login screen.',
+              Text(context.l10n.profileSignOutBody,
                   textAlign: TextAlign.center,
                   style: TextStyle(color: c.secondaryText, fontSize: body * 0.9)),
               SizedBox(height: sh * 0.036),
@@ -1071,7 +1073,7 @@ class ProfileScreen extends StatelessWidget {
                           side: BorderSide(color: c.cardBorder),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         ),
-                        child: Text('Cancel',
+                        child: Text(context.l10n.cancel,
                             style: TextStyle(fontSize: body, fontWeight: FontWeight.w600)),
                       ),
                     ),
@@ -1088,7 +1090,7 @@ class ProfileScreen extends StatelessWidget {
                           elevation: 0,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         ),
-                        child: Text('Sign Out',
+                        child: Text(context.l10n.profileSignOut,
                             style: TextStyle(
                                 fontFamily: 'Nunito',
                                 fontSize: body,
@@ -1145,7 +1147,7 @@ class ProfileScreen extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Sign Out',
+                        context.l10n.profileSignOut,
                         style: TextStyle(color: red, fontSize: body, fontWeight: FontWeight.w600),
                       ),
                     ),
@@ -1208,13 +1210,13 @@ class ProfileScreen extends StatelessWidget {
                 child: const Icon(Icons.delete_forever_rounded, color: red, size: 30),
               ),
               SizedBox(height: sh * 0.020),
-              Text('Delete Account?',
+              Text(context.l10n.profileDeleteTitle,
                 style: TextStyle(fontFamily: 'Nunito', color: c.primaryText,
                   fontSize: (sw * 0.052).clamp(18.0, 22.0), fontWeight: FontWeight.w700),
               ),
               SizedBox(height: sh * 0.010),
               Text(
-                'This will permanently delete your account and all your golf data including rounds, stats, and achievements.',
+                context.l10n.profileDeleteBody,
                 textAlign: TextAlign.center,
                 style: TextStyle(color: c.secondaryText, fontSize: body * 0.9, height: 1.5),
               ),
@@ -1231,7 +1233,7 @@ class ProfileScreen extends StatelessWidget {
                           side: BorderSide(color: c.cardBorder),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         ),
-                        child: Text('Cancel', style: TextStyle(fontSize: body, fontWeight: FontWeight.w600)),
+                        child: Text(context.l10n.cancel, style: TextStyle(fontSize: body, fontWeight: FontWeight.w600)),
                       ),
                     ),
                   ),
@@ -1247,7 +1249,7 @@ class ProfileScreen extends StatelessWidget {
                           elevation: 0,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         ),
-                        child: Text('Continue', style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: body, fontWeight: FontWeight.w700)),
+                        child: Text(context.l10n.profileContinue, style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: body, fontWeight: FontWeight.w700)),
                       ),
                     ),
                   ),
@@ -1287,17 +1289,17 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ),
               SizedBox(height: sh * 0.028),
-              Text('Are you absolutely sure?',
+              Text(context.l10n.profileDeleteAreYouSure,
                 style: TextStyle(fontFamily: 'Nunito', color: red,
                   fontSize: (sw * 0.048).clamp(16.0, 20.0), fontWeight: FontWeight.w800),
               ),
               SizedBox(height: sh * 0.012),
-              _deleteBullet(c, body, 'All your rounds and scorecards'),
-              _deleteBullet(c, body, 'Stats, handicap history and achievements'),
-              _deleteBullet(c, body, 'Your profile and preferences'),
-              _deleteBullet(c, body, 'Smart notifications and tee times'),
+              _deleteBullet(c, body, context.l10n.profileDeleteRoundsItem),
+              _deleteBullet(c, body, context.l10n.profileDeleteStatsItem),
+              _deleteBullet(c, body, context.l10n.profileDeleteProfileItem),
+              _deleteBullet(c, body, context.l10n.profileDeleteNotificationsItem),
               SizedBox(height: sh * 0.010),
-              Text('This action cannot be undone.',
+              Text(context.l10n.profileDeleteCannotUndo,
                 style: TextStyle(color: red, fontSize: body * 0.9, fontWeight: FontWeight.w600)),
               SizedBox(height: sh * 0.032),
               SizedBox(
@@ -1311,7 +1313,7 @@ class ProfileScreen extends StatelessWidget {
                     elevation: 0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
-                  child: Text('Delete My Account', style: TextStyle(fontFamily: 'Nunito', fontSize: body, fontWeight: FontWeight.w800)),
+                  child: Text(context.l10n.profileDeleteButton, style: TextStyle(fontFamily: 'Nunito', fontSize: body, fontWeight: FontWeight.w800)),
                 ),
               ),
               SizedBox(height: sh * 0.010),
@@ -1320,7 +1322,7 @@ class ProfileScreen extends StatelessWidget {
                 height: (sh * 0.055).clamp(42.0, 50.0),
                 child: TextButton(
                   onPressed: () => Navigator.pop(sheetCtx, false),
-                  child: Text('Keep My Account', style: TextStyle(color: c.secondaryText, fontSize: body * 0.9)),
+                  child: Text(context.l10n.profileKeepButton, style: TextStyle(color: c.secondaryText, fontSize: body * 0.9)),
                 ),
               ),
             ],
@@ -1345,7 +1347,7 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 CircularProgressIndicator(color: c.accent, strokeWidth: 3),
                 const SizedBox(height: 16),
-                Text('Deleting account…', style: TextStyle(color: c.primaryText, fontSize: body)),
+                Text(context.l10n.profileDeletingAccount, style: TextStyle(color: c.primaryText, fontSize: body)),
               ],
             ),
           ),
@@ -1360,7 +1362,7 @@ class ProfileScreen extends StatelessWidget {
         if (e.code == 'requires-recent-login') {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Please sign out and sign back in before deleting your account.'),
+              content: Text(context.l10n.profileReauthRequired),
               backgroundColor: red,
               behavior: SnackBarBehavior.floating,
             ),
@@ -1379,7 +1381,7 @@ class ProfileScreen extends StatelessWidget {
         Navigator.pop(context); // close loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Something went wrong. Please try again.'),
+            content: Text(context.l10n.profileSomethingWrong),
             backgroundColor: red,
             behavior: SnackBarBehavior.floating,
           ),
@@ -1398,7 +1400,7 @@ class ProfileScreen extends StatelessWidget {
         ),
         child: Center(
           child: Text(
-            'Delete Account',
+            context.l10n.profileDeleteAccount,
             style: TextStyle(
               color: red.withValues(alpha: 0.7),
               fontSize: body * 0.88,
@@ -1514,14 +1516,14 @@ class _AvatarPickerSheetState extends State<_AvatarPickerSheet> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Choose Avatar',
+                  Text(context.l10n.profileChooseAvatar,
                     style: TextStyle(fontFamily: 'Nunito',
                       color: c.primaryText,
                       fontSize: (sw * 0.052).clamp(18.0, 22.0),
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  Text('Select a preset avatar',
+                  Text(context.l10n.profileSelectPresetAvatar,
                     style: TextStyle(color: c.secondaryText, fontSize: label),
                   ),
                 ],
@@ -1605,7 +1607,7 @@ class _AvatarPickerSheetState extends State<_AvatarPickerSheet> {
             Center(
               child: TextButton(
                 onPressed: () => setState(() => _selectedUrl = null),
-                child: Text('Remove Avatar',
+                child: Text(context.l10n.profileRemoveAvatar,
                   style: TextStyle(
                     color: c.tertiaryText,
                     fontSize: label,
@@ -1647,7 +1649,7 @@ class _AvatarPickerSheetState extends State<_AvatarPickerSheet> {
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white),
                     )
-                  : Text('Save Avatar',
+                  : Text(context.l10n.profileSaveAvatar,
                       style: TextStyle(
                         color: Colors.white,
                         fontFamily: 'Nunito',

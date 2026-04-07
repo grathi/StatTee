@@ -5,6 +5,7 @@ import '../models/round_summary_ai.dart';
 import '../services/ai_round_summary_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/calorie_calculator.dart';
+import '../utils/l10n_extension.dart';
 import '../widgets/ai_round_summary_card.dart';
 
 // ---------------------------------------------------------------------------
@@ -67,8 +68,8 @@ class _RoundSummaryScreenState extends State<RoundSummaryScreen> {
   late final Future<RoundSummaryAI> _aiFuture;
 
   int get _diff => widget.totalScore - widget.totalPar;
-  String get _diffLabel =>
-      _diff == 0 ? 'Even' : _diff > 0 ? '+$_diff' : '$_diff';
+  String _diffLabel(BuildContext context) =>
+      _diff == 0 ? context.l10n.roundSummaryEven : _diff > 0 ? '+$_diff' : '$_diff';
 
   @override
   void initState() {
@@ -151,7 +152,7 @@ class _RoundSummaryScreenState extends State<RoundSummaryScreen> {
                   const Text('🏆', style: TextStyle(fontSize: 52)),
                   SizedBox(height: sh * 0.012),
                   Text(
-                    'Round Complete!',
+                    context.l10n.roundSummaryComplete,
                     style: TextStyle(
                       fontFamily: 'Nunito',
                       color: c.primaryText,
@@ -173,7 +174,7 @@ class _RoundSummaryScreenState extends State<RoundSummaryScreen> {
                   SizedBox(height: sh * 0.032),
 
                   // Score tiles
-                  _buildScoreTiles(c, sw, sh, body),
+                  _buildScoreTiles(context, c, sw, sh, body),
                   SizedBox(height: sh * 0.028),
 
                   // AI summary card
@@ -213,7 +214,7 @@ class _RoundSummaryScreenState extends State<RoundSummaryScreen> {
                       ),
                       alignment: Alignment.center,
                       child: Text(
-                        'Back to Home',
+                        context.l10n.roundSummaryBackToHome,
                         style: TextStyle(
                           fontFamily: 'Nunito',
                           color: Colors.white,
@@ -271,19 +272,19 @@ class _RoundSummaryScreenState extends State<RoundSummaryScreen> {
     );
   }
 
-  Widget _buildScoreTiles(AppColors c, double sw, double sh, double body) {
+  Widget _buildScoreTiles(BuildContext context, AppColors c, double sw, double sh, double body) {
     final label = (sw * 0.030).clamp(11.0, 13.0);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _tile(c, sw, label, 'Score', '${widget.totalScore}'),
-        _tile(c, sw, label, 'vs Par', _diffLabel,
+        _tile(c, sw, label, context.l10n.roundSummaryScore, '${widget.totalScore}'),
+        _tile(c, sw, label, context.l10n.roundSummaryVsPar, _diffLabel(context),
             valueColor: _diff < 0
                 ? c.accent
                 : _diff == 0
                     ? null
                     : const Color(0xFFE53935)),
-        _tile(c, sw, label, 'Holes', '${widget.totalHoles}'),
+        _tile(c, sw, label, context.l10n.roundSummaryHoles, '${widget.totalHoles}'),
       ],
     );
   }

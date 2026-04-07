@@ -37,6 +37,9 @@ import '../models/news_article.dart';
 import '../services/news_service.dart';
 import 'news_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../utils/l10n_extension.dart';
+import '../main.dart' show appLocaleNotifier, kSupportedLocales, kLocaleLabels, saveLocale;
 
 // ---------------------------------------------------------------------------
 // Shell — owns the bottom nav and tab switching
@@ -73,61 +76,61 @@ class _HomeScreenState extends State<HomeScreen> {
       if (homeState?._greetingKey != null)
         TourStep(
           targetKey: homeState!._greetingKey,
-          title: 'Welcome to TeeStats',
-          body: 'This is your home — see recent rounds, performance and nearby courses at a glance.',
+          title: context.l10n.homeWelcomeTour,
+          body: context.l10n.homeWelcomeTourBody,
           anchor: TourAnchor.below,
         ),
       if (homeState?._friendsKey != null)
         TourStep(
           targetKey: homeState!._friendsKey,
-          title: 'Friends & Leaderboard',
-          body: 'Add golf buddies, accept friend requests, and compare scores on the leaderboard. A green dot appears when you have a pending request.',
+          title: context.l10n.homeFriendsAndLeaderboard,
+          body: context.l10n.homeFriendsAndLeaderboardBody,
           anchor: TourAnchor.below,
         ),
       TourStep(
         targetKey: _fabKey,
-        title: 'Start a Round',
-        body: 'Tap the green button anytime to start scoring a new round at any course.',
+        title: context.l10n.homeStartARound,
+        body: context.l10n.homeStartARoundBody,
         anchor: TourAnchor.above,
       ),
       if (homeState?._heroCardKey != null)
         TourStep(
           targetKey: homeState!._heroCardKey,
-          title: 'Your Active Round',
-          body: 'If you leave mid-round, it\'s saved here. Tap Resume to pick up where you left off.',
+          title: context.l10n.homeYourActiveRound,
+          body: context.l10n.homeResumeRoundBody,
           anchor: TourAnchor.below,
         ),
       TourStep(
         targetKey: _roundsTabKey,
-        title: 'Round History',
-        body: 'All your completed rounds live here. Tap any round for a full hole-by-hole breakdown.',
+        title: context.l10n.homeRoundHistory,
+        body: context.l10n.homeRoundHistoryBody,
         anchor: TourAnchor.above,
       ),
       TourStep(
         targetKey: _statsTabKey,
-        title: 'Your Stats',
-        body: 'Track your handicap trend, scoring patterns, GIR, fairways and strokes gained over time.',
+        title: context.l10n.homeYourStats,
+        body: context.l10n.homeYourStatsBody,
         anchor: TourAnchor.above,
       ),
       TourStep(
         targetKey: _profileTabKey,
-        title: 'Your Profile',
-        body: 'Set your handicap goal, pick an avatar, and view your Golf DNA and Play Style identity.',
+        title: context.l10n.homeYourProfile,
+        body: context.l10n.homeYourProfileBody,
         anchor: TourAnchor.above,
       ),
       if (homeState?._quickStatsKey != null)
         TourStep(
           targetKey: homeState!._quickStatsKey,
-          title: 'Quick Stats',
-          body: 'Live averages across all your rounds — fairways, GIR, putts and birdies per round.',
+          title: context.l10n.homeQuickStats,
+          body: context.l10n.homeQuickStatsBody,
           anchor: TourAnchor.above,
           beforeShow: () async => homeState.scrollToQuickStats(),
         ),
       if (homeState?._nearbyCourseKey != null)
         TourStep(
           targetKey: homeState!._nearbyCourseKey,
-          title: 'Nearby Courses',
-          body: 'Golf courses near your location. Tap any course to start a round there instantly.',
+          title: context.l10n.homeNearbyCourses,
+          body: context.l10n.homeNearbyCoursesBody,
           anchor: TourAnchor.above,
           beforeShow: () async => homeState.scrollToQuickStats(),
         ),
@@ -222,11 +225,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final lblSz   = (sw * 0.030).clamp(11.0, 13.0);
     final playDia = (sw * 0.100).clamp(36.0, 44.0);
 
-    const navItems = [
-      (Icons.home_rounded,        Icons.home_outlined,          'Home',    0),
-      (Icons.golf_course_rounded, Icons.golf_course_outlined,   'Rounds',  1),
-      (Icons.bar_chart_rounded,   Icons.bar_chart_outlined,     'Stats',   2),
-      (Icons.person_rounded,      Icons.person_outline_rounded, 'Profile', 3),
+    final navItems = [
+      (Icons.home_rounded,        Icons.home_outlined,          context.l10n.home,    0),
+      (Icons.golf_course_rounded, Icons.golf_course_outlined,   context.l10n.rounds,  1),
+      (Icons.bar_chart_rounded,   Icons.bar_chart_outlined,     context.l10n.stats,   2),
+      (Icons.person_rounded,      Icons.person_outline_rounded, context.l10n.profile, 3),
     ];
 
     // iOS 18-style expanding chip: active = icon + label in tinted capsule
@@ -524,7 +527,7 @@ class _HomeTabState extends State<_HomeTab>
       final result = await PlacesService.searchGolfCoursesByCity(q);
       if (!mounted) return;
       if (result == null) {
-        setSheet(() { searching = false; searchError = 'Location not found. Try a different city name.'; });
+        setSheet(() { searching = false; searchError = context.l10n.homeLocationNotFound; });
         return;
       }
       ++_loadGeneration;
@@ -581,8 +584,8 @@ class _HomeTabState extends State<_HomeTab>
                   ),
                   const SizedBox(width: 12),
                   Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('Change Location', style: TextStyle(fontFamily: 'Nunito', color: c.primaryText, fontSize: (_sw * 0.048).clamp(16.0, 20.0), fontWeight: FontWeight.w700)),
-                    Text('Search a city or area', style: TextStyle(color: c.secondaryText, fontSize: _bodySize * 0.85)),
+                    Text(context.l10n.homeChangeLocation, style: TextStyle(fontFamily: 'Nunito', color: c.primaryText, fontSize: (_sw * 0.048).clamp(16.0, 20.0), fontWeight: FontWeight.w700)),
+                    Text(context.l10n.homeSearchCityOrArea, style: TextStyle(color: c.secondaryText, fontSize: _bodySize * 0.85)),
                   ]),
                 ]),
                 SizedBox(height: sh * 0.024),
@@ -600,7 +603,7 @@ class _HomeTabState extends State<_HomeTab>
                     textInputAction: TextInputAction.search,
                     style: TextStyle(color: c.fieldText, fontSize: _bodySize),
                     decoration: InputDecoration(
-                      hintText: 'e.g. Dubai, London, New York…',
+                      hintText: context.l10n.homeLocationHint,
                       hintStyle: TextStyle(color: c.tertiaryText, fontSize: _bodySize),
                       prefixIcon: Icon(Icons.search_rounded, color: c.fieldIcon, size: _bodySize * 1.3),
                       suffixIcon: searching
@@ -717,7 +720,7 @@ class _HomeTabState extends State<_HomeTab>
                     child: Row(children: [
                       Icon(Icons.my_location_rounded, color: c.accent, size: 18),
                       const SizedBox(width: 10),
-                      Text('Use my current location', style: TextStyle(color: c.accent, fontSize: _bodySize, fontWeight: FontWeight.w600)),
+                      Text(context.l10n.homeUseCurrentLocation, style: TextStyle(color: c.accent, fontSize: _bodySize, fontWeight: FontWeight.w600)),
                     ]),
                   ),
                 ),
@@ -738,7 +741,7 @@ class _HomeTabState extends State<_HomeTab>
                       ),
                       child: searching
                           ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.5, valueColor: AlwaysStoppedAnimation(Colors.white)))
-                          : Text('Search Location', style: TextStyle(color: Colors.white, fontSize: _bodySize, fontWeight: FontWeight.w600)),
+                          : Text(context.l10n.homeSearchLocation, style: TextStyle(color: Colors.white, fontSize: _bodySize, fontWeight: FontWeight.w600)),
                     ),
                   ),
                 ),
@@ -816,13 +819,13 @@ class _HomeTabState extends State<_HomeTab>
 
   String _timeAgo(DateTime dt) {
     final diff = DateTime.now().difference(dt);
-    if (diff.inDays == 0) return 'Today';
-    if (diff.inDays == 1) return 'Yesterday';
-    if (diff.inDays < 7) return '${diff.inDays} days ago';
-    if (diff.inDays < 14) return '1 week ago';
-    if (diff.inDays < 21) return '2 weeks ago';
-    if (diff.inDays < 30) return '3 weeks ago';
-    return '${(diff.inDays / 30).floor()} months ago';
+    if (diff.inDays == 0) return context.l10n.homeToday;
+    if (diff.inDays == 1) return context.l10n.homeYesterday;
+    if (diff.inDays < 7) return context.l10n.homeDaysAgo(diff.inDays);
+    if (diff.inDays < 14) return context.l10n.homeWeekAgo;
+    if (diff.inDays < 21) return context.l10n.homeTwoWeeksAgo;
+    if (diff.inDays < 30) return context.l10n.homeThreeWeeksAgo;
+    return context.l10n.homeMonthsAgo((diff.inDays / 30).floor());
   }
 
   Color _diffColor(int diff) {
@@ -991,7 +994,7 @@ class _HomeTabState extends State<_HomeTab>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '${session.hostName} invited you to play',
+                            context.l10n.homeInvitedToPlay(session.hostName),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -1020,9 +1023,9 @@ class _HomeTabState extends State<_HomeTab>
                         color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: const Text(
-                        'View',
-                        style: TextStyle(
+                      child: Text(
+                        context.l10n.view,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -1160,12 +1163,78 @@ class _HomeTabState extends State<_HomeTab>
               );
             },
           ),
+          SizedBox(width: (_sw * 0.025).clamp(8.0, 12.0)),
+          // Language picker — round FA icon, dropdown on tap, persists to prefs
+          ValueListenableBuilder<Locale>(
+            valueListenable: appLocaleNotifier,
+            builder: (context, locale, _) {
+              final current = locale.languageCode;
+              final btnSize = (_sw * 0.110).clamp(38.0, 48.0);
+              return GestureDetector(
+                onTapUp: (details) async {
+                  final RenderBox box = context.findRenderObject()! as RenderBox;
+                  final RenderBox overlay = Navigator.of(context)
+                      .overlay!
+                      .context
+                      .findRenderObject()! as RenderBox;
+                  final offset = box.localToGlobal(Offset.zero, ancestor: overlay);
+                  final selected = await showMenu<String>(
+                    context: context,
+                    position: RelativeRect.fromLTRB(
+                      offset.dx,
+                      offset.dy + box.size.height + 4,
+                      overlay.size.width - offset.dx - box.size.width,
+                      0,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 8,
+                    items: kSupportedLocales.map((l) {
+                      final code  = l.languageCode;
+                      final label = kLocaleLabels[code] ?? code;
+                      return PopupMenuItem<String>(
+                        value: code,
+                        child: Row(
+                          children: [
+                            Text(label, style: const TextStyle(fontSize: 14)),
+                            if (code == current) ...[
+                              const Spacer(),
+                              Icon(Icons.check_rounded,
+                                  size: 16, color: const Color(0xFF5A9E1F)),
+                            ],
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  );
+                  if (selected != null && selected != current) {
+                    await saveLocale(selected);
+                  }
+                },
+                child: Container(
+                  width: btnSize,
+                  height: btnSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: c.iconContainerBg,
+                    border: Border.all(color: c.iconContainerBorder),
+                  ),
+                  child: Center(
+                    child: FaIcon(
+                      FontAwesomeIcons.language,
+                      color: c.iconColor,
+                      size: btnSize * 0.42,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
   }
-
-  // ── Top carousel — Resume card (page 0) + Start New card (page 1) ──────────
   Widget _buildTopCarousel(Round? activeRound) {
     final cardHeight = (_sh * 0.215).clamp(160.0, 215.0);
     final hasActive  = activeRound != null;
@@ -1323,7 +1392,7 @@ class _HomeTabState extends State<_HomeTab>
                         ),
                       ),
                       child: Text(
-                        '⛳  Ready to play?',
+                        context.l10n.homeReadyToPlay,
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.9),
                           fontSize: _labelSize,
@@ -1333,7 +1402,7 @@ class _HomeTabState extends State<_HomeTab>
                     ),
                     SizedBox(height: _sh * 0.012),
                     Text(
-                      'Start Round',
+                      context.l10n.homeStartRound,
                       style: TextStyle(
                         fontFamily: 'Nunito',
                         color: Colors.white,
@@ -1346,7 +1415,7 @@ class _HomeTabState extends State<_HomeTab>
                     Row(
                       children: [
                         Text(
-                          'Tap to tee off',
+                          context.l10n.homeTapToTeeOff,
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.7),
                             fontSize: _bodySize * 0.875,
@@ -1393,7 +1462,7 @@ class _HomeTabState extends State<_HomeTab>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Golf News',
+                    context.l10n.homeGolfNews,
                     style: TextStyle(
                       fontFamily: 'Nunito',
                       fontSize: 16,
@@ -1406,7 +1475,7 @@ class _HomeTabState extends State<_HomeTab>
                       MaterialPageRoute(builder: (_) => const NewsScreen()),
                     ),
                     child: Text(
-                      'See all',
+                      context.l10n.homeSeeAll,
                       style: TextStyle(
                         fontFamily: 'Nunito',
                         fontSize: 13,
@@ -1503,7 +1572,7 @@ class _HomeTabState extends State<_HomeTab>
     final allCards = <_RoundCardData>[];
     if (activeRound != null) {
       allCards.add(_RoundCardData.fromRound(activeRound,
-          isActive: true, timeAgo: 'In Progress'));
+          isActive: true, timeAgo: context.l10n.homeInProgress));
     }
     for (final r in recentRounds) {
       allCards.add(_RoundCardData.fromRound(r,
@@ -1518,11 +1587,11 @@ class _HomeTabState extends State<_HomeTab>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _sectionTitle('Recent Rounds'),
+              _sectionTitle(context.l10n.homeRecentRounds),
               GestureDetector(
                 onTap: widget.onViewAllRounds,
                 child: Text(
-                  'View all',
+                  context.l10n.homeViewAll,
                   style: TextStyle(
                     color: c.accent,
                     fontSize: _labelSize,
@@ -1598,7 +1667,7 @@ class _HomeTabState extends State<_HomeTab>
                 size: (_sw * 0.08).clamp(28.0, 36.0)),
             const SizedBox(height: 8),
             Text(
-              'No rounds yet — start your first!',
+              context.l10n.homeNoRoundsYet,
               style: TextStyle(color: c.secondaryText, fontSize: _labelSize),
             ),
           ],
@@ -1659,7 +1728,7 @@ class _HomeTabState extends State<_HomeTab>
                     ),
                   ),
                   child: Text(
-                    'Active',
+                    context.l10n.homeActive,
                     style: TextStyle(
                       color: c.accent,
                       fontSize: _labelSize * 0.9,
@@ -1676,7 +1745,7 @@ class _HomeTabState extends State<_HomeTab>
               const SizedBox(width: 3),
               Expanded(
                 child: Text(
-                  round.location.isNotEmpty ? round.location : 'No location',
+                  round.location.isNotEmpty ? round.location : context.l10n.homeNoLocation,
                   style: TextStyle(color: c.tertiaryText, fontSize: _labelSize),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -1714,7 +1783,8 @@ class _HomeTabState extends State<_HomeTab>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
+              Flexible(
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -1729,11 +1799,13 @@ class _HomeTabState extends State<_HomeTab>
                     ),
                   ),
                   Text(
-                    round.isActive ? 'Holes' : 'Score',
+                    round.isActive ? context.l10n.roundSummaryHoles : context.l10n.roundSummaryScore,
                     style:
                         TextStyle(color: c.tertiaryText, fontSize: _labelSize),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
+              ),
               ),
               if (!round.isActive)
                 Container(
@@ -1754,7 +1826,8 @@ class _HomeTabState extends State<_HomeTab>
                     ),
                   ),
                 ),
-              Column(
+              Flexible(
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
@@ -1769,8 +1842,10 @@ class _HomeTabState extends State<_HomeTab>
                     round.timeAgo,
                     style:
                         TextStyle(color: c.tertiaryText, fontSize: _labelSize),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
+              ),
               ),
             ],
           ),
@@ -1789,7 +1864,7 @@ class _HomeTabState extends State<_HomeTab>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionTitle('Performance'),
+          _sectionTitle(context.l10n.homePerformance),
           SizedBox(height: _sh * 0.016),
           Container(
             decoration: ShapeDecoration(
@@ -1810,7 +1885,7 @@ class _HomeTabState extends State<_HomeTab>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Handicap Index',
+                                  context.l10n.homeHandicapIndex,
                                   style: TextStyle(
                                     color: c.secondaryText,
                                     fontSize: _labelSize,
@@ -1830,7 +1905,7 @@ class _HomeTabState extends State<_HomeTab>
                                 else ...[
                                   const SizedBox(height: 4),
                                   Text(
-                                    '${stats.totalRounds}/20 rounds',
+                                    context.l10n.homeRoundsNeeded(stats.totalRounds),
                                     style: TextStyle(
                                       fontFamily: 'Nunito',
                                       color: c.primaryText,
@@ -1851,7 +1926,7 @@ class _HomeTabState extends State<_HomeTab>
                                   ),
                                   const SizedBox(height: 6),
                                   Text(
-                                    '${20 - stats.totalRounds} more rounds to unlock your Handicap Index',
+                                    context.l10n.homeMoreRoundsToUnlock(20 - stats.totalRounds),
                                     style: TextStyle(color: c.tertiaryText, fontSize: _labelSize * 0.9),
                                   ),
                                 ],
@@ -1866,10 +1941,10 @@ class _HomeTabState extends State<_HomeTab>
                       SizedBox(height: _sh * 0.018),
                       Row(
                         children: [
-                          _perfMiniStat('Avg Score', stats.avgScoreLabel, null),
+                          _perfMiniStat(context.l10n.statsAvgScore, stats.avgScoreLabel, null),
                           _perfDivider(),
                           _perfMiniStat(
-                            'Best Round',
+                            context.l10n.statsBestRound,
                             stats.bestRoundScore > 0
                                 ? '${stats.bestRoundScore}'
                                 : '-',
@@ -1879,9 +1954,9 @@ class _HomeTabState extends State<_HomeTab>
                           ),
                           _perfDivider(),
                           _perfMiniStat(
-                              'Rounds', '${stats.totalRounds}', null),
+                              context.l10n.statsTotalRounds, '${stats.totalRounds}', null),
                           _perfDivider(),
-                          _perfMiniStat('Birdies',
+                          _perfMiniStat(context.l10n.statsTotalBirdies,
                               '${stats.totalBirdies}', const Color(0xFF8FD44E)),
                         ],
                       ),
@@ -1905,7 +1980,7 @@ class _HomeTabState extends State<_HomeTab>
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Complete rounds to see your handicap and performance stats.',
+              context.l10n.homeCompleteRoundsForStats,
               style: TextStyle(color: c.secondaryText, fontSize: _labelSize),
             ),
           ),
@@ -2005,7 +2080,7 @@ class _HomeTabState extends State<_HomeTab>
       children: [
         Padding(
           padding: EdgeInsets.symmetric(horizontal: _hPad),
-          child: _sectionTitle('Quick Stats'),
+          child: _sectionTitle(context.l10n.homeQuickStats),
         ),
         SizedBox(height: _sh * 0.016),
         Padding(
@@ -2119,7 +2194,7 @@ class _HomeTabState extends State<_HomeTab>
           padding: EdgeInsets.symmetric(horizontal: _hPad),
           child: Row(
             children: [
-              Expanded(child: _sectionTitle('Nearby Courses')),
+              Expanded(child: _sectionTitle(context.l10n.homeNearbyCourses)),
               GestureDetector(
                 onTap: _showLocationPicker,
                 child: Row(
@@ -2442,14 +2517,17 @@ class _HomeTabState extends State<_HomeTab>
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                Text(
-                                  'AI Swing Tracer',
+                                Flexible(
+                                  child: Text(
+                                  context.l10n.swingAnalyzerAITracerTitle,
                                   style: TextStyle(
                                     fontFamily: 'Nunito',
                                     color: c.primaryText,
                                     fontSize: (_sw * 0.040).clamp(14.0, 16.0),
                                     fontWeight: FontWeight.w800,
                                   ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                                 ),
                                 const SizedBox(width: 8),
                                 // Beta badge

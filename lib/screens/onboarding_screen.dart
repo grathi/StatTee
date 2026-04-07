@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/onboarding_service.dart';
+import '../utils/l10n_extension.dart';
 import 'home_screen.dart';
 
 // ---------------------------------------------------------------------------
@@ -24,50 +25,6 @@ class _Slide {
     this.isAiSlide = false,
   });
 }
-
-const _kSlides = [
-  _Slide(
-    tag: 'SCORE TRACKING',
-    tagIcon: Icons.sports_golf_rounded,
-    title: 'Track Every\nRound',
-    body:
-        'GPS-powered scoring for every hole. Your complete round history, always in your pocket.',
-    accentColor: Color(0xFF7BC344),
-  ),
-  _Slide(
-    tag: 'PERFORMANCE',
-    tagIcon: Icons.bar_chart_rounded,
-    title: 'Know Your\nGolf DNA',
-    body:
-        'Fairways hit, GIR, putts per round, handicap trends — pinpoint exactly where to improve.',
-    accentColor: Color(0xFF4CAF8A),
-  ),
-  _Slide(
-    tag: 'MULTIPLAYER',
-    tagIcon: Icons.group_rounded,
-    title: 'Play\nTogether',
-    body:
-        'Invite friends to a live group round. Real-time leaderboard, zero extra scorekeeping.',
-    accentColor: Color(0xFF5BB8A0),
-  ),
-  _Slide(
-    tag: 'SOCIAL',
-    tagIcon: Icons.emoji_events_rounded,
-    title: 'Friends &\nLeaderboard',
-    body:
-        'Connect with your golf crew. See who\'s on a hot streak and challenge them to beat you.',
-    accentColor: Color(0xFF7BC344),
-  ),
-  _Slide(
-    tag: 'AI POWERED',
-    tagIcon: Icons.auto_awesome_rounded,
-    title: 'Your Personal\nCaddie',
-    body:
-        'After every round, Gemini AI analyses your stats and delivers coaching insights — strengths, weaknesses and a focus area to sharpen next time.',
-    accentColor: Color(0xFF6ECFF6),
-    isAiSlide: true,
-  ),
-];
 
 // ---------------------------------------------------------------------------
 // OnboardingScreen
@@ -123,6 +80,48 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     super.dispose();
   }
 
+  List<_Slide> _buildSlides(BuildContext context) {
+    final l10n = context.l10n;
+    return [
+      _Slide(
+        tag: l10n.onboardingScoreTrackingTag,
+        tagIcon: Icons.sports_golf_rounded,
+        title: l10n.onboardingTrackEveryRoundTitle,
+        body: l10n.onboardingScoreTrackingBody,
+        accentColor: const Color(0xFF7BC344),
+      ),
+      _Slide(
+        tag: l10n.onboardingPerformanceTag,
+        tagIcon: Icons.bar_chart_rounded,
+        title: l10n.onboardingGolfDNATitle,
+        body: l10n.onboardingPerformanceBody,
+        accentColor: const Color(0xFF4CAF8A),
+      ),
+      _Slide(
+        tag: l10n.onboardingMultiplayerTag,
+        tagIcon: Icons.group_rounded,
+        title: l10n.onboardingPlayTogetherTitle,
+        body: l10n.onboardingMultiplayerBody,
+        accentColor: const Color(0xFF5BB8A0),
+      ),
+      _Slide(
+        tag: l10n.onboardingSocialTag,
+        tagIcon: Icons.emoji_events_rounded,
+        title: l10n.onboardingFriendsLeaderboardTitle,
+        body: l10n.onboardingSocialBody,
+        accentColor: const Color(0xFF7BC344),
+      ),
+      _Slide(
+        tag: l10n.onboardingAITag,
+        tagIcon: Icons.auto_awesome_rounded,
+        title: l10n.onboardingPersonalCaddieTitle,
+        body: l10n.onboardingAIBody,
+        accentColor: const Color(0xFF6ECFF6),
+        isAiSlide: true,
+      ),
+    ];
+  }
+
   Future<void> _finish() async {
     await OnboardingService.markTourSeen();
     if (!mounted) return;
@@ -136,8 +135,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     );
   }
 
-  void _next() {
-    if (_page < _kSlides.length - 1) {
+  void _next(List<_Slide> slides) {
+    if (_page < slides.length - 1) {
       _pageCtrl.nextPage(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
@@ -169,10 +168,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   @override
   Widget build(BuildContext context) {
-    final slide       = _kSlides[_page];
+    final slides      = _buildSlides(context);
+    final slide       = slides[_page];
     final size        = MediaQuery.sizeOf(context);
     final visualHeight = size.height * 0.50;
-    final isLast      = _page == _kSlides.length - 1;
+    final isLast      = _page == slides.length - 1;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light, // white icons on dark background
@@ -192,7 +192,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 8, right: 4),
                 child: Text(
-                  'Swing. Track. Win.',
+                  context.l10n.onboardingTagline,
                   style: TextStyle(
                     fontFamily: 'Nunito',
                     fontSize: 13,
@@ -223,7 +223,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 color: Colors.transparent,
                 shape: const CircleBorder(),
                 child: InkWell(
-                  onTap: _next,
+                  onTap: () => _next(slides),
                   customBorder: const CircleBorder(),
                   child: Center(
                     child: AnimatedSwitcher(
@@ -306,9 +306,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 child: PageView.builder(
                   controller: _pageCtrl,
                   onPageChanged: _onPageChanged,
-                  itemCount: _kSlides.length,
+                  itemCount: slides.length,
                   itemBuilder: (_, i) => _ContentPage(
-                    slide: _kSlides[i],
+                    slide: slides[i],
                     contentFade: i == _page
                         ? _contentFade
                         : const AlwaysStoppedAnimation(1.0),
@@ -316,7 +316,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                         ? _contentSlide
                         : const AlwaysStoppedAnimation(Offset.zero),
                     currentPage: _page,
-                    totalPages: _kSlides.length,
+                    totalPages: slides.length,
                   ),
                 ),
               ),
@@ -340,7 +340,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       foregroundColor: Colors.white,
                     ),
                     child: Text(
-                      'Skip',
+                      context.l10n.skip,
                       style: TextStyle(
                         fontFamily: 'Nunito',
                         fontSize: 14,
@@ -524,7 +524,7 @@ class _GeminiBadge extends StatelessWidget {
               size: 13, color: Colors.white.withValues(alpha: 0.45)),
           const SizedBox(width: 5),
           Text(
-            'Powered by Google Gemini',
+            context.l10n.onboardingPoweredByGemini,
             style: TextStyle(
               fontFamily: 'Nunito',
               fontSize: 12,

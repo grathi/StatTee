@@ -1,0 +1,812 @@
+{
+  "@@locale": "en",
+
+  "appName": "TeeStats",
+
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "save": "Save",
+  "done": "Done",
+  "search": "Search",
+  "ok": "OK",
+  "yes": "Yes",
+  "no": "No",
+  "next": "Next",
+  "back": "Back",
+  "skip": "Skip",
+  "close": "Close",
+  "edit": "Edit",
+  "view": "View",
+  "accept": "Accept",
+  "decline": "Decline",
+
+  "home": "Home",
+  "rounds": "Rounds",
+  "stats": "Stats",
+  "profile": "Profile",
+  "friends": "Friends",
+
+  "loginWelcomeBack": "Welcome back",
+  "loginSignInToContinue": "Sign in to continue",
+  "loginEmail": "Email",
+  "loginPassword": "Password",
+  "loginForgotPassword": "Forgot password?",
+  "loginSignIn": "Sign In",
+  "loginDontHaveAccount": "Don't have an account?",
+  "loginSignUp": "Sign Up",
+  "loginTagline": "Play  ·  Track  ·  Improve",
+  "loginResetPasswordTitle": "Reset Password",
+  "loginResetPasswordSubtitle": "We'll send a reset link to your email",
+  "loginEnterYourEmail": "Enter your email",
+  "loginEnterValidEmail": "Enter a valid email",
+  "loginSendResetLink": "Send Reset Link",
+  "loginResetLinkSent": "Reset link sent!",
+  "loginCheckInboxFor": "Check your inbox for {email}",
+  "@loginCheckInboxFor": {
+    "placeholders": {
+      "email": { "type": "String" }
+    }
+  },
+  "loginErrorNoAccount": "No account found with this email.",
+  "loginErrorInvalidEmail": "Please enter a valid email.",
+  "loginErrorSomethingWrong": "Something went wrong. Try again.",
+  "loginErrorIncorrectCredentials": "Incorrect email or password.",
+  "loginErrorAccountDisabled": "This account has been disabled.",
+  "loginErrorTooManyAttempts": "Too many attempts. Try again later.",
+  "loginErrorTryAgain": "Something went wrong. Please try again.",
+
+  "signupCreateAccount": "Create Account",
+  "signupJoinToday": "Join TeeStats today",
+  "signupFullName": "Full Name",
+  "signupEnterYourName": "Enter your name",
+  "signupEmail": "Email",
+  "signupPassword": "Password",
+  "signupConfirmPassword": "Confirm Password",
+  "signupEnterPassword": "Enter a password",
+  "signupMinimumChars": "Minimum 6 characters",
+  "signupConfirmYourPassword": "Confirm your password",
+  "signupPasswordsDoNotMatch": "Passwords do not match",
+  "signupPasswordStrength": "Password strength: {label}",
+  "@signupPasswordStrength": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "signupPasswordWeak": "Weak",
+  "signupPasswordFair": "Fair",
+  "signupPasswordGood": "Good",
+  "signupPasswordStrong": "Strong",
+  "signupAlreadyHaveAccount": "Already have an account?",
+  "signupErrorAccountExists": "An account with this email already exists.",
+  "signupErrorInvalidEmail": "Please enter a valid email address.",
+  "signupErrorWeakPassword": "Password must be at least 6 characters.",
+  "signupErrorNotEnabled": "Email sign-up is not enabled.",
+
+  "onboardingTagline": "Swing. Track. Win.",
+  "onboardingScoreTrackingTag": "SCORE TRACKING",
+  "onboardingTrackEveryRoundTitle": "Track Every\nRound",
+  "onboardingScoreTrackingBody": "GPS-powered scoring for every hole. Your complete round history, always in your pocket.",
+  "onboardingPerformanceTag": "PERFORMANCE",
+  "onboardingGolfDNATitle": "Know Your\nGolf DNA",
+  "onboardingPerformanceBody": "Fairways hit, GIR, putts per round, handicap trends — pinpoint exactly where to improve.",
+  "onboardingMultiplayerTag": "MULTIPLAYER",
+  "onboardingPlayTogetherTitle": "Play\nTogether",
+  "onboardingMultiplayerBody": "Invite friends to a live group round. Real-time leaderboard, zero extra scorekeeping.",
+  "onboardingSocialTag": "SOCIAL",
+  "onboardingFriendsLeaderboardTitle": "Friends &\nLeaderboard",
+  "onboardingSocialBody": "Connect with your golf crew. See who's on a hot streak and challenge them to beat you.",
+  "onboardingAITag": "AI POWERED",
+  "onboardingPersonalCaddieTitle": "Your Personal\nCaddie",
+  "onboardingAIBody": "After every round, Gemini AI analyses your stats and delivers coaching insights — strengths, weaknesses and a focus area to sharpen next time.",
+  "onboardingPoweredByGemini": "Powered by Google Gemini",
+
+  "homeReadyToPlay": "⛳  Ready to play?",
+  "homeStartRound": "Start Round",
+  "homeTapToTeeOff": "Tap to tee off",
+  "homeGolfNews": "Golf News",
+  "homeSeeAll": "See all",
+  "homeRecentRounds": "Recent Rounds",
+  "homeViewAll": "View all",
+  "homeNoRoundsYet": "No rounds yet — start your first!",
+  "homeInProgress": "In Progress",
+  "homeActive": "Active",
+  "homeNoLocation": "No location",
+  "homePerformance": "Performance",
+  "homeCompleteRoundsForStats": "Complete rounds to see your handicap and performance stats.",
+  "homeHandicapIndex": "Handicap Index",
+  "homeRoundsNeeded": "{n}/20 rounds",
+  "@homeRoundsNeeded": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "homeMoreRoundsToUnlock": "{n} more rounds to unlock your Handicap Index",
+  "@homeMoreRoundsToUnlock": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "homeFairwaysHit": "Fairways Hit",
+  "homePar4And5": "Par 4 & 5 holes",
+  "homeGIR": "Greens in Reg.",
+  "homeAllHoles": "All holes",
+  "homeAvgPutts": "Avg Putts",
+  "homePerHole": "Per hole",
+  "homeBirdies": "Birdies",
+  "homeAllRounds": "All rounds",
+  "homeToday": "Today",
+  "homeYesterday": "Yesterday",
+  "homeDaysAgo": "{n} days ago",
+  "@homeDaysAgo": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "homeWeekAgo": "1 week ago",
+  "homeTwoWeeksAgo": "2 weeks ago",
+  "homeThreeWeeksAgo": "3 weeks ago",
+  "homeMonthsAgo": "{n} months ago",
+  "@homeMonthsAgo": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "homeInvitedToPlay": "{name} invited you to play",
+  "@homeInvitedToPlay": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "homeChangeLocation": "Change Location",
+  "homeSearchCityOrArea": "Search a city or area",
+  "homeLocationHint": "e.g. Dubai, London, New York…",
+  "homeSearchLocation": "Search Location",
+  "homeLocationNotFound": "Location not found. Try a different city name.",
+  "homeUseCurrentLocation": "Use my current location",
+  "homeWelcomeTour": "Welcome to TeeStats",
+  "homeWelcomeTourBody": "This is your home — see recent rounds, performance and nearby courses at a glance.",
+  "homeFriendsAndLeaderboard": "Friends & Leaderboard",
+  "homeFriendsAndLeaderboardBody": "Add golf buddies, accept friend requests, and compare scores on the leaderboard. A green dot appears when you have a pending request.",
+  "homeStartARound": "Start a Round",
+  "homeStartARoundBody": "Tap the green button anytime to start scoring a new round at any course.",
+  "homeYourActiveRound": "Your Active Round",
+  "homeResumeRoundBody": "If you leave mid-round, it's saved here. Tap Resume to pick up where you left off.",
+  "homeRoundHistory": "Round History",
+  "homeRoundHistoryBody": "All your completed rounds live here. Tap any round for a full hole-by-hole breakdown.",
+  "homeYourStats": "Your Stats",
+  "homeYourStatsBody": "Track your handicap trend, scoring patterns, GIR, fairways and strokes gained over time.",
+  "homeYourProfile": "Your Profile",
+  "homeYourProfileBody": "Set your handicap goal, pick an avatar, and view your Golf DNA and Play Style identity.",
+  "homeQuickStats": "Quick Stats",
+  "homeQuickStatsBody": "Live averages across all your rounds — fairways, GIR, putts and birdies per round.",
+  "homeNearbyCourses": "Nearby Courses",
+  "homeNearbyCoursesBody": "Golf courses near your location. Tap any course to start a round there instantly.",
+
+  "roundsMyRounds": "My Rounds",
+  "roundsRoundsTab": "Rounds",
+  "roundsPracticeTab": "Practice",
+  "roundsTournamentsTab": "Tournaments",
+  "roundsHistoryTitle": "Your Round History",
+  "roundsHistorySubtitle": "All completed rounds are here. Tap any round for a full hole-by-hole breakdown and stats.",
+  "roundsInProgress": "Round in Progress",
+  "roundsHolesProgress": "{played}/{total} holes",
+  "@roundsHolesProgress": {
+    "placeholders": {
+      "played": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "roundsNoRoundsYet": "No rounds yet",
+  "roundsStartFirst": "Start your first round from the Home tab",
+  "roundsOrScanScorecard": "or scan a paper scorecard",
+  "roundsDeleteTitle": "Delete Round?",
+  "roundsDeleteConfirm": "Permanently remove your round at {courseName}?",
+  "@roundsDeleteConfirm": {
+    "placeholders": {
+      "courseName": { "type": "String" }
+    }
+  },
+  "roundsBirdies": "Birdies",
+  "roundsPars": "Pars",
+  "roundsBogeys": "Bogeys",
+  "roundsPutts": "Putts",
+  "roundsFIR": "FIR",
+
+  "roundSummaryComplete": "Round Complete!",
+  "roundSummaryScore": "Score",
+  "roundSummaryVsPar": "vs Par",
+  "roundSummaryHoles": "Holes",
+  "roundSummaryBackToHome": "Back to Home",
+  "roundSummaryEven": "Even",
+
+  "roundDetailScorecard": "Scorecard",
+  "roundDetailShotTrails": "Shot Trails",
+  "roundDetailHole": "Hole",
+  "roundDetailPar": "Par",
+  "roundDetailGIR": "GIR",
+  "roundDetailTotal": "TOT",
+  "roundDetailShare": "Share scorecard",
+  "roundDetailDelete": "Delete round",
+  "roundDetailDeleteTitle": "Delete Round?",
+  "roundDetailDeleteConfirm": "This will permanently remove your round at {courseName}.",
+  "@roundDetailDeleteConfirm": {
+    "placeholders": {
+      "courseName": { "type": "String" }
+    }
+  },
+
+  "startRoundPickCourse": "📍  Pick your course",
+  "startRoundWherePlaying": "Where are\nyou playing?",
+  "startRoundSearchHint": "Search for a nearby golf course",
+  "startRoundCourseName": "Course Name",
+  "startRoundEnterCourseName": "Enter course name",
+  "startRoundFetchingTeeData": "Fetching tee data…",
+  "startRoundSelectTee": "SELECT TEE",
+  "startRoundCourseRating": "COURSE RATING (OPTIONAL)",
+  "startRoundRatingForHandicap": "For an accurate USGA Handicap Index",
+  "startRoundCourseRatingLabel": "Course Rating",
+  "startRoundCourseRatingHint": "e.g. 72.5",
+  "startRoundSlopeRatingLabel": "Slope Rating",
+  "startRoundSlopeRatingHint": "e.g. 113",
+  "startRoundSlopeError": "55–155",
+  "startRoundNumberOfHoles": "NUMBER OF HOLES",
+  "startRoundHoles": "Holes",
+  "startRoundInviteFriends": "INVITE FRIENDS (MAX 3)",
+  "startRoundSearchFriends": "Search friends…",
+  "startRoundNoFriends": "No friends yet.",
+  "startRoundNoMatches": "No matches.",
+  "startRoundFriendsInvited": "{count, plural, =1{1 friend will be invited} other{{count} friends will be invited}}",
+  "@startRoundFriendsInvited": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "startRoundTeeOff": "Tee Off!",
+  "startRoundNoCoursesFound": "No golf courses found nearby",
+  "startRoundNoHoleData": "No hole data found for this course.",
+  "startRoundUploadScorecard": "Upload Scorecard",
+  "startRoundError": "Error: {error}",
+  "@startRoundError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "scorecardScoringARound": "Scoring a Round",
+  "scorecardInstructions": "Enter your score, putts, fairway and GIR for each hole. Tap the club to track your club selection.",
+  "scorecardHole": "Hole",
+  "scorecardPlayingWithFriends": "Playing with friends",
+  "scorecardScore": "SCORE",
+  "scorecardPutts": "PUTTS",
+  "scorecardFairwayHit": "FAIRWAY HIT",
+  "scorecardGIR": "GREEN IN REGULATION",
+  "scorecardTrackShots": "Track shots",
+  "scorecardTeeSet": "Tee set",
+  "scorecardShotsTracked": "{count, plural, =1{1 shot tracked} other{{count} shots tracked}}",
+  "@scorecardShotsTracked": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "scorecardClub": "CLUB",
+  "scorecardScorecardLabel": "SCORECARD",
+  "scorecardLeaveTitle": "Leave Round?",
+  "scorecardLeaveBody": "Your progress is saved automatically.\nYou can resume this round from the home screen.",
+  "scorecardSaveAndExit": "Save & Exit",
+  "scorecardKeepPlaying": "Keep Playing",
+  "scorecardAbandon": "Abandon",
+  "scorecardNextHole": "Next Hole",
+  "scorecardFinishRound": "Finish Round",
+  "scorecardAICaddy": "AI CADDY",
+  "scorecardTipPar3": "Par 3: commit to one club and trust the swing.",
+  "scorecardTipInsightsUnlock": "Play your game — insights unlock after 3 holes.",
+  "scorecardTipAvgPutts": "Averaging {avgPutts} putts — focus on lag putting from distance.",
+  "@scorecardTipAvgPutts": {
+    "placeholders": {
+      "avgPutts": { "type": "String" }
+    }
+  },
+  "scorecardTipFairways": "Only {fwhitPercent}% fairways hit — consider a 3-wood off the tee.",
+  "@scorecardTipFairways": {
+    "placeholders": {
+      "fwhitPercent": { "type": "String" }
+    }
+  },
+  "scorecardTipApproach": "Approaches struggling — aim for the fat of the green today.",
+  "scorecardTipSolid": "Solid round so far — keep the same rhythm and tempo.",
+  "scorecardYds": "YDS",
+  "scorecardPlaysLike": "PLAYS LIKE {distance} YDS",
+  "@scorecardPlaysLike": {
+    "placeholders": {
+      "distance": { "type": "String" }
+    }
+  },
+  "scorecardEagle": "Eagle",
+  "scorecardAlbatross": "Albatross",
+  "scorecardBirdie": "Birdie",
+  "scorecardPar": "Par",
+  "scorecardBogey": "Bogey",
+  "scorecardDouble": "Double",
+  "scorecardEditHole": "Edit Hole {hole}",
+  "@scorecardEditHole": {
+    "placeholders": {
+      "hole": { "type": "int" }
+    }
+  },
+  "scorecardErrorSaving": "Error saving: {error}",
+  "@scorecardErrorSaving": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "scorecardOn": "ON",
+  "scorecardOff": "OFF",
+
+  "statsHub": "Your Stats Hub",
+  "statsPlayMoreRounds": "Play more rounds to unlock trend charts, strokes gained and score distribution analysis.",
+  "statsHandicapIndex": "Handicap Index",
+  "statsBasedOnRounds": "{n, plural, =1{Based on 1 round} other{Based on {n} rounds}}",
+  "@statsBasedOnRounds": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "statsCompleteToCalculate": "Complete rounds to calculate",
+  "statsAvgScore": "Avg Score",
+  "statsBestRound": "Best Round",
+  "statsTotalRounds": "Total Rounds",
+  "statsTotalBirdies": "Total Birdies",
+  "statsScoreDistribution": "Score Distribution",
+  "statsEagles": "Eagles",
+  "statsBirdies": "Birdies",
+  "statsPars": "Pars",
+  "statsBogeys": "Bogeys",
+  "statsDoublePlus": "Double+",
+  "statsScoreVsPar": "Score vs Par (Last {n} Rounds)",
+  "@statsScoreVsPar": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "statsOldestToRecent": "Oldest → Most Recent",
+  "statsHandicapTrend": "Handicap Trend",
+  "statsGoal": "Goal: {n}",
+  "@statsGoal": {
+    "placeholders": {
+      "n": { "type": "String" }
+    }
+  },
+  "statsLatest": "Latest: {n}",
+  "@statsLatest": {
+    "placeholders": {
+      "n": { "type": "String" }
+    }
+  },
+  "statsFairwaysHit": "Fairways Hit",
+  "statsGIR": "Greens in Regulation",
+  "statsAvgPuttsPerHole": "Avg Putts / Hole",
+  "statsClubStats": "Club Stats",
+  "statsClubStatsSubtitle": "Score vs par & avg putts per club",
+  "statsClub": "Club",
+  "statsHoles": "Holes",
+  "statsAvgPlusMinus": "Avg ±Par",
+  "statsAvgPutts": "Avg Putts",
+  "statsStrokesGained": "Strokes Gained",
+  "statsVsScratch": "vs scratch golfer baseline",
+  "statsOffTheTee": "Off the Tee",
+  "statsApproach": "Approach",
+  "statsAroundGreen": "Around Green",
+  "statsPutting": "Putting",
+  "statsBetterThanAvg": "Better\nthan avg",
+
+  "tournamentNoTournaments": "No tournaments yet",
+  "tournamentCreateInstructions": "Tap \"New Tournament\" to create one,\nthen start rounds to score for the tournament.",
+  "tournamentNew": "New Tournament",
+  "tournamentStartInstructions": "Create a tournament first, then use the ＋ FAB on the home screen to start a tournament round.",
+  "tournamentDeleteTitle": "Delete Tournament?",
+  "tournamentDeleteConfirm": "Remove \"{name}\"? The rounds themselves will not be deleted.",
+  "@tournamentDeleteConfirm": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "tournamentRoundByRound": "Round by Round",
+  "tournamentVsPar": "vs Par",
+  "tournamentRoundsLabel": "Rounds",
+  "tournamentNameLabel": "Tournament Name",
+  "tournamentNameHint": "e.g. Club Championship 2026",
+  "tournamentCreate": "Create Tournament",
+  "tournamentRoundsCount": "{n, plural, =1{1 round} other{{n} rounds}}",
+  "@tournamentRoundsCount": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "tournamentRunning": "running",
+
+  "practiceNoSessions": "No practice sessions yet",
+  "practiceStartInstructions": "Start a round to score holes,\nor log range and short-game sessions.",
+  "practiceLogSession": "Log Session",
+  "practiceScoredRound": "Scored Round",
+  "practiceDeleteTitle": "Delete Session?",
+  "practiceDeleteConfirm": "This practice session will be permanently removed.",
+  "practiceLogTitle": "Log Practice Session",
+  "practiceType": "Type",
+  "practiceBallsHit": "Balls hit",
+  "practiceDuration": "Duration (min)",
+  "practiceNotes": "Notes (optional)",
+  "practiceNotesHint": "What did you work on?",
+  "practiceSave": "Save Session",
+
+  "friendsTitle": "Friends",
+  "friendsLeaderboard": "Leaderboard",
+  "friendsNoFriendsYet": "No friends yet",
+  "friendsEnterEmail": "Enter a friend's email above to add them",
+  "friendsSearchHint": "Search by email address…",
+  "friendsPendingRequests": "Pending Requests",
+  "friendsWantsToBeF": "Wants to be friends",
+  "friendsRequestSent": "Request Sent",
+  "friendsAcceptRequest": "Accept Request",
+  "friendsAlreadyFriends": "Already Friends",
+  "friendsAddFriend": "Add Friend",
+  "friendsNoLeaderboard": "No leaderboard yet",
+  "friendsAddToCompare": "Add friends to compare scores",
+  "friendsHandicap": "Handicap",
+  "friendsAvgScore": "Avg Score",
+  "friendsYou": "You",
+
+  "notifPrefsTitle": "Smart Notifications",
+  "notifPrefsSubtitle": "AI-powered alerts for your game",
+  "notifPrefsSectionTitle": "NOTIFICATION TYPES",
+  "notifPrefsPracticeReminders": "Practice Reminders",
+  "notifPrefsPracticeDesc": "AI-tailored drills for your weakest areas",
+  "notifPrefsResumeRound": "Resume Round",
+  "notifPrefsResumeDesc": "Nudges to complete rounds you left unfinished",
+  "notifPrefsPerformance": "Performance Insights",
+  "notifPrefsPerformanceDesc": "Celebrate improvement streaks and trends",
+  "notifPrefsTeeTime": "Tee Time Reminders",
+  "notifPrefsTeeTimeDesc": "Alerts before upcoming tee times",
+  "notifPrefsSaved": "Preferences saved",
+  "notifPrefsPersonalised": "Notifications are personalised based on your\nrecent rounds and performance trends.",
+  "notifPrefsAIDriven": "✨ AI-Driven Alerts",
+  "notifPrefsSmartDesc": "Smart notifications\ntailored to your golf game",
+  "notifPrefsExplanation": "TeeStats analyses your rounds, practice habits, and performance trends to send notifications that actually help your game.",
+  "notifPrefsSave": "Save Preferences",
+
+  "profileTitle": "Profile",
+  "profileSubtitle": "Make It Yours",
+  "profileDescription": "Set your handicap goal, pick an avatar, and explore your Golf DNA and Play Style.",
+  "profileGolfer": "Golfer",
+  "profileGolfPlaces": "Golf Places",
+  "profileEditProfile": "Edit Profile",
+  "profileSmartNotifications": "Smart Notifications",
+  "profileAchievementsSection": "ACHIEVEMENTS",
+  "profileRounds": "Rounds",
+  "profileHandicap": "Handicap",
+  "profileBirdies": "Birdies",
+  "profileAccount": "Account",
+  "profileSignOut": "Sign Out",
+  "profileDeleteAccount": "Delete Account",
+  "profileVersion": "TeeStats v{version}",
+  "@profileVersion": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
+  "profileCopyright": "© {year} TeeStats. All rights reserved.",
+  "@profileCopyright": {
+    "placeholders": {
+      "year": { "type": "String" }
+    }
+  },
+  "profileHandicapGoal": "Handicap Goal",
+  "profileHandicapGoalDesc": "Set a target handicap index to track on your trend chart.",
+  "profileTargetPrefix": "Target: {value}",
+  "@profileTargetPrefix": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "profileNotSet": "Not set — tap to set",
+  "profileClear": "Clear",
+  "profileSaveGoal": "Save Goal",
+  "profileSignOutTitle": "Sign Out?",
+  "profileSignOutBody": "You will be returned to the login screen.",
+  "profileDeleteTitle": "Delete Account?",
+  "profileDeleteBody": "This will permanently delete your account and all your golf data including rounds, stats, and achievements.",
+  "profileDeleteAreYouSure": "Are you absolutely sure?",
+  "profileDeleteRoundsItem": "All your rounds and scorecards",
+  "profileDeleteStatsItem": "Stats, handicap history and achievements",
+  "profileDeleteProfileItem": "Your profile and preferences",
+  "profileDeleteNotificationsItem": "Smart notifications and tee times",
+  "profileDeleteCannotUndo": "This action cannot be undone.",
+  "profileDeleteButton": "Delete My Account",
+  "profileKeepButton": "Keep My Account",
+  "profileDeletingAccount": "Deleting account…",
+  "profileReauthRequired": "Please sign out and sign back in before deleting your account.",
+  "profileSomethingWrong": "Something went wrong. Please try again.",
+  "profileContinue": "Continue",
+  "profileDisplayName": "Display Name",
+  "profileSaveChanges": "Save Changes",
+  "profileChooseAvatar": "Choose Avatar",
+  "profileSelectPresetAvatar": "Select a preset avatar",
+  "profileRemoveAvatar": "Remove Avatar",
+  "profileSaveAvatar": "Save Avatar",
+
+  "shotTrackerTapToMark": "Tap the map to mark the tee",
+  "shotTrackerTeeMarked": "Tee marked · tap to track shots",
+  "shotTrackerShotsFromTee": "{count, plural, =1{1 shot from tee} other{{count} shots from tee}}",
+  "@shotTrackerShotsFromTee": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "shotTrackerAcquiringGPS": "Acquiring GPS…",
+  "shotTrackerDistToPin": "{distance} yds to pin",
+  "@shotTrackerDistToPin": {
+    "placeholders": {
+      "distance": { "type": "String" }
+    }
+  },
+  "shotTrackerLastShot": "Last shot: {distance} yds",
+  "@shotTrackerLastShot": {
+    "placeholders": {
+      "distance": { "type": "String" }
+    }
+  },
+  "shotTrackerUndo": "Undo",
+  "shotTrackerFinishHole": "Finish Hole",
+  "shotTrackerFinishHoleWithCount": "Finish Hole  ({count} shots)",
+  "@shotTrackerFinishHoleWithCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "shotTrackerNiceApproach": "Nice approach!",
+  "shotTrackerOnGreen": "You're on the green — {shotCount}Ready to log putts for Hole {holeNumber}?",
+  "@shotTrackerOnGreen": {
+    "placeholders": {
+      "shotCount": { "type": "String" },
+      "holeNumber": { "type": "int" }
+    }
+  },
+  "shotTrackerNotYet": "Not yet",
+  "shotTrackerLogPutts": "Log putts for Hole {holeNumber}",
+  "@shotTrackerLogPutts": {
+    "placeholders": {
+      "holeNumber": { "type": "int" }
+    }
+  },
+
+  "swingAnalyzerTitle": "Swing Analyzer",
+  "swingAnalyzerSaveToGallery": "Save to gallery",
+  "swingAnalyzerShare": "Share",
+  "swingAnalyzerLoadingVideo": "Loading video…",
+  "swingAnalyzerUploading": "Uploading video…",
+  "swingAnalyzerAnalyzing": "Analyzing ball flight…",
+  "swingAnalyzerPreviewUnavailable": "Preview unavailable — tap where the ball is",
+  "swingAnalyzerTapBall": "Tap on the golf ball",
+  "swingAnalyzerReposition": "Tap to reposition",
+  "swingAnalyzerSkip": "Skip",
+  "swingAnalyzerAnalyze": "Analyze",
+  "swingAnalyzerAITracerTitle": "AI Swing Tracer",
+  "swingAnalyzerAITracerDesc": "Record or upload a golf swing video.\nGemini AI will track the ball and overlay a live tracer.",
+  "swingAnalyzerButton": "Analyze Swing",
+  "swingAnalyzerComingSoon": "Coming Soon",
+  "swingAnalyzerComingSoonMsg": "AI Swing Tracer is currently under development. Stay tuned for the update!",
+  "swingAnalyzerGotIt": "Got it",
+  "swingAnalyzerFailed": "Analysis Failed",
+  "swingAnalyzerFailedMsg": "Something went wrong. Please try again.",
+  "swingAnalyzerTryAgain": "Try Again",
+  "swingAnalyzerRecording": "REC",
+  "swingAnalyzerBallNotDetected": "Ball not detected in video",
+  "swingAnalyzerNoVideoFile": "No video file to save",
+  "swingAnalyzerVideoSaved": "Video saved to gallery",
+  "swingAnalyzerCouldNotSave": "Could not save video: {error}",
+  "@swingAnalyzerCouldNotSave": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "swingAnalyzerShareText": "Check out my swing trace from TeeStats! 🏌️",
+  "swingAnalyzerShotAnalysis": "Shot Analysis",
+  "swingAnalyzerCarry": "Carry",
+  "swingAnalyzerHeight": "Height",
+  "swingAnalyzerLaunch": "Launch",
+  "swingAnalyzerPathNotDetected": "Ball path not detected. Try better lighting or a closer angle.",
+  "swingAnalyzerAnotherSwing": "Analyze Another Swing",
+
+  "scorecardUploadTitle": "Scan Your Scorecard",
+  "scorecardUploadDesc": "AI will extract hole-by-hole data including par, yardage, and handicap.",
+  "scorecardUploadChooseSource": "CHOOSE SOURCE",
+  "scorecardUploadTakePhoto": "Take Photo",
+  "scorecardUploadFromGallery": "Choose from Gallery",
+  "scorecardUploadAnalyzing": "Analyzing scorecard…",
+  "scorecardUploadAnalyzingNote": "This usually takes a few seconds",
+  "scorecardUploadReviewTitle": "Review Scorecard",
+  "scorecardUploadUploadTitle": "Upload Scorecard",
+  "scorecardUploadCourseName": "COURSE NAME",
+  "scorecardUploadCourseNameHint": "Enter course name",
+  "scorecardUploadCityState": "City, State",
+  "scorecardUploadSelectTee": "SELECT TEE",
+  "scorecardUploadRetake": "Retake",
+  "scorecardUploadSaveUse": "Save & Use",
+  "scorecardUploadNoTeeData": "No tee data was extracted. Try a clearer photo.",
+  "scorecardUploadFailed": "Extraction failed. Try a clearer photo.\n{error}",
+  "@scorecardUploadFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "scorecardUploadRating": "Rating",
+  "scorecardUploadSlope": "Slope",
+  "scorecardUploadHoleHeader": "HOLE",
+  "scorecardUploadParHeader": "PAR",
+  "scorecardUploadYdsHeader": "YDS",
+  "scorecardUploadHcpHeader": "HCP",
+  "scorecardUploadRatingFooter": "Rating {rating}",
+  "@scorecardUploadRatingFooter": {
+    "placeholders": {
+      "rating": { "type": "String" }
+    }
+  },
+  "scorecardUploadSlopeFooter": "Slope {slope}",
+  "@scorecardUploadSlopeFooter": {
+    "placeholders": {
+      "slope": { "type": "String" }
+    }
+  },
+  "scorecardUploadValidation": "Please enter the course name.",
+  "scorecardUploadMissingScores": "Some Scores Missing",
+  "scorecardUploadMissingMsg": "A few holes still show 0. They'll be saved as 0 strokes — you can edit them after import.",
+  "scorecardUploadImportAnyway": "Import Anyway",
+  "scorecardUploadFixFirst": "Fix First",
+
+  "scorecardImportCourse": "Course",
+  "scorecardImportCourseNameHint": "Course name",
+  "scorecardImportLocationHint": "Location — search a course above",
+  "scorecardImportNoCoursesFound": "No golf courses found",
+  "scorecardImportButton": "Import",
+  "scorecardImportConditions": "Round Conditions",
+  "scorecardImportAvgTemp": "Avg Temp",
+  "scorecardImportAvgWind": "Avg Wind",
+  "scorecardImportConditionsLabel": "Conditions",
+  "scorecardImportWeatherUnavailable": "Weather unavailable",
+  "scorecardImportToday": "Today",
+  "scorecardImportHowToAdd": "How would you like to add your scorecard?",
+  "scorecardImportTakePhoto": "Take a Photo",
+  "scorecardImportPhotoDesc": "Photograph your paper scorecard",
+  "scorecardImportFromLibrary": "Choose from Library",
+  "scorecardImportLibraryDesc": "Select an existing photo",
+  "scorecardImportReading": "Reading your scorecard…",
+  "scorecardImportAnalyzing": "Analysing with AI — this takes a few seconds",
+  "scorecardImportUnableRead": "Unable to Read Scorecard",
+  "scorecardImportConnectionError": "Couldn't reach the AI service. Check your connection and try again.",
+
+  "notifPersonalBestTitle": "🏆 New Personal Best!",
+  "notifPersonalBestMsg": "You scored {score} — your best round yet. Keep it up!",
+  "@notifPersonalBestMsg": {
+    "placeholders": {
+      "score": { "type": "String" }
+    }
+  },
+  "notifTeeTime1HourTitle": "⛳ Tee time in 1 hour!",
+  "notifTeeTime1HourMsg": "Get ready for your round at {courseName}.",
+  "@notifTeeTime1HourMsg": {
+    "placeholders": {
+      "courseName": { "type": "String" }
+    }
+  },
+  "notifTeeTime15MinTitle": "⛳ Tee time in 15 minutes!",
+  "notifTeeTime15MinMsg": "Head to the first tee at {courseName}.",
+  "@notifTeeTime15MinMsg": {
+    "placeholders": {
+      "courseName": { "type": "String" }
+    }
+  },
+  "notifStreakTitle": "⛳ Time to hit the course!",
+  "notifStreakMsg": "It's been a while since your last round. Get out there!",
+
+  "noNotificationsTitle": "No notifications yet",
+  "noNotificationsDesc": "Play more rounds to unlock\nAI-personalised alerts",
+
+  "widgetLeaderboardTitle": "Live Leaderboard",
+  "widgetLeaderboardUpdates": "Updates after each hole",
+  "widgetLeaderboardPos": "POS",
+  "widgetLeaderboardPlayer": "PLAYER",
+  "widgetLeaderboardThru": "THRU",
+  "widgetLeaderboardScore": "SCORE",
+  "widgetLeaderboardThruHoles": "Thru {holes}",
+  "@widgetLeaderboardThruHoles": {
+    "placeholders": {
+      "holes": { "type": "String" }
+    }
+  },
+  "widgetLeaderboardTeeOff": "Tee Off",
+  "widgetLeaderboardFinished": "F",
+  "widgetLeaderboardInvited": "Invited",
+  "widgetLeaderboardDeclined": "Declined",
+
+  "widgetUnfinishedRound": "Unfinished Round",
+  "widgetHolesPlayed": "{played} / {total} holes played",
+  "@widgetHolesPlayed": {
+    "placeholders": {
+      "played": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "widgetResumeRound": "Resume Round",
+  "widgetDiscardTitle": "Discard Round?",
+  "widgetDiscardMsg": "All progress on \"{courseName}\" will be permanently lost.",
+  "@widgetDiscardMsg": {
+    "placeholders": {
+      "courseName": { "type": "String" }
+    }
+  },
+  "widgetKeep": "Keep",
+  "widgetDiscard": "Discard",
+
+  "widgetClubsHint": "Tap clubs below to track each shot",
+  "widgetClubsSelected": "{count} of {max} clubs selected",
+  "@widgetClubsSelected": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "max": { "type": "int" }
+    }
+  },
+
+  "widgetGolfDNA": "GOLF DNA",
+  "widgetProAnalysis": "PRO ANALYSIS",
+  "widgetPower": "Power",
+  "widgetAccuracy": "Accuracy",
+  "widgetPutting": "Putting",
+  "widgetStrengthsWeaknesses": "Strengths & Weaknesses",
+  "widgetPerformanceTrends": "Performance Trends",
+  "widgetTraitAnalysis": "Trait Analysis",
+  "widgetDrivingPower": "Driving Power",
+  "widgetConsistency": "Consistency",
+  "widgetRiskLevel": "Risk Level",
+  "widgetStamina": "Stamina",
+  "widgetAIRoundSummary": "AI Round Summary",
+  "widgetAnalyzingRound": "Analyzing your round…",
+  "widgetGemini": "Gemini",
+  "widgetStrength": "Strength",
+  "widgetWeakness": "Weakness",
+  "widgetFocusArea": "Focus Area",
+  "widgetPlayStyle": "PLAY STYLE",
+  "widgetAIPowered": "AI Powered",
+  "widgetUpdated": "Updated {date}",
+  "@widgetUpdated": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "widgetUpdatedToday": "today",
+  "widgetUpdatedYesterday": "yesterday",
+  "widgetUpdatedDaysAgo": "{days}d ago",
+  "@widgetUpdatedDaysAgo": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+
+  "timeJustNow": "just now",
+  "timeMinutesAgo": "{minutes}m ago",
+  "@timeMinutesAgo": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "timeHoursAgo": "{hours}h ago",
+  "@timeHoursAgo": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "timeDaysAgo": "{days}d ago",
+  "@timeDaysAgo": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  }
+}

@@ -1,0 +1,812 @@
+{
+  "@@locale": "hi",
+
+  "appName": "TeeStats",
+
+  "cancel": "रद्द करें",
+  "delete": "हटाएं",
+  "save": "सहेजें",
+  "done": "हो गया",
+  "search": "खोजें",
+  "ok": "ठीक है",
+  "yes": "हां",
+  "no": "नहीं",
+  "next": "अगला",
+  "back": "वापस",
+  "skip": "छोड़ें",
+  "close": "बंद करें",
+  "edit": "संपादित करें",
+  "view": "देखें",
+  "accept": "स्वीकार करें",
+  "decline": "अस्वीकार करें",
+
+  "home": "होम",
+  "rounds": "राउंड",
+  "stats": "आंकड़े",
+  "profile": "प्रोफ़ाइल",
+  "friends": "मित्र",
+
+  "loginWelcomeBack": "वापसी पर स्वागत है",
+  "loginSignInToContinue": "जारी रखने के लिए साइन इन करें",
+  "loginEmail": "ईमेल",
+  "loginPassword": "पासवर्ड",
+  "loginForgotPassword": "पासवर्ड भूल गए?",
+  "loginSignIn": "साइन इन करें",
+  "loginDontHaveAccount": "खाता नहीं है?",
+  "loginSignUp": "साइन अप करें",
+  "loginTagline": "खेलें  ·  ट्रैक करें  ·  सुधारें",
+  "loginResetPasswordTitle": "पासवर्ड रीसेट करें",
+  "loginResetPasswordSubtitle": "हम आपके ईमेल पर एक रीसेट लिंक भेजेंगे",
+  "loginEnterYourEmail": "अपना ईमेल दर्ज करें",
+  "loginEnterValidEmail": "एक मान्य ईमेल दर्ज करें",
+  "loginSendResetLink": "रीसेट लिंक भेजें",
+  "loginResetLinkSent": "रीसेट लिंक भेज दिया गया!",
+  "loginCheckInboxFor": "{email} के लिए अपना इनबॉक्स देखें",
+  "@loginCheckInboxFor": {
+    "placeholders": {
+      "email": { "type": "String" }
+    }
+  },
+  "loginErrorNoAccount": "इस ईमेल से कोई खाता नहीं मिला।",
+  "loginErrorInvalidEmail": "कृपया एक मान्य ईमेल दर्ज करें।",
+  "loginErrorSomethingWrong": "कुछ गलत हो गया। पुनः प्रयास करें।",
+  "loginErrorIncorrectCredentials": "गलत ईमेल या पासवर्ड।",
+  "loginErrorAccountDisabled": "यह खाता अक्षम कर दिया गया है।",
+  "loginErrorTooManyAttempts": "बहुत अधिक प्रयास। बाद में पुनः प्रयास करें।",
+  "loginErrorTryAgain": "कुछ गलत हो गया। कृपया पुनः प्रयास करें।",
+
+  "signupCreateAccount": "खाता बनाएं",
+  "signupJoinToday": "आज TeeStats से जुड़ें",
+  "signupFullName": "पूरा नाम",
+  "signupEnterYourName": "अपना नाम दर्ज करें",
+  "signupEmail": "ईमेल",
+  "signupPassword": "पासवर्ड",
+  "signupConfirmPassword": "पासवर्ड की पुष्टि करें",
+  "signupEnterPassword": "एक पासवर्ड दर्ज करें",
+  "signupMinimumChars": "न्यूनतम 6 अक्षर",
+  "signupConfirmYourPassword": "अपने पासवर्ड की पुष्टि करें",
+  "signupPasswordsDoNotMatch": "पासवर्ड मेल नहीं खाते",
+  "signupPasswordStrength": "पासवर्ड की मजबूती: {label}",
+  "@signupPasswordStrength": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "signupPasswordWeak": "कमज़ोर",
+  "signupPasswordFair": "ठीक-ठाक",
+  "signupPasswordGood": "अच्छा",
+  "signupPasswordStrong": "मजबूत",
+  "signupAlreadyHaveAccount": "पहले से खाता है?",
+  "signupErrorAccountExists": "इस ईमेल से एक खाता पहले से मौजूद है।",
+  "signupErrorInvalidEmail": "कृपया एक मान्य ईमेल पता दर्ज करें।",
+  "signupErrorWeakPassword": "पासवर्ड कम से कम 6 अक्षरों का होना चाहिए।",
+  "signupErrorNotEnabled": "ईमेल साइन-अप सक्षम नहीं है।",
+
+  "onboardingTagline": "स्विंग करें। ट्रैक करें। जीतें।",
+  "onboardingScoreTrackingTag": "स्कोर ट्रैकिंग",
+  "onboardingTrackEveryRoundTitle": "हर राउंड\nट्रैक करें",
+  "onboardingScoreTrackingBody": "हर होल के लिए GPS-संचालित स्कोरिंग। आपका पूरा राउंड इतिहास, हमेशा आपकी जेब में।",
+  "onboardingPerformanceTag": "प्रदर्शन",
+  "onboardingGolfDNATitle": "अपना\nगोल्फ DNA जानें",
+  "onboardingPerformanceBody": "फेयरवे हिट, GIR, प्रति राउंड पट, हैंडीकैप ट्रेंड — ठीक वह जगह पहचानें जहाँ सुधार करना है।",
+  "onboardingMultiplayerTag": "मल्टीप्लेयर",
+  "onboardingPlayTogetherTitle": "साथ\nखेलें",
+  "onboardingMultiplayerBody": "मित्रों को एक लाइव ग्रुप राउंड में आमंत्रित करें। रियल-टाइम लीडरबोर्ड, बिना अतिरिक्त स्कोरकीपिंग।",
+  "onboardingSocialTag": "सोशल",
+  "onboardingFriendsLeaderboardTitle": "मित्र और\nलीडरबोर्ड",
+  "onboardingSocialBody": "अपने गोल्फ क्रू से जुड़ें। देखें कौन शानदार फॉर्म में है और उन्हें आपको हराने की चुनौती दें।",
+  "onboardingAITag": "AI संचालित",
+  "onboardingPersonalCaddieTitle": "आपका व्यक्तिगत\nकैडी",
+  "onboardingAIBody": "हर राउंड के बाद, Gemini AI आपके आंकड़े विश्लेषण करता है और कोचिंग अंतर्दृष्टि देता है — ताकत, कमज़ोरियां और अगली बार तेज करने का फोकस क्षेत्र।",
+  "onboardingPoweredByGemini": "Google Gemini द्वारा संचालित",
+
+  "homeReadyToPlay": "⛳  खेलने के लिए तैयार?",
+  "homeStartRound": "राउंड शुरू करें",
+  "homeTapToTeeOff": "टी ऑफ के लिए टैप करें",
+  "homeGolfNews": "गोल्फ समाचार",
+  "homeSeeAll": "सभी देखें",
+  "homeRecentRounds": "हाल के राउंड",
+  "homeViewAll": "सभी देखें",
+  "homeNoRoundsYet": "अभी तक कोई राउंड नहीं — अपना पहला शुरू करें!",
+  "homeInProgress": "जारी है",
+  "homeActive": "सक्रिय",
+  "homeNoLocation": "कोई स्थान नहीं",
+  "homePerformance": "प्रदर्शन",
+  "homeCompleteRoundsForStats": "अपना हैंडीकैप और प्रदर्शन आंकड़े देखने के लिए राउंड पूरे करें।",
+  "homeHandicapIndex": "हैंडीकैप इंडेक्स",
+  "homeRoundsNeeded": "{n}/20 राउंड",
+  "@homeRoundsNeeded": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "homeMoreRoundsToUnlock": "अपना हैंडीकैप इंडेक्स अनलॉक करने के लिए {n} और राउंड",
+  "@homeMoreRoundsToUnlock": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "homeFairwaysHit": "फेयरवे हिट",
+  "homePar4And5": "पार 4 और 5 होल",
+  "homeGIR": "ग्रीन इन रेग.",
+  "homeAllHoles": "सभी होल",
+  "homeAvgPutts": "औसत पट",
+  "homePerHole": "प्रति होल",
+  "homeBirdies": "बर्डी",
+  "homeAllRounds": "सभी राउंड",
+  "homeToday": "आज",
+  "homeYesterday": "कल",
+  "homeDaysAgo": "{n} दिन पहले",
+  "@homeDaysAgo": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "homeWeekAgo": "1 सप्ताह पहले",
+  "homeTwoWeeksAgo": "2 सप्ताह पहले",
+  "homeThreeWeeksAgo": "3 सप्ताह पहले",
+  "homeMonthsAgo": "{n} महीने पहले",
+  "@homeMonthsAgo": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "homeInvitedToPlay": "{name} ने आपको खेलने के लिए आमंत्रित किया",
+  "@homeInvitedToPlay": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "homeChangeLocation": "स्थान बदलें",
+  "homeSearchCityOrArea": "कोई शहर या क्षेत्र खोजें",
+  "homeLocationHint": "जैसे: दुबई, लंदन, न्यूयॉर्क…",
+  "homeSearchLocation": "स्थान खोजें",
+  "homeLocationNotFound": "स्थान नहीं मिला। किसी अन्य शहर का नाम आज़माएं।",
+  "homeUseCurrentLocation": "मेरी वर्तमान स्थान का उपयोग करें",
+  "homeWelcomeTour": "TeeStats में आपका स्वागत है",
+  "homeWelcomeTourBody": "यह आपका होम है — एक नज़र में हाल के राउंड, प्रदर्शन और पास के कोर्स देखें।",
+  "homeFriendsAndLeaderboard": "मित्र और लीडरबोर्ड",
+  "homeFriendsAndLeaderboardBody": "गोल्फ साथियों को जोड़ें, मित्र अनुरोध स्वीकार करें, और लीडरबोर्ड पर स्कोर तुलना करें। जब कोई लंबित अनुरोध हो तो एक हरा डॉट दिखता है।",
+  "homeStartARound": "राउंड शुरू करें",
+  "homeStartARoundBody": "किसी भी कोर्स पर नया राउंड स्कोर करना शुरू करने के लिए कभी भी हरे बटन पर टैप करें।",
+  "homeYourActiveRound": "आपका सक्रिय राउंड",
+  "homeResumeRoundBody": "यदि आप बीच में छोड़ते हैं, तो यह यहाँ सहेजा जाता है। जहाँ छोड़ा था वहाँ से जारी रखने के लिए Resume टैप करें।",
+  "homeRoundHistory": "राउंड इतिहास",
+  "homeRoundHistoryBody": "आपके सभी पूर्ण राउंड यहाँ हैं। प्रत्येक होल के विस्तृत विवरण के लिए किसी भी राउंड पर टैप करें।",
+  "homeYourStats": "आपके आंकड़े",
+  "homeYourStatsBody": "समय के साथ अपना हैंडीकैप ट्रेंड, स्कोरिंग पैटर्न, GIR, फेयरवे और स्ट्रोक्स गेंड ट्रैक करें।",
+  "homeYourProfile": "आपकी प्रोफ़ाइल",
+  "homeYourProfileBody": "अपना हैंडीकैप लक्ष्य निर्धारित करें, एक अवतार चुनें, और अपनी गोल्फ DNA और प्ले स्टाइल पहचान देखें।",
+  "homeQuickStats": "त्वरित आंकड़े",
+  "homeQuickStatsBody": "आपके सभी राउंड में लाइव औसत — फेयरवे, GIR, पट और बर्डी प्रति राउंड।",
+  "homeNearbyCourses": "पास के कोर्स",
+  "homeNearbyCoursesBody": "आपके स्थान के पास गोल्फ कोर्स। तुरंत वहाँ राउंड शुरू करने के लिए किसी भी कोर्स पर टैप करें।",
+
+  "roundsMyRounds": "मेरे राउंड",
+  "roundsRoundsTab": "राउंड",
+  "roundsPracticeTab": "अभ्यास",
+  "roundsTournamentsTab": "टूर्नामेंट",
+  "roundsHistoryTitle": "आपका राउंड इतिहास",
+  "roundsHistorySubtitle": "सभी पूर्ण राउंड यहाँ हैं। प्रत्येक होल के विस्तृत विवरण और आंकड़ों के लिए किसी भी राउंड पर टैप करें।",
+  "roundsInProgress": "राउंड जारी है",
+  "roundsHolesProgress": "{played}/{total} होल",
+  "@roundsHolesProgress": {
+    "placeholders": {
+      "played": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "roundsNoRoundsYet": "अभी तक कोई राउंड नहीं",
+  "roundsStartFirst": "होम टैब से अपना पहला राउंड शुरू करें",
+  "roundsOrScanScorecard": "या एक कागज़ी स्कोरकार्ड स्कैन करें",
+  "roundsDeleteTitle": "राउंड हटाएं?",
+  "roundsDeleteConfirm": "{courseName} पर आपका राउंड स्थायी रूप से हटाएं?",
+  "@roundsDeleteConfirm": {
+    "placeholders": {
+      "courseName": { "type": "String" }
+    }
+  },
+  "roundsBirdies": "बर्डी",
+  "roundsPars": "पार",
+  "roundsBogeys": "बोगी",
+  "roundsPutts": "पट",
+  "roundsFIR": "FIR",
+
+  "roundSummaryComplete": "राउंड पूर्ण!",
+  "roundSummaryScore": "स्कोर",
+  "roundSummaryVsPar": "पार बनाम",
+  "roundSummaryHoles": "होल",
+  "roundSummaryBackToHome": "होम पर वापस",
+  "roundSummaryEven": "बराबर",
+
+  "roundDetailScorecard": "स्कोरकार्ड",
+  "roundDetailShotTrails": "शॉट ट्रेल्स",
+  "roundDetailHole": "होल",
+  "roundDetailPar": "पार",
+  "roundDetailGIR": "GIR",
+  "roundDetailTotal": "कुल",
+  "roundDetailShare": "स्कोरकार्ड शेयर करें",
+  "roundDetailDelete": "राउंड हटाएं",
+  "roundDetailDeleteTitle": "राउंड हटाएं?",
+  "roundDetailDeleteConfirm": "यह {courseName} पर आपका राउंड स्थायी रूप से हटा देगा।",
+  "@roundDetailDeleteConfirm": {
+    "placeholders": {
+      "courseName": { "type": "String" }
+    }
+  },
+
+  "startRoundPickCourse": "📍  अपना कोर्स चुनें",
+  "startRoundWherePlaying": "आप कहाँ\nखेल रहे हैं?",
+  "startRoundSearchHint": "पास के गोल्फ कोर्स की खोज करें",
+  "startRoundCourseName": "कोर्स का नाम",
+  "startRoundEnterCourseName": "कोर्स का नाम दर्ज करें",
+  "startRoundFetchingTeeData": "टी डेटा प्राप्त हो रहा है…",
+  "startRoundSelectTee": "टी चुनें",
+  "startRoundCourseRating": "कोर्स रेटिंग (वैकल्पिक)",
+  "startRoundRatingForHandicap": "सटीक USGA हैंडीकैप इंडेक्स के लिए",
+  "startRoundCourseRatingLabel": "कोर्स रेटिंग",
+  "startRoundCourseRatingHint": "जैसे: 72.5",
+  "startRoundSlopeRatingLabel": "स्लोप रेटिंग",
+  "startRoundSlopeRatingHint": "जैसे: 113",
+  "startRoundSlopeError": "55–155",
+  "startRoundNumberOfHoles": "होल की संख्या",
+  "startRoundHoles": "होल",
+  "startRoundInviteFriends": "मित्रों को आमंत्रित करें (अधिकतम 3)",
+  "startRoundSearchFriends": "मित्र खोजें…",
+  "startRoundNoFriends": "अभी तक कोई मित्र नहीं।",
+  "startRoundNoMatches": "कोई मेल नहीं।",
+  "startRoundFriendsInvited": "{count, plural, =1{1 मित्र को आमंत्रित किया जाएगा} other{{count} मित्रों को आमंत्रित किया जाएगा}}",
+  "@startRoundFriendsInvited": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "startRoundTeeOff": "टी ऑफ करें!",
+  "startRoundNoCoursesFound": "पास में कोई गोल्फ कोर्स नहीं मिला",
+  "startRoundNoHoleData": "इस कोर्स के लिए कोई होल डेटा नहीं मिला।",
+  "startRoundUploadScorecard": "स्कोरकार्ड अपलोड करें",
+  "startRoundError": "त्रुटि: {error}",
+  "@startRoundError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "scorecardScoringARound": "राउंड स्कोर करना",
+  "scorecardInstructions": "प्रत्येक होल के लिए अपना स्कोर, पट, फेयरवे और GIR दर्ज करें। क्लब चयन ट्रैक करने के लिए क्लब पर टैप करें।",
+  "scorecardHole": "होल",
+  "scorecardPlayingWithFriends": "मित्रों के साथ खेल रहे हैं",
+  "scorecardScore": "स्कोर",
+  "scorecardPutts": "पट",
+  "scorecardFairwayHit": "फेयरवे हिट",
+  "scorecardGIR": "ग्रीन इन रेगुलेशन",
+  "scorecardTrackShots": "शॉट ट्रैक करें",
+  "scorecardTeeSet": "टी सेट",
+  "scorecardShotsTracked": "{count, plural, =1{1 शॉट ट्रैक किया गया} other{{count} शॉट ट्रैक किए गए}}",
+  "@scorecardShotsTracked": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "scorecardClub": "क्लब",
+  "scorecardScorecardLabel": "स्कोरकार्ड",
+  "scorecardLeaveTitle": "राउंड छोड़ें?",
+  "scorecardLeaveBody": "आपकी प्रगति स्वचालित रूप से सहेजी जाती है।\nआप होम स्क्रीन से यह राउंड फिर शुरू कर सकते हैं।",
+  "scorecardSaveAndExit": "सहेजें और बाहर निकलें",
+  "scorecardKeepPlaying": "खेलते रहें",
+  "scorecardAbandon": "छोड़ें",
+  "scorecardNextHole": "अगला होल",
+  "scorecardFinishRound": "राउंड समाप्त करें",
+  "scorecardAICaddy": "AI कैडी",
+  "scorecardTipPar3": "पार 3: एक क्लब पर निर्णय लें और स्विंग पर भरोसा करें।",
+  "scorecardTipInsightsUnlock": "अपना खेल खेलें — 3 होल के बाद अंतर्दृष्टि अनलॉक होगी।",
+  "scorecardTipAvgPutts": "औसत {avgPutts} पट — दूरी से लैग पटिंग पर ध्यान दें।",
+  "@scorecardTipAvgPutts": {
+    "placeholders": {
+      "avgPutts": { "type": "String" }
+    }
+  },
+  "scorecardTipFairways": "केवल {fwhitPercent}% फेयरवे हिट — टी से 3-वुड का प्रयोग करें।",
+  "@scorecardTipFairways": {
+    "placeholders": {
+      "fwhitPercent": { "type": "String" }
+    }
+  },
+  "scorecardTipApproach": "अप्रोच संघर्ष कर रही है — आज ग्रीन के बीच का हिस्सा लक्ष्य रखें।",
+  "scorecardTipSolid": "अब तक शानदार राउंड — वही लय और टेम्पो बनाए रखें।",
+  "scorecardYds": "गज",
+  "scorecardPlaysLike": "खेलता है {distance} गज जैसा",
+  "@scorecardPlaysLike": {
+    "placeholders": {
+      "distance": { "type": "String" }
+    }
+  },
+  "scorecardEagle": "ईगल",
+  "scorecardAlbatross": "अल्बाट्रॉस",
+  "scorecardBirdie": "बर्डी",
+  "scorecardPar": "पार",
+  "scorecardBogey": "बोगी",
+  "scorecardDouble": "डबल",
+  "scorecardEditHole": "होल {hole} संपादित करें",
+  "@scorecardEditHole": {
+    "placeholders": {
+      "hole": { "type": "int" }
+    }
+  },
+  "scorecardErrorSaving": "सहेजने में त्रुटि: {error}",
+  "@scorecardErrorSaving": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "scorecardOn": "चालू",
+  "scorecardOff": "बंद",
+
+  "statsHub": "आपका आंकड़े हब",
+  "statsPlayMoreRounds": "ट्रेंड चार्ट, स्ट्रोक्स गेंड और स्कोर वितरण विश्लेषण अनलॉक करने के लिए अधिक राउंड खेलें।",
+  "statsHandicapIndex": "हैंडीकैप इंडेक्स",
+  "statsBasedOnRounds": "{n, plural, =1{1 राउंड के आधार पर} other{{n} राउंड के आधार पर}}",
+  "@statsBasedOnRounds": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "statsCompleteToCalculate": "गणना करने के लिए राउंड पूरे करें",
+  "statsAvgScore": "औसत स्कोर",
+  "statsBestRound": "सर्वश्रेष्ठ राउंड",
+  "statsTotalRounds": "कुल राउंड",
+  "statsTotalBirdies": "कुल बर्डी",
+  "statsScoreDistribution": "स्कोर वितरण",
+  "statsEagles": "ईगल",
+  "statsBirdies": "बर्डी",
+  "statsPars": "पार",
+  "statsBogeys": "बोगी",
+  "statsDoublePlus": "डबल+",
+  "statsScoreVsPar": "स्कोर बनाम पार (पिछले {n} राउंड)",
+  "@statsScoreVsPar": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "statsOldestToRecent": "सबसे पुराना → सबसे हाल का",
+  "statsHandicapTrend": "हैंडीकैप ट्रेंड",
+  "statsGoal": "लक्ष्य: {n}",
+  "@statsGoal": {
+    "placeholders": {
+      "n": { "type": "String" }
+    }
+  },
+  "statsLatest": "नवीनतम: {n}",
+  "@statsLatest": {
+    "placeholders": {
+      "n": { "type": "String" }
+    }
+  },
+  "statsFairwaysHit": "फेयरवे हिट",
+  "statsGIR": "ग्रीन इन रेगुलेशन",
+  "statsAvgPuttsPerHole": "औसत पट / होल",
+  "statsClubStats": "क्लब आंकड़े",
+  "statsClubStatsSubtitle": "प्रति क्लब स्कोर बनाम पार और औसत पट",
+  "statsClub": "क्लब",
+  "statsHoles": "होल",
+  "statsAvgPlusMinus": "औसत ±पार",
+  "statsAvgPutts": "औसत पट",
+  "statsStrokesGained": "स्ट्रोक्स गेंड",
+  "statsVsScratch": "स्क्रैच गोल्फर बेसलाइन बनाम",
+  "statsOffTheTee": "टी से",
+  "statsApproach": "अप्रोच",
+  "statsAroundGreen": "ग्रीन के आसपास",
+  "statsPutting": "पटिंग",
+  "statsBetterThanAvg": "औसत से\nbेहतर",
+
+  "tournamentNoTournaments": "अभी तक कोई टूर्नामेंट नहीं",
+  "tournamentCreateInstructions": "एक बनाने के लिए \"नया टूर्नामेंट\" टैप करें,\nफिर टूर्नामेंट के लिए स्कोर करने हेतु राउंड शुरू करें।",
+  "tournamentNew": "नया टूर्नामेंट",
+  "tournamentStartInstructions": "पहले एक टूर्नामेंट बनाएं, फिर टूर्नामेंट राउंड शुरू करने के लिए होम स्क्रीन पर ＋ FAB का उपयोग करें।",
+  "tournamentDeleteTitle": "टूर्नामेंट हटाएं?",
+  "tournamentDeleteConfirm": "\"{name}\" हटाएं? राउंड स्वयं हटाए नहीं जाएंगे।",
+  "@tournamentDeleteConfirm": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "tournamentRoundByRound": "राउंड दर राउंड",
+  "tournamentVsPar": "पार बनाम",
+  "tournamentRoundsLabel": "राउंड",
+  "tournamentNameLabel": "टूर्नामेंट का नाम",
+  "tournamentNameHint": "जैसे: क्लब चैंपियनशिप 2026",
+  "tournamentCreate": "टूर्नामेंट बनाएं",
+  "tournamentRoundsCount": "{n, plural, =1{1 राउंड} other{{n} राउंड}}",
+  "@tournamentRoundsCount": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
+  "tournamentRunning": "जारी है",
+
+  "practiceNoSessions": "अभी तक कोई अभ्यास सत्र नहीं",
+  "practiceStartInstructions": "होल स्कोर करने के लिए एक राउंड शुरू करें,\nया रेंज और शॉर्ट-गेम सत्र लॉग करें।",
+  "practiceLogSession": "सत्र लॉग करें",
+  "practiceScoredRound": "स्कोर किया गया राउंड",
+  "practiceDeleteTitle": "सत्र हटाएं?",
+  "practiceDeleteConfirm": "यह अभ्यास सत्र स्थायी रूप से हटा दिया जाएगा।",
+  "practiceLogTitle": "अभ्यास सत्र लॉग करें",
+  "practiceType": "प्रकार",
+  "practiceBallsHit": "बॉल हिट",
+  "practiceDuration": "अवधि (मिनट)",
+  "practiceNotes": "नोट्स (वैकल्पिक)",
+  "practiceNotesHint": "आपने किस पर काम किया?",
+  "practiceSave": "सत्र सहेजें",
+
+  "friendsTitle": "मित्र",
+  "friendsLeaderboard": "लीडरबोर्ड",
+  "friendsNoFriendsYet": "अभी तक कोई मित्र नहीं",
+  "friendsEnterEmail": "उन्हें जोड़ने के लिए ऊपर एक मित्र का ईमेल दर्ज करें",
+  "friendsSearchHint": "ईमेल पते से खोजें…",
+  "friendsPendingRequests": "लंबित अनुरोध",
+  "friendsWantsToBeF": "मित्र बनना चाहता है",
+  "friendsRequestSent": "अनुरोध भेजा गया",
+  "friendsAcceptRequest": "अनुरोध स्वीकार करें",
+  "friendsAlreadyFriends": "पहले से मित्र हैं",
+  "friendsAddFriend": "मित्र जोड़ें",
+  "friendsNoLeaderboard": "अभी तक कोई लीडरबोर्ड नहीं",
+  "friendsAddToCompare": "स्कोर तुलना करने के लिए मित्र जोड़ें",
+  "friendsHandicap": "हैंडीकैप",
+  "friendsAvgScore": "औसत स्कोर",
+  "friendsYou": "आप",
+
+  "notifPrefsTitle": "स्मार्ट सूचनाएं",
+  "notifPrefsSubtitle": "आपके खेल के लिए AI-संचालित अलर्ट",
+  "notifPrefsSectionTitle": "सूचना प्रकार",
+  "notifPrefsPracticeReminders": "अभ्यास अनुस्मारक",
+  "notifPrefsPracticeDesc": "आपके कमजोर क्षेत्रों के लिए AI-अनुकूलित अभ्यास",
+  "notifPrefsResumeRound": "राउंड फिर शुरू करें",
+  "notifPrefsResumeDesc": "अधूरे राउंड पूरे करने के लिए प्रेरणा",
+  "notifPrefsPerformance": "प्रदर्शन अंतर्दृष्टि",
+  "notifPrefsPerformanceDesc": "सुधार की लकीरों और रुझानों का जश्न मनाएं",
+  "notifPrefsTeeTime": "टी टाइम अनुस्मारक",
+  "notifPrefsTeeTimeDesc": "आगामी टी टाइम से पहले अलर्ट",
+  "notifPrefsSaved": "प्राथमिकताएं सहेजी गईं",
+  "notifPrefsPersonalised": "सूचनाएं आपके हाल के राउंड और\nप्रदर्शन रुझानों के आधार पर व्यक्तिगत हैं।",
+  "notifPrefsAIDriven": "✨ AI-संचालित अलर्ट",
+  "notifPrefsSmartDesc": "आपके गोल्फ खेल के अनुकूल\nस्मार्ट सूचनाएं",
+  "notifPrefsExplanation": "TeeStats आपके राउंड, अभ्यास की आदतें और प्रदर्शन रुझानों का विश्लेषण करके ऐसी सूचनाएं भेजता है जो वास्तव में आपके खेल में मदद करती हैं।",
+  "notifPrefsSave": "प्राथमिकताएं सहेजें",
+
+  "profileTitle": "प्रोफ़ाइल",
+  "profileSubtitle": "इसे अपना बनाएं",
+  "profileDescription": "अपना हैंडीकैप लक्ष्य निर्धारित करें, एक अवतार चुनें, और अपनी गोल्फ DNA और प्ले स्टाइल जानें।",
+  "profileGolfer": "गोल्फर",
+  "profileGolfPlaces": "गोल्फ स्थान",
+  "profileEditProfile": "प्रोफ़ाइल संपादित करें",
+  "profileSmartNotifications": "स्मार्ट सूचनाएं",
+  "profileAchievementsSection": "उपलब्धियां",
+  "profileRounds": "राउंड",
+  "profileHandicap": "हैंडीकैप",
+  "profileBirdies": "बर्डी",
+  "profileAccount": "खाता",
+  "profileSignOut": "साइन आउट करें",
+  "profileDeleteAccount": "खाता हटाएं",
+  "profileVersion": "TeeStats v{version}",
+  "@profileVersion": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
+  "profileCopyright": "© {year} TeeStats. सर्वाधिकार सुरक्षित।",
+  "@profileCopyright": {
+    "placeholders": {
+      "year": { "type": "String" }
+    }
+  },
+  "profileHandicapGoal": "हैंडीकैप लक्ष्य",
+  "profileHandicapGoalDesc": "अपने ट्रेंड चार्ट पर ट्रैक करने के लिए एक लक्ष्य हैंडीकैप इंडेक्स निर्धारित करें।",
+  "profileTargetPrefix": "लक्ष्य: {value}",
+  "@profileTargetPrefix": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "profileNotSet": "निर्धारित नहीं — सेट करने के लिए टैप करें",
+  "profileClear": "साफ़ करें",
+  "profileSaveGoal": "लक्ष्य सहेजें",
+  "profileSignOutTitle": "साइन आउट करें?",
+  "profileSignOutBody": "आपको लॉगिन स्क्रीन पर वापस किया जाएगा।",
+  "profileDeleteTitle": "खाता हटाएं?",
+  "profileDeleteBody": "यह आपका खाता और सभी गोल्फ डेटा सहित राउंड, आंकड़े और उपलब्धियां स्थायी रूप से हटा देगा।",
+  "profileDeleteAreYouSure": "क्या आप बिल्कुल निश्चित हैं?",
+  "profileDeleteRoundsItem": "आपके सभी राउंड और स्कोरकार्ड",
+  "profileDeleteStatsItem": "आंकड़े, हैंडीकैप इतिहास और उपलब्धियां",
+  "profileDeleteProfileItem": "आपकी प्रोफ़ाइल और प्राथमिकताएं",
+  "profileDeleteNotificationsItem": "स्मार्ट सूचनाएं और टी टाइम",
+  "profileDeleteCannotUndo": "यह क्रिया पूर्ववत नहीं की जा सकती।",
+  "profileDeleteButton": "मेरा खाता हटाएं",
+  "profileKeepButton": "मेरा खाता रखें",
+  "profileDeletingAccount": "खाता हटाया जा रहा है…",
+  "profileReauthRequired": "अपना खाता हटाने से पहले कृपया साइन आउट करें और वापस साइन इन करें।",
+  "profileSomethingWrong": "कुछ गलत हो गया। कृपया पुनः प्रयास करें।",
+  "profileContinue": "जारी रखें",
+  "profileDisplayName": "प्रदर्शन नाम",
+  "profileSaveChanges": "परिवर्तन सहेजें",
+  "profileChooseAvatar": "अवतार चुनें",
+  "profileSelectPresetAvatar": "एक प्रीसेट अवतार चुनें",
+  "profileRemoveAvatar": "अवतार हटाएं",
+  "profileSaveAvatar": "अवतार सहेजें",
+
+  "shotTrackerTapToMark": "टी चिह्नित करने के लिए मैप पर टैप करें",
+  "shotTrackerTeeMarked": "टी चिह्नित · शॉट ट्रैक करने के लिए टैप करें",
+  "shotTrackerShotsFromTee": "{count, plural, =1{टी से 1 शॉट} other{टी से {count} शॉट}}",
+  "@shotTrackerShotsFromTee": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "shotTrackerAcquiringGPS": "GPS प्राप्त हो रहा है…",
+  "shotTrackerDistToPin": "पिन तक {distance} गज",
+  "@shotTrackerDistToPin": {
+    "placeholders": {
+      "distance": { "type": "String" }
+    }
+  },
+  "shotTrackerLastShot": "आखिरी शॉट: {distance} गज",
+  "@shotTrackerLastShot": {
+    "placeholders": {
+      "distance": { "type": "String" }
+    }
+  },
+  "shotTrackerUndo": "पूर्ववत करें",
+  "shotTrackerFinishHole": "होल समाप्त करें",
+  "shotTrackerFinishHoleWithCount": "होल समाप्त करें  ({count} शॉट)",
+  "@shotTrackerFinishHoleWithCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "shotTrackerNiceApproach": "शानदार अप्रोच!",
+  "shotTrackerOnGreen": "आप ग्रीन पर हैं — {shotCount}होल {holeNumber} के पट लॉग करने के लिए तैयार?",
+  "@shotTrackerOnGreen": {
+    "placeholders": {
+      "shotCount": { "type": "String" },
+      "holeNumber": { "type": "int" }
+    }
+  },
+  "shotTrackerNotYet": "अभी नहीं",
+  "shotTrackerLogPutts": "होल {holeNumber} के पट लॉग करें",
+  "@shotTrackerLogPutts": {
+    "placeholders": {
+      "holeNumber": { "type": "int" }
+    }
+  },
+
+  "swingAnalyzerTitle": "स्विंग एनालाइज़र",
+  "swingAnalyzerSaveToGallery": "गैलरी में सहेजें",
+  "swingAnalyzerShare": "शेयर करें",
+  "swingAnalyzerLoadingVideo": "वीडियो लोड हो रहा है…",
+  "swingAnalyzerUploading": "वीडियो अपलोड हो रहा है…",
+  "swingAnalyzerAnalyzing": "बॉल फ्लाइट का विश्लेषण हो रहा है…",
+  "swingAnalyzerPreviewUnavailable": "प्रीव्यू उपलब्ध नहीं — जहाँ बॉल है वहाँ टैप करें",
+  "swingAnalyzerTapBall": "गोल्फ बॉल पर टैप करें",
+  "swingAnalyzerReposition": "पुनः स्थित करने के लिए टैप करें",
+  "swingAnalyzerSkip": "छोड़ें",
+  "swingAnalyzerAnalyze": "विश्लेषण करें",
+  "swingAnalyzerAITracerTitle": "AI स्विंग ट्रेसर",
+  "swingAnalyzerAITracerDesc": "गोल्फ स्विंग वीडियो रिकॉर्ड या अपलोड करें।\nGemini AI बॉल ट्रैक करेगा और एक लाइव ट्रेसर ओवरले करेगा।",
+  "swingAnalyzerButton": "स्विंग विश्लेषण करें",
+  "swingAnalyzerComingSoon": "जल्द आ रहा है",
+  "swingAnalyzerComingSoonMsg": "AI स्विंग ट्रेसर वर्तमान में विकास में है। अपडेट के लिए बने रहें!",
+  "swingAnalyzerGotIt": "समझ गया",
+  "swingAnalyzerFailed": "विश्लेषण विफल",
+  "swingAnalyzerFailedMsg": "कुछ गलत हो गया। कृपया पुनः प्रयास करें।",
+  "swingAnalyzerTryAgain": "पुनः प्रयास करें",
+  "swingAnalyzerRecording": "रिकॉर्डिंग",
+  "swingAnalyzerBallNotDetected": "वीडियो में बॉल का पता नहीं चला",
+  "swingAnalyzerNoVideoFile": "सहेजने के लिए कोई वीडियो फ़ाइल नहीं",
+  "swingAnalyzerVideoSaved": "वीडियो गैलरी में सहेजा गया",
+  "swingAnalyzerCouldNotSave": "वीडियो सहेज नहीं सका: {error}",
+  "@swingAnalyzerCouldNotSave": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "swingAnalyzerShareText": "TeeStats से मेरा स्विंग ट्रेस देखें! 🏌️",
+  "swingAnalyzerShotAnalysis": "शॉट विश्लेषण",
+  "swingAnalyzerCarry": "कैरी",
+  "swingAnalyzerHeight": "ऊंचाई",
+  "swingAnalyzerLaunch": "लॉन्च",
+  "swingAnalyzerPathNotDetected": "बॉल पथ का पता नहीं चला। बेहतर रोशनी या नज़दीकी कोण आज़माएं।",
+  "swingAnalyzerAnotherSwing": "एक और स्विंग विश्लेषण करें",
+
+  "scorecardUploadTitle": "अपना स्कोरकार्ड स्कैन करें",
+  "scorecardUploadDesc": "AI पार, यार्डेज और हैंडीकैप सहित होल-दर-होल डेटा निकालेगा।",
+  "scorecardUploadChooseSource": "स्रोत चुनें",
+  "scorecardUploadTakePhoto": "फोटो लें",
+  "scorecardUploadFromGallery": "गैलरी से चुनें",
+  "scorecardUploadAnalyzing": "स्कोरकार्ड का विश्लेषण हो रहा है…",
+  "scorecardUploadAnalyzingNote": "इसमें आमतौर पर कुछ सेकंड लगते हैं",
+  "scorecardUploadReviewTitle": "स्कोरकार्ड समीक्षा करें",
+  "scorecardUploadUploadTitle": "स्कोरकार्ड अपलोड करें",
+  "scorecardUploadCourseName": "कोर्स का नाम",
+  "scorecardUploadCourseNameHint": "कोर्स का नाम दर्ज करें",
+  "scorecardUploadCityState": "शहर, राज्य",
+  "scorecardUploadSelectTee": "टी चुनें",
+  "scorecardUploadRetake": "फिर से लें",
+  "scorecardUploadSaveUse": "सहेजें और उपयोग करें",
+  "scorecardUploadNoTeeData": "कोई टी डेटा नहीं निकाला गया। अधिक स्पष्ट फोटो आज़माएं।",
+  "scorecardUploadFailed": "निष्कर्षण विफल। अधिक स्पष्ट फोटो आज़माएं।\n{error}",
+  "@scorecardUploadFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "scorecardUploadRating": "रेटिंग",
+  "scorecardUploadSlope": "स्लोप",
+  "scorecardUploadHoleHeader": "होल",
+  "scorecardUploadParHeader": "पार",
+  "scorecardUploadYdsHeader": "गज",
+  "scorecardUploadHcpHeader": "HCP",
+  "scorecardUploadRatingFooter": "रेटिंग {rating}",
+  "@scorecardUploadRatingFooter": {
+    "placeholders": {
+      "rating": { "type": "String" }
+    }
+  },
+  "scorecardUploadSlopeFooter": "स्लोप {slope}",
+  "@scorecardUploadSlopeFooter": {
+    "placeholders": {
+      "slope": { "type": "String" }
+    }
+  },
+  "scorecardUploadValidation": "कृपया कोर्स का नाम दर्ज करें।",
+  "scorecardUploadMissingScores": "कुछ स्कोर अनुपस्थित हैं",
+  "scorecardUploadMissingMsg": "कुछ होल अभी भी 0 दिखाते हैं। उन्हें 0 स्ट्रोक के रूप में सहेजा जाएगा — आप आयात के बाद उन्हें संपादित कर सकते हैं।",
+  "scorecardUploadImportAnyway": "फिर भी आयात करें",
+  "scorecardUploadFixFirst": "पहले ठीक करें",
+
+  "scorecardImportCourse": "कोर्स",
+  "scorecardImportCourseNameHint": "कोर्स का नाम",
+  "scorecardImportLocationHint": "स्थान — ऊपर एक कोर्स खोजें",
+  "scorecardImportNoCoursesFound": "कोई गोल्फ कोर्स नहीं मिला",
+  "scorecardImportButton": "आयात करें",
+  "scorecardImportConditions": "राउंड की स्थितियां",
+  "scorecardImportAvgTemp": "औसत तापमान",
+  "scorecardImportAvgWind": "औसत हवा",
+  "scorecardImportConditionsLabel": "स्थितियां",
+  "scorecardImportWeatherUnavailable": "मौसम उपलब्ध नहीं",
+  "scorecardImportToday": "आज",
+  "scorecardImportHowToAdd": "आप अपना स्कोरकार्ड कैसे जोड़ना चाहेंगे?",
+  "scorecardImportTakePhoto": "फोटो लें",
+  "scorecardImportPhotoDesc": "अपने कागज़ी स्कोरकार्ड की फोटो लें",
+  "scorecardImportFromLibrary": "लाइब्रेरी से चुनें",
+  "scorecardImportLibraryDesc": "एक मौजूदा फोटो चुनें",
+  "scorecardImportReading": "आपका स्कोरकार्ड पढ़ा जा रहा है…",
+  "scorecardImportAnalyzing": "AI से विश्लेषण हो रहा है — इसमें कुछ सेकंड लगते हैं",
+  "scorecardImportUnableRead": "स्कोरकार्ड पढ़ने में असमर्थ",
+  "scorecardImportConnectionError": "AI सेवा तक नहीं पहुंचा जा सका। अपना कनेक्शन जांचें और पुनः प्रयास करें।",
+
+  "notifPersonalBestTitle": "🏆 नया व्यक्तिगत सर्वश्रेष्ठ!",
+  "notifPersonalBestMsg": "आपने {score} स्कोर किया — अब तक का आपका सर्वश्रेष्ठ राउंड। इसी तरह जारी रखें!",
+  "@notifPersonalBestMsg": {
+    "placeholders": {
+      "score": { "type": "String" }
+    }
+  },
+  "notifTeeTime1HourTitle": "⛳ 1 घंटे में टी टाइम!",
+  "notifTeeTime1HourMsg": "{courseName} पर अपने राउंड के लिए तैयार हो जाएं।",
+  "@notifTeeTime1HourMsg": {
+    "placeholders": {
+      "courseName": { "type": "String" }
+    }
+  },
+  "notifTeeTime15MinTitle": "⛳ 15 मिनट में टी टाइम!",
+  "notifTeeTime15MinMsg": "{courseName} पर पहले टी की ओर जाएं।",
+  "@notifTeeTime15MinMsg": {
+    "placeholders": {
+      "courseName": { "type": "String" }
+    }
+  },
+  "notifStreakTitle": "⛳ कोर्स पर जाने का समय!",
+  "notifStreakMsg": "आपके पिछले राउंड के बाद काफी समय हो गया है। निकल पड़ें!",
+
+  "noNotificationsTitle": "अभी तक कोई सूचना नहीं",
+  "noNotificationsDesc": "AI-व्यक्तिगत अलर्ट अनलॉक करने के लिए\nअधिक राउंड खेलें",
+
+  "widgetLeaderboardTitle": "लाइव लीडरबोर्ड",
+  "widgetLeaderboardUpdates": "प्रत्येक होल के बाद अपडेट",
+  "widgetLeaderboardPos": "स्थान",
+  "widgetLeaderboardPlayer": "खिलाड़ी",
+  "widgetLeaderboardThru": "थ्रू",
+  "widgetLeaderboardScore": "स्कोर",
+  "widgetLeaderboardThruHoles": "थ्रू {holes}",
+  "@widgetLeaderboardThruHoles": {
+    "placeholders": {
+      "holes": { "type": "String" }
+    }
+  },
+  "widgetLeaderboardTeeOff": "टी ऑफ",
+  "widgetLeaderboardFinished": "F",
+  "widgetLeaderboardInvited": "आमंत्रित",
+  "widgetLeaderboardDeclined": "अस्वीकृत",
+
+  "widgetUnfinishedRound": "अधूरा राउंड",
+  "widgetHolesPlayed": "{played} / {total} होल खेले",
+  "@widgetHolesPlayed": {
+    "placeholders": {
+      "played": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "widgetResumeRound": "राउंड फिर शुरू करें",
+  "widgetDiscardTitle": "राउंड छोड़ें?",
+  "widgetDiscardMsg": "\"{courseName}\" पर सभी प्रगति स्थायी रूप से खो जाएगी।",
+  "@widgetDiscardMsg": {
+    "placeholders": {
+      "courseName": { "type": "String" }
+    }
+  },
+  "widgetKeep": "रखें",
+  "widgetDiscard": "छोड़ें",
+
+  "widgetClubsHint": "प्रत्येक शॉट ट्रैक करने के लिए नीचे क्लब टैप करें",
+  "widgetClubsSelected": "{max} में से {count} क्लब चुने गए",
+  "@widgetClubsSelected": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "max": { "type": "int" }
+    }
+  },
+
+  "widgetGolfDNA": "गोल्फ DNA",
+  "widgetProAnalysis": "प्रो विश्लेषण",
+  "widgetPower": "शक्ति",
+  "widgetAccuracy": "सटीकता",
+  "widgetPutting": "पटिंग",
+  "widgetStrengthsWeaknesses": "ताकत और कमज़ोरियां",
+  "widgetPerformanceTrends": "प्रदर्शन रुझान",
+  "widgetTraitAnalysis": "विशेषता विश्लेषण",
+  "widgetDrivingPower": "ड्राइविंग शक्ति",
+  "widgetConsistency": "निरंतरता",
+  "widgetRiskLevel": "जोखिम स्तर",
+  "widgetStamina": "सहनशक्ति",
+  "widgetAIRoundSummary": "AI राउंड सारांश",
+  "widgetAnalyzingRound": "आपके राउंड का विश्लेषण हो रहा है…",
+  "widgetGemini": "Gemini",
+  "widgetStrength": "ताकत",
+  "widgetWeakness": "कमज़ोरी",
+  "widgetFocusArea": "फोकस क्षेत्र",
+  "widgetPlayStyle": "प्ले स्टाइल",
+  "widgetAIPowered": "AI संचालित",
+  "widgetUpdated": "{date} को अपडेट किया गया",
+  "@widgetUpdated": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "widgetUpdatedToday": "आज",
+  "widgetUpdatedYesterday": "कल",
+  "widgetUpdatedDaysAgo": "{days} दिन पहले",
+  "@widgetUpdatedDaysAgo": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+
+  "timeJustNow": "अभी-अभी",
+  "timeMinutesAgo": "{minutes} मिनट पहले",
+  "@timeMinutesAgo": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "timeHoursAgo": "{hours} घंटे पहले",
+  "@timeHoursAgo": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "timeDaysAgo": "{days} दिन पहले",
+  "@timeDaysAgo": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  }
+}

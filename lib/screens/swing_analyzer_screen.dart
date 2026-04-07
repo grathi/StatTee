@@ -13,6 +13,7 @@ import 'package:video_player/video_player.dart';
 import '../models/swing_analysis.dart';
 import '../services/swing_analysis_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/l10n_extension.dart';
 import '../widgets/ball_tracer_view.dart';
 
 enum _AnalyzerState { idle, picking, recording, hinting, uploading, analyzing, result, error }
@@ -205,7 +206,7 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
     if (mounted) {
       await Share.shareXFiles(
         [XFile(file.path)],
-        text: 'Check out my swing trace from TeeStats! 🏌️',
+        text: context.l10n.swingAnalyzerShareText,
       );
     }
   }
@@ -215,7 +216,7 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
     if (path == null || !File(path).existsSync()) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No video file to save')),
+          SnackBar(content: Text(context.l10n.swingAnalyzerNoVideoFile)),
         );
       }
       return;
@@ -224,13 +225,13 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
       await Gal.putVideo(path);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Video saved to gallery')),
+          SnackBar(content: Text(context.l10n.swingAnalyzerVideoSaved)),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not save video: $e')),
+          SnackBar(content: Text(context.l10n.swingAnalyzerCouldNotSave(e.toString()))),
         );
       }
     }
@@ -246,19 +247,19 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
       appBar: AppBar(
         backgroundColor: c.scaffoldBg,
         foregroundColor: c.primaryText,
-        title: Text('Swing Analyzer',
+        title: Text(context.l10n.swingAnalyzerTitle,
             style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w700, color: c.primaryText)),
         actions: [
           if (_state == _AnalyzerState.result) ...[
             IconButton(
               icon: const Icon(Icons.download_rounded),
               onPressed: _saveVideo,
-              tooltip: 'Save to gallery',
+              tooltip: context.l10n.swingAnalyzerSaveToGallery,
             ),
             IconButton(
               icon: const Icon(Icons.share_rounded),
               onPressed: _shareFrame,
-              tooltip: 'Share',
+              tooltip: context.l10n.swingAnalyzerShare,
             ),
           ],
         ],
@@ -276,13 +277,13 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
         return _buildIdle(c);
       case _AnalyzerState.picking:
       case _AnalyzerState.recording:
-        return _buildLoading(c, 'Loading video…');
+        return _buildLoading(c, context.l10n.swingAnalyzerLoadingVideo);
       case _AnalyzerState.hinting:
         return _buildHinting(c);
       case _AnalyzerState.uploading:
-        return _buildAnalyzing(c, title: 'Uploading video…');
+        return _buildAnalyzing(c, title: context.l10n.swingAnalyzerUploading);
       case _AnalyzerState.analyzing:
-        return _buildAnalyzing(c, title: 'Analyzing ball flight…');
+        return _buildAnalyzing(c, title: context.l10n.swingAnalyzerAnalyzing);
       case _AnalyzerState.result:
         return _buildResult(c);
       case _AnalyzerState.error:
@@ -317,8 +318,8 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
               Expanded(
                 child: Text(
                   videoUnavailable
-                      ? (hasHint ? 'Tap to reposition the ball' : 'Preview unavailable — tap where the ball is')
-                      : (hasHint ? 'Tap to reposition' : 'Tap on the golf ball'),
+                      ? (hasHint ? 'Tap to reposition the ball' : context.l10n.swingAnalyzerPreviewUnavailable)
+                      : (hasHint ? context.l10n.swingAnalyzerReposition : context.l10n.swingAnalyzerTapBall),
                   style: TextStyle(
                     color: c.primaryText,
                     fontFamily: 'Nunito',
@@ -428,7 +429,7 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
                         side: BorderSide(color: c.accentBorder),
                       ),
                     ),
-                    child: Text('Skip',
+                    child: Text(context.l10n.swingAnalyzerSkip,
                         style: TextStyle(
                             fontFamily: 'Nunito',
                             fontSize: 15,
@@ -462,7 +463,7 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
                             size: 18,
                             color: hasHint ? Colors.white : c.secondaryText),
                         const SizedBox(width: 8),
-                        Text('Analyze',
+                        Text(context.l10n.swingAnalyzerAnalyze,
                             style: TextStyle(
                                 fontFamily: 'Nunito',
                                 fontSize: 15,
@@ -503,7 +504,7 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
             ),
             const SizedBox(height: 24),
             Text(
-              'AI Swing Tracer',
+              context.l10n.swingAnalyzerAITracerTitle,
               style: TextStyle(
                   fontFamily: 'Nunito',
                   color: c.primaryText,
@@ -512,7 +513,7 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Record or upload a golf swing video.\nGemini AI will track the ball and overlay a live tracer.',
+              context.l10n.swingAnalyzerAITracerDesc,
               textAlign: TextAlign.center,
               style: TextStyle(
                   color: c.secondaryText, fontSize: 14, height: 1.5),
@@ -532,13 +533,13 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
                       borderRadius: BorderRadius.circular(28),
                     ),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.videocam_rounded, color: Colors.white, size: 20),
-                      SizedBox(width: 10),
-                      Text('Analyze Swing',
-                          style: TextStyle(
+                      const Icon(Icons.videocam_rounded, color: Colors.white, size: 20),
+                      const SizedBox(width: 10),
+                      Text(context.l10n.swingAnalyzerButton,
+                          style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16,
                               fontWeight: FontWeight.w700)),
@@ -570,7 +571,7 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
               child: Icon(Icons.sports_golf_rounded, color: c.accent, size: 22),
             ),
             const SizedBox(width: 12),
-            Text('Coming Soon',
+            Text(context.l10n.swingAnalyzerComingSoon,
                 style: TextStyle(
                     color: c.primaryText,
                     fontFamily: 'Nunito',
@@ -579,13 +580,13 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
           ],
         ),
         content: Text(
-          'AI Swing Tracer is currently under development. Stay tuned for the update!',
+          context.l10n.swingAnalyzerComingSoonMsg,
           style: TextStyle(color: c.secondaryText, fontSize: 14, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Got it',
+            child: Text(context.l10n.swingAnalyzerGotIt,
                 style: TextStyle(
                     color: c.accent,
                     fontWeight: FontWeight.w700)),
@@ -729,7 +730,7 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Shot Analysis',
+                Text(context.l10n.swingAnalyzerShotAnalysis,
                     style: TextStyle(
                         fontFamily: 'Nunito',
                         color: c.primaryText,
@@ -738,13 +739,13 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    _statTile('Carry', '${analysis.shotData.carryYards.round()} yds',
+                    _statTile(context.l10n.swingAnalyzerCarry, '${analysis.shotData.carryYards.round()} yds',
                         Icons.straighten_rounded),
                     const SizedBox(width: 12),
-                    _statTile('Height', '${analysis.shotData.maxHeightYards.round()} yds',
+                    _statTile(context.l10n.swingAnalyzerHeight, '${analysis.shotData.maxHeightYards.round()} yds',
                         Icons.height_rounded),
                     const SizedBox(width: 12),
-                    _statTile('Launch', '${analysis.shotData.launchAngle.round()}°',
+                    _statTile(context.l10n.swingAnalyzerLaunch, '${analysis.shotData.launchAngle.round()}°',
                         Icons.trending_up_rounded),
                   ],
                 ),
@@ -767,7 +768,7 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Ball path not detected. Try better lighting or a closer angle.',
+                            context.l10n.swingAnalyzerPathNotDetected,
                             style: TextStyle(
                                 color: c.secondaryText,
                                 fontSize: 13),
@@ -793,13 +794,13 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
                         borderRadius: BorderRadius.circular(28),
                       ),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.add_rounded, color: Colors.white),
-                        SizedBox(width: 8),
-                        Text('Analyze Another Swing',
-                            style: TextStyle(
+                        const Icon(Icons.add_rounded, color: Colors.white),
+                        const SizedBox(width: 8),
+                        Text(context.l10n.swingAnalyzerAnotherSwing,
+                            style: const TextStyle(
                                 fontFamily: 'Nunito',
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white)),
@@ -871,7 +872,7 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
                   color: Color(0xFFFF6B6B), size: 30),
             ),
             const SizedBox(height: 20),
-            Text('Analysis Failed',
+            Text(context.l10n.swingAnalyzerFailed,
                 style: TextStyle(
                     fontFamily: 'Nunito',
                     color: c.primaryText,
@@ -879,7 +880,7 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
                     fontWeight: FontWeight.w700)),
             const SizedBox(height: 10),
             Text(
-              _errorMessage ?? 'Something went wrong. Please try again.',
+              _errorMessage ?? context.l10n.swingAnalyzerFailedMsg,
               textAlign: TextAlign.center,
               style: TextStyle(
                   color: c.secondaryText,
@@ -897,8 +898,8 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
                     borderRadius: BorderRadius.circular(28),
                   ),
                 ),
-                child: const Text('Try Again',
-                    style: TextStyle(
+                child: Text(context.l10n.swingAnalyzerTryAgain,
+                    style: const TextStyle(
                         fontFamily: 'Nunito',
                         fontWeight: FontWeight.w700,
                         color: Colors.white)),
@@ -1010,14 +1011,14 @@ class _CameraRecorderScreenState extends State<_CameraRecorderScreen> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.fiber_manual_record,
+                    const Icon(Icons.fiber_manual_record,
                         color: Colors.white, size: 10),
-                    SizedBox(width: 5),
-                    Text('REC',
-                        style: TextStyle(
+                    const SizedBox(width: 5),
+                    Text(context.l10n.swingAnalyzerRecording,
+                        style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,
                             fontWeight: FontWeight.w700)),
@@ -1056,7 +1057,7 @@ class _NoTracePreviewState extends State<_NoTracePreview> {
             Icon(Icons.visibility_off_rounded,
                 color: c.secondaryText, size: 36),
             const SizedBox(height: 12),
-            Text('Ball not detected in video',
+            Text(context.l10n.swingAnalyzerBallNotDetected,
                 style: TextStyle(color: c.secondaryText, fontSize: 14)),
           ],
         ),

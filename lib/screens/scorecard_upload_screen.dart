@@ -6,6 +6,7 @@ import 'package:superellipse_shape/superellipse_shape.dart';
 import '../models/course_model.dart';
 import '../services/course_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/l10n_extension.dart';
 
 class ScorecardUploadScreen extends StatefulWidget {
   const ScorecardUploadScreen({super.key, this.initialCourseName, this.initialLocation});
@@ -82,7 +83,7 @@ class _ScorecardUploadScreenState extends State<ScorecardUploadScreen> {
         _locationCtrl.text = course.location.isNotEmpty ? course.location : _locationCtrl.text;
       }
     } catch (e) {
-      if (mounted) setState(() { _error = 'Extraction failed. Try a clearer photo.\n$e'; _analyzing = false; });
+      if (mounted) setState(() { _error = context.l10n.scorecardUploadFailed(e.toString()); _analyzing = false; });
     }
   }
 
@@ -102,7 +103,7 @@ class _ScorecardUploadScreenState extends State<ScorecardUploadScreen> {
     final course = _extracted;
     if (course == null) return;
     final name = _nameCtrl.text.trim();
-    if (name.isEmpty) { setState(() => _error = 'Please enter the course name.'); return; }
+    if (name.isEmpty) { setState(() => _error = context.l10n.scorecardUploadValidation); return; }
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
     final updated = CourseData(
@@ -135,7 +136,7 @@ class _ScorecardUploadScreenState extends State<ScorecardUploadScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          _extracted != null ? 'Review Scorecard' : 'Upload Scorecard',
+          _extracted != null ? context.l10n.scorecardUploadReviewTitle : context.l10n.scorecardUploadUploadTitle,
           style: TextStyle(color: c.primaryText, fontWeight: FontWeight.w700, fontSize: _body * 1.1),
         ),
         centerTitle: true,
@@ -182,13 +183,13 @@ class _ScorecardUploadScreenState extends State<ScorecardUploadScreen> {
                   child: Icon(Icons.document_scanner_outlined, color: c.accent, size: 30),
                 ),
                 const SizedBox(height: 16),
-                Text('Scan Your Scorecard',
+                Text(context.l10n.scorecardUploadTitle,
                     style: TextStyle(color: c.primaryText, fontSize: _body * 1.1, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 6),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
-                    'AI will extract hole-by-hole data including par, yardage, and handicap.',
+                    context.l10n.scorecardUploadDesc,
                     textAlign: TextAlign.center,
                     style: TextStyle(color: c.secondaryText, fontSize: _label * 1.1, height: 1.5),
                   ),
@@ -198,13 +199,13 @@ class _ScorecardUploadScreenState extends State<ScorecardUploadScreen> {
           ),
           const SizedBox(height: 28),
 
-          _sectionLabel(c, 'CHOOSE SOURCE'),
+          _sectionLabel(c, context.l10n.scorecardUploadChooseSource),
           const SizedBox(height: 12),
 
           // Camera button
           _actionButton(
             icon:   Icons.camera_alt_rounded,
-            label:  'Take Photo',
+            label:  context.l10n.scorecardUploadTakePhoto,
             onTap:  () => _pickImage(ImageSource.camera),
             c:      c,
             filled: true,
@@ -213,7 +214,7 @@ class _ScorecardUploadScreenState extends State<ScorecardUploadScreen> {
           // Gallery button
           _actionButton(
             icon:   Icons.photo_library_rounded,
-            label:  'Choose from Gallery',
+            label:  context.l10n.scorecardUploadFromGallery,
             onTap:  () => _pickImage(ImageSource.gallery),
             c:      c,
             filled: false,
@@ -249,10 +250,10 @@ class _ScorecardUploadScreenState extends State<ScorecardUploadScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          Text('Analyzing scorecard…',
+          Text(context.l10n.scorecardUploadAnalyzing,
               style: TextStyle(color: c.primaryText, fontSize: _body, fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
-          Text('This usually takes a few seconds',
+          Text(context.l10n.scorecardUploadAnalyzingNote,
               style: TextStyle(color: c.tertiaryText, fontSize: _label)),
         ],
       ),
@@ -282,13 +283,13 @@ class _ScorecardUploadScreenState extends State<ScorecardUploadScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _sectionLabel(c, 'COURSE NAME'),
+                _sectionLabel(c, context.l10n.scorecardUploadCourseName),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _nameCtrl,
                   style: TextStyle(color: c.primaryText, fontSize: _body * 1.1, fontWeight: FontWeight.w700),
                   decoration: InputDecoration(
-                    hintText:        'Enter course name',
+                    hintText:        context.l10n.scorecardUploadCourseNameHint,
                     hintStyle:       TextStyle(color: c.tertiaryText, fontWeight: FontWeight.w400),
                     filled:          true,
                     fillColor:       c.fieldBg,
@@ -310,7 +311,7 @@ class _ScorecardUploadScreenState extends State<ScorecardUploadScreen> {
                   controller: _locationCtrl,
                   style: TextStyle(color: c.secondaryText, fontSize: _body),
                   decoration: InputDecoration(
-                    hintText:        'City, State',
+                    hintText:        context.l10n.scorecardUploadCityState,
                     hintStyle:       TextStyle(color: c.tertiaryText),
                     filled:          true,
                     fillColor:       c.fieldBg,
@@ -333,11 +334,11 @@ class _ScorecardUploadScreenState extends State<ScorecardUploadScreen> {
           const SizedBox(height: 20),
 
           if (!hasTees) ...[
-            _errorBanner(c, 'No tee data was extracted. Try a clearer photo.'),
+            _errorBanner(c, context.l10n.scorecardUploadNoTeeData),
           ] else ...[
             // Tee chips
             if (course.tees.length > 1) ...[
-              _sectionLabel(c, 'SELECT TEE'),
+              _sectionLabel(c, context.l10n.scorecardUploadSelectTee),
               const SizedBox(height: 10),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -404,7 +405,7 @@ class _ScorecardUploadScreenState extends State<ScorecardUploadScreen> {
                       ),
                     ),
                     alignment: Alignment.center,
-                    child: Text('Retake',
+                    child: Text(context.l10n.scorecardUploadRetake,
                         style: TextStyle(color: c.secondaryText, fontWeight: FontWeight.w600, fontSize: _body)),
                   ),
                 ),
@@ -424,7 +425,7 @@ class _ScorecardUploadScreenState extends State<ScorecardUploadScreen> {
                     child: _saving
                         ? const SizedBox(width: 18, height: 18,
                             child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : Text('Save & Use',
+                        : Text(context.l10n.scorecardUploadSaveUse,
                             style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: _body)),
                   ),
                 ),
@@ -443,7 +444,12 @@ class _ScorecardUploadScreenState extends State<ScorecardUploadScreen> {
     final displayHoles = tee.effectiveHoles;
     final hasYardage   = displayHoles.any((h) => h.yardage  > 0);
     final hasHandicap  = displayHoles.any((h) => h.handicap > 0);
-    final cols         = ['HOLE', 'PAR', if (hasYardage) 'YDS', if (hasHandicap) 'HCP'];
+    final cols         = [
+      context.l10n.scorecardUploadHoleHeader,
+      context.l10n.scorecardUploadParHeader,
+      if (hasYardage) context.l10n.scorecardUploadYdsHeader,
+      if (hasHandicap) context.l10n.scorecardUploadHcpHeader,
+    ];
 
     return Container(
       decoration: ShapeDecoration(
@@ -506,12 +512,12 @@ class _ScorecardUploadScreenState extends State<ScorecardUploadScreen> {
                 children: [
                   Icon(Icons.sports_golf_rounded, size: 13, color: c.accent),
                   const SizedBox(width: 6),
-                  Text('Rating ${tee.courseRating.toStringAsFixed(1)}',
+                  Text(context.l10n.scorecardUploadRatingFooter(tee.courseRating.toStringAsFixed(1)),
                       style: TextStyle(color: c.accent, fontSize: _label, fontWeight: FontWeight.w600)),
                   Container(width: 1, height: 12,
                       margin: const EdgeInsets.symmetric(horizontal: 10),
                       color: c.accentBorder),
-                  Text('Slope ${tee.slopeRating}',
+                  Text(context.l10n.scorecardUploadSlopeFooter(tee.slopeRating.toString()),
                       style: TextStyle(color: c.accent, fontSize: _label, fontWeight: FontWeight.w600)),
                 ],
               ),

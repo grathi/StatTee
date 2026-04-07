@@ -22,6 +22,7 @@ import '../services/onboarding_service.dart';
 import 'round_summary_screen.dart';
 import 'group_round_results_screen.dart';
 import '../widgets/live_leaderboard_sheet.dart';
+import '../utils/l10n_extension.dart';
 
 class ScorecardScreen extends StatefulWidget {
   final String roundId;
@@ -310,7 +311,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Error saving: $e'),
+              content: Text(context.l10n.scorecardErrorSaving(e.toString())),
               backgroundColor: const Color(0xFFE53935)),
         );
       }
@@ -485,8 +486,8 @@ class _ScorecardScreenState extends State<ScorecardScreen>
               _buildTopBar(c),
               _buildProgressDots(c),
               TipBanner(
-                title: 'Scoring a Round',
-                body: 'Enter your score, putts, fairway and GIR for each hole. Tap the club to track your club selection.',
+                title: context.l10n.scorecardScoringARound,
+                body: context.l10n.scorecardInstructions,
                 hasSeenFn: OnboardingService.hasSeenScorecardTip,
                 markSeenFn: OnboardingService.markScorecardTipSeen,
               ),
@@ -579,7 +580,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                     children: [
                       Icon(Icons.people_rounded, size: 12, color: c.accent),
                       const SizedBox(width: 3),
-                      Text('Playing with friends',
+                      Text(context.l10n.scorecardPlayingWithFriends,
                           style: TextStyle(color: c.accent, fontSize: _label * 0.9, fontWeight: FontWeight.w600)),
                     ],
                   ),
@@ -825,7 +826,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Text('Edit Hole ${original.hole}',
+                    Text(ctx.l10n.scorecardEditHole(original.hole),
                         style: TextStyle(
                             fontFamily: 'Nunito',
                             color: c.primaryText,
@@ -939,7 +940,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                                 strokeWidth: 2.5,
                                 valueColor: AlwaysStoppedAnimation(Colors.white)),
                           )
-                        : Text('Save Changes',
+                        : Text(ctx.l10n.profileSaveChanges,
                             style: TextStyle(
                                 fontFamily: 'Nunito',
                                 fontSize: (sw * 0.046).clamp(16.0, 20.0),
@@ -961,7 +962,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'SCORECARD',
+          context.l10n.scorecardScorecardLabel,
           style: TextStyle(fontFamily: 'Nunito',
               color: c.secondaryText,
               fontSize: _label,
@@ -982,7 +983,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
             children: _saved.map((h) {
               final diff  = h.score - h.par;
               final color = _scoreColor(diff);
-              final label = _scoreLabel(diff);
+              final label = _scoreLabelL10n(context, diff);
               return GestureDetector(
                 onTap: () => _resetForHole(h.hole),
                 child: Container(
@@ -1074,7 +1075,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
 
   // ── Next / Complete button ─────────────────────────────────────────────────
   Widget _buildNextButton(AppColors c) {
-    final label = _isLastHole ? 'Finish Round' : 'Next Hole';
+    final label = _isLastHole ? context.l10n.scorecardFinishRound : context.l10n.scorecardNextHole;
     final btnHeight = (_sh * 0.068).clamp(52.0, 64.0);
 
     final mainButton = GestureDetector(
@@ -1311,7 +1312,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 10),
                                 child: Text(
-                                  'YDS',
+                                  context.l10n.scorecardYds,
                                   style: TextStyle(
                                     color:         c.secondaryText,
                                     fontSize:      (_sw * 0.038).clamp(13.0, 17.0),
@@ -1339,7 +1340,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                                       color: c.secondaryText, size: 11),
                                   const SizedBox(width: 4),
                                   Text(
-                                    'PLAYS LIKE ${_playsLike(holeData.yardage)} YDS',
+                                    context.l10n.scorecardPlaysLike(_playsLike(holeData.yardage).toString()),
                                     style: TextStyle(
                                       color:         c.secondaryText,
                                       fontSize:      (_sw * 0.024).clamp(9.0, 11.0),
@@ -1417,24 +1418,24 @@ class _ScorecardScreenState extends State<ScorecardScreen>
 
   String _smartCaddyTip() {
     if (_saved.length < 3) {
-      if (_par == 3) return 'Par 3: commit to one club and trust the swing.';
-      return 'Play your game — insights unlock after 3 holes.';
+      if (_par == 3) return context.l10n.scorecardTipPar3;
+      return context.l10n.scorecardTipInsightsUnlock;
     }
     final avgPutts = _saved.fold(0, (s, h) => s + h.putts) / _saved.length;
     final fhTotal  = _saved.where((h) => h.par >= 4).length;
     final fhCount  = _saved.where((h) => h.par >= 4 && h.fairwayHit).length;
     final girCount = _saved.where((h) => h.gir).length;
     if (avgPutts > 2.3) {
-      return 'Averaging \${avgPutts.toStringAsFixed(1)} putts — focus on lag putting from distance.';
+      return context.l10n.scorecardTipAvgPutts(avgPutts.toStringAsFixed(1));
     }
     if (fhTotal > 0 && fhCount / fhTotal < 0.4) {
-      return 'Only \${(fhCount / fhTotal * 100).round()}% fairways hit — consider a 3-wood off the tee.';
+      return context.l10n.scorecardTipFairways((fhCount / fhTotal * 100).round().toString());
     }
     if (_saved.isNotEmpty && girCount / _saved.length < 0.3) {
-      return 'Approaches struggling — aim for the fat of the green today.';
+      return context.l10n.scorecardTipApproach;
     }
-    if (_par == 3) return 'Par 3: commit to one club and trust the swing.';
-    return 'Solid round so far — keep the same rhythm and tempo.';
+    if (_par == 3) return context.l10n.scorecardTipPar3;
+    return context.l10n.scorecardTipSolid;
   }
 
   Widget _buildSmartCaddyCard(AppColors c) {
@@ -1478,7 +1479,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                   Row(
                     children: [
                       Text(
-                        'AI CADDY',
+                        context.l10n.scorecardAICaddy,
                         style: TextStyle(
                           color:         aiColor,
                           fontSize:      10.0,
@@ -1530,7 +1531,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
   Widget _buildScoringCard(AppColors c) {
     final diff       = _score - _par;
     final scoreCol   = _scoreColor(diff);
-    final scoreLabel = _scoreLabel(diff);
+    final scoreLabel = _scoreLabelL10n(context, diff);
     final puttsMax   = _score.clamp(0, 6);
 
     return Container(
@@ -1551,7 +1552,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('SCORE', style: TextStyle(
+                Text(context.l10n.scorecardScore, style: TextStyle(
                   color: c.tertiaryText, fontSize: _label * 0.85,
                   fontWeight: FontWeight.w700, letterSpacing: 1.2,
                 )),
@@ -1587,7 +1588,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
             SizedBox(height: _sh * 0.020),
 
             // ── Putts row ───────────────────────────────────────────────
-            Text('PUTTS', style: TextStyle(
+            Text(context.l10n.scorecardPutts, style: TextStyle(
               color: c.tertiaryText, fontSize: _label * 0.85,
               fontWeight: FontWeight.w700, letterSpacing: 1.2,
             )),
@@ -1638,14 +1639,14 @@ class _ScorecardScreenState extends State<ScorecardScreen>
             // ── Fairway Hit + GIR toggles ───────────────────────────────
             if (_par >= 4) ...[
               _BigToggle(
-                label: 'FAIRWAY HIT', icon: Icons.grass_rounded,
+                label: context.l10n.scorecardFairwayHit, icon: Icons.grass_rounded,
                 value: _fairwayHit, c: c, sw: _sw, sh: _sh,
                 onTap: () => setState(() => _fairwayHit = !_fairwayHit),
               ),
               SizedBox(height: _sh * 0.012),
             ],
             _BigToggle(
-              label: 'GREEN IN REGULATION', icon: Icons.flag_rounded,
+              label: context.l10n.scorecardGIR, icon: Icons.flag_rounded,
               value: _gir, c: c, sw: _sw, sh: _sh,
               onTap: () => setState(() => _gir = !_gir),
             ),
@@ -1675,10 +1676,10 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                     const SizedBox(width: 6),
                     Text(
                       _currentHoleShots.isEmpty
-                          ? 'Track shots'
+                          ? context.l10n.scorecardTrackShots
                           : _currentHoleShots.length == 1
-                              ? 'Tee set'
-                              : '${_currentHoleShots.length - 1} shot${(_currentHoleShots.length - 1) == 1 ? '' : 's'} tracked',
+                              ? context.l10n.scorecardTeeSet
+                              : context.l10n.scorecardShotsTracked(_currentHoleShots.length - 1),
                       style: TextStyle(
                         fontSize: _label,
                         color: c.accent,
@@ -1699,7 +1700,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
             SizedBox(height: _sh * 0.020),
 
             // ── Club selector ────────────────────────────────────────────
-            Text('CLUB', style: TextStyle(
+            Text(context.l10n.scorecardClub, style: TextStyle(
               color: c.tertiaryText, fontSize: _label * 0.85,
               fontWeight: FontWeight.w700, letterSpacing: 1.2,
             )),
@@ -1755,7 +1756,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                 child: Icon(Icons.flag_rounded, color: c.accent, size: 26),
               ),
               const SizedBox(height: 16),
-              Text('Leave Round?',
+              Text(context.l10n.scorecardLeaveTitle,
                   style: TextStyle(
                     fontFamily: 'Nunito',
                     color: c.primaryText,
@@ -1764,7 +1765,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                   )),
               const SizedBox(height: 8),
               Text(
-                'Your progress is saved automatically.\nYou can resume this round from the home screen.',
+                context.l10n.scorecardLeaveBody,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: c.secondaryText,
@@ -1824,7 +1825,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                       const Icon(Icons.save_rounded,
                           color: Colors.white, size: 18),
                       const SizedBox(width: 8),
-                      Text('Save & Exit',
+                      Text(context.l10n.scorecardSaveAndExit,
                           style: TextStyle(
                             fontFamily: 'Nunito',
                             color: Colors.white,
@@ -1852,7 +1853,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                           ),
                         ),
                         alignment: Alignment.center,
-                        child: Text('Keep Playing',
+                        child: Text(context.l10n.scorecardKeepPlaying,
                             style: TextStyle(
                               fontFamily: 'Nunito',
                               color: c.primaryText,
@@ -1898,7 +1899,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
                           ),
                         ),
                         alignment: Alignment.center,
-                        child: Text('Abandon',
+                        child: Text(context.l10n.scorecardAbandon,
                             style: TextStyle(
                               fontFamily: 'Nunito',
                               color: const Color(0xFFE53935),
@@ -1926,12 +1927,12 @@ class _ScorecardScreenState extends State<ScorecardScreen>
     return const Color(0xFFE53935);                 // Double+
   }
 
-  String _scoreLabel(int diff) {
-    if (diff <= -2) return diff == -2 ? 'Eagle' : 'Albatross';
-    if (diff == -1) return 'Birdie';
-    if (diff == 0)  return 'Par';
-    if (diff == 1)  return 'Bogey';
-    if (diff == 2)  return 'Double';
+  String _scoreLabelL10n(BuildContext context, int diff) {
+    if (diff <= -2) return diff == -2 ? context.l10n.scorecardEagle : context.l10n.scorecardAlbatross;
+    if (diff == -1) return context.l10n.scorecardBirdie;
+    if (diff == 0)  return context.l10n.scorecardPar;
+    if (diff == 1)  return context.l10n.scorecardBogey;
+    if (diff == 2)  return context.l10n.scorecardDouble;
     return '+$diff';
   }
 }
@@ -2169,7 +2170,7 @@ class _BigToggle extends StatelessWidget {
                 color:        on ? c.accentBorder : c.fieldBorder.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Text(on ? 'ON' : 'OFF', style: TextStyle(
+              child: Text(on ? context.l10n.scorecardOn : context.l10n.scorecardOff, style: TextStyle(
                 color:      on ? c.accent : Colors.white,
                 fontSize:   11.0,
                 fontWeight: FontWeight.w800,

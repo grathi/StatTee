@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
 import '../services/smart_notification_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/l10n_extension.dart';
 
 // ---------------------------------------------------------------------------
 // NotificationPreferencesScreen
@@ -24,29 +25,21 @@ class _NotificationPreferencesScreenState
   static const List<_PrefMeta> _prefMeta = [
     _PrefMeta(
       key:      'weaknessPractice',
-      title:    'Practice Reminders',
-      subtitle: 'AI-tailored drills for your weakest areas',
       icon:     Icons.fitness_center_rounded,
       gradient: [Color(0xFF1A3A08), Color(0xFF4E8A18)],
     ),
     _PrefMeta(
       key:      'incompleteRound',
-      title:    'Resume Round',
-      subtitle: 'Nudges to complete rounds you left unfinished',
       icon:     Icons.sports_golf_rounded,
       gradient: [Color(0xFF0D2B40), Color(0xFF1565C0)],
     ),
     _PrefMeta(
       key:      'performanceTrend',
-      title:    'Performance Insights',
-      subtitle: 'Celebrate improvement streaks and trends',
       icon:     Icons.trending_up_rounded,
       gradient: [Color(0xFF2E1760), Color(0xFF6A35C8)],
     ),
     _PrefMeta(
       key:      'teeTimeReminder',
-      title:    'Tee Time Reminders',
-      subtitle: 'Alerts before upcoming tee times',
       icon:     Icons.schedule_rounded,
       gradient: [Color(0xFF3D1A08), Color(0xFFE65100)],
     ),
@@ -70,13 +63,33 @@ class _NotificationPreferencesScreenState
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Preferences saved'),
+          content: Text(context.l10n.notifPrefsSaved),
           backgroundColor: AppColors.of(context).accent,
           behavior: SnackBarBehavior.floating,
           shape: SuperellipseShape(borderRadius: BorderRadius.circular(24)),
           duration: const Duration(seconds: 2),
         ),
       );
+    }
+  }
+
+  String _titleForKey(BuildContext context, String key) {
+    switch (key) {
+      case 'weaknessPractice':   return context.l10n.notifPrefsPracticeReminders;
+      case 'incompleteRound':    return context.l10n.notifPrefsResumeRound;
+      case 'performanceTrend':   return context.l10n.notifPrefsPerformance;
+      case 'teeTimeReminder':    return context.l10n.notifPrefsTeeTime;
+      default:                   return key;
+    }
+  }
+
+  String _subtitleForKey(BuildContext context, String key) {
+    switch (key) {
+      case 'weaknessPractice':   return context.l10n.notifPrefsPracticeDesc;
+      case 'incompleteRound':    return context.l10n.notifPrefsResumeDesc;
+      case 'performanceTrend':   return context.l10n.notifPrefsPerformanceDesc;
+      case 'teeTimeReminder':    return context.l10n.notifPrefsTeeTimeDesc;
+      default:                   return key;
     }
   }
 
@@ -140,14 +153,14 @@ class _NotificationPreferencesScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Smart Notifications',
+                Text(context.l10n.notifPrefsTitle,
                     style: TextStyle(
                       fontFamily: 'Nunito',
                       color: c.primaryText,
                       fontSize: (sw * 0.05).clamp(17.0, 22.0),
                       fontWeight: FontWeight.w800,
                     )),
-                Text('AI-powered alerts for your game',
+                Text(context.l10n.notifPrefsSubtitle,
                     style: TextStyle(
                       color: c.secondaryText,
                       fontSize: (sw * 0.030).clamp(11.0, 13.0),
@@ -181,7 +194,7 @@ class _NotificationPreferencesScreenState
 
           // Section label
           Text(
-            'NOTIFICATION TYPES',
+            context.l10n.notifPrefsSectionTitle,
             style: TextStyle(
               color: c.tertiaryText,
               fontSize: (sw * 0.028).clamp(10.0, 12.0),
@@ -219,7 +232,7 @@ class _NotificationPreferencesScreenState
           // Footer note
           Center(
             child: Text(
-              'Notifications are personalised based on your\nrecent rounds and performance trends.',
+              context.l10n.notifPrefsPersonalised,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: c.tertiaryText,
@@ -260,7 +273,7 @@ class _NotificationPreferencesScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('✨ AI-Driven Alerts',
+                Text(context.l10n.notifPrefsAIDriven,
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.7),
                       fontSize: (sw * 0.030).clamp(11.0, 13.0),
@@ -268,7 +281,7 @@ class _NotificationPreferencesScreenState
                       letterSpacing: 0.3,
                     )),
                 const SizedBox(height: 4),
-                Text('Smart notifications\ntailored to your golf game',
+                Text(context.l10n.notifPrefsSmartDesc,
                     style: TextStyle(
                       fontFamily: 'Nunito',
                       color: Colors.white,
@@ -278,8 +291,7 @@ class _NotificationPreferencesScreenState
                     )),
                 const SizedBox(height: 10),
                 Text(
-                  'TeeStats analyses your rounds, practice habits, and '
-                  'performance trends to send notifications that actually help your game.',
+                  context.l10n.notifPrefsExplanation,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.75),
                     fontSize: (sw * 0.030).clamp(11.0, 13.0),
@@ -351,14 +363,14 @@ class _NotificationPreferencesScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(meta.title,
+                  Text(_titleForKey(context, meta.key),
                       style: TextStyle(
                         color: c.primaryText,
                         fontSize: (sw * 0.038).clamp(13.0, 16.0),
                         fontWeight: FontWeight.w600,
                       )),
                   const SizedBox(height: 2),
-                  Text(meta.subtitle,
+                  Text(_subtitleForKey(context, meta.key),
                       style: TextStyle(
                         color: c.secondaryText,
                         fontSize: (sw * 0.030).clamp(11.0, 13.0),
@@ -429,7 +441,7 @@ class _NotificationPreferencesScreenState
                   valueColor: AlwaysStoppedAnimation(Colors.white),
                 ),
               )
-            : Text('Save Preferences',
+            : Text(context.l10n.notifPrefsSave,
                 style: TextStyle(
                   fontFamily: 'Nunito',
                   fontSize: (sw * 0.042).clamp(15.0, 18.0),
@@ -446,15 +458,11 @@ class _NotificationPreferencesScreenState
 // ---------------------------------------------------------------------------
 class _PrefMeta {
   final String key;
-  final String title;
-  final String subtitle;
   final IconData icon;
   final List<Color> gradient;
 
   const _PrefMeta({
     required this.key,
-    required this.title,
-    required this.subtitle,
     required this.icon,
     required this.gradient,
   });
