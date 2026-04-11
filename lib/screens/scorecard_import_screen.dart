@@ -414,7 +414,9 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
   late final TextEditingController _courseNameCtrl;
   late final TextEditingController _ratingCtrl;
   late final TextEditingController _slopeCtrl;
-  late List<ImportedHole> _holes;
+  late List<PlayerImportData> _players;
+  late List<TextEditingController> _playerNameCtrls;
+  int _activePlayer = 0;
   late DateTime _roundDate;
   late int _totalHoles;
   bool _saving = false;
@@ -451,7 +453,13 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
         text: d.courseRating?.toString() ?? sess?.courseRating?.toString() ?? '');
     _slopeCtrl = TextEditingController(
         text: d.slopeRating?.toString() ?? sess?.slopeRating?.toString() ?? '');
-    _holes = List.from(d.holes);
+    _players = d.players.map((p) => PlayerImportData(
+          playerName: p.playerName,
+          holes: List.from(p.holes),
+        )).toList();
+    _playerNameCtrls = _players
+        .map((p) => TextEditingController(text: p.playerName))
+        .toList();
     _roundDate = d.roundDate;
     _totalHoles = d.totalHoles;
     _locationText = d.courseLocation.isNotEmpty ? d.courseLocation : (sess?.courseLocation ?? '');
@@ -465,6 +473,7 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
     _courseNameCtrl.dispose();
     _ratingCtrl.dispose();
     _slopeCtrl.dispose();
+    for (final c in _playerNameCtrls) c.dispose();
     _courseNameFocus.dispose();
     super.dispose();
   }
@@ -510,7 +519,9 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
     FocusScope.of(context).unfocus();
   }
 
-  bool get _hasUnreadable => _holes.any((h) => h.score == 0);
+  List<ImportedHole> get _holes => _players[_activePlayer].holes;
+
+  bool get _hasUnreadable => _players.any((p) => p.hasUnreadableScores);
   int get _totalPar => _holes.fold(0, (s, h) => s + h.par);
   int get _totalScore => _holes.fold(0, (s, h) => s + h.score);
 
@@ -680,7 +691,7 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
       final rating = double.tryParse(_ratingCtrl.text);
       final slope = int.tryParse(_slopeCtrl.text);
 
-      final holeScores = _holes
+      final holeScores = _players.first.holes
           .map((h) => HoleScore(
                 hole: h.hole,
                 par: h.par,
@@ -730,30 +741,48 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
       }
 
       // ── Normal import path ───────────────────────────────────────────────
-      final roundId = await RoundService.startRound(
-        courseName: courseName.isEmpty ? 'Imported Round' : courseName,
-        courseLocation: location,
-        totalHoles: _totalHoles,
-        courseRating: rating,
-        slopeRating: slope,
-      );
+      String firstRoundId = '';
+      for (int i = 0; i < _players.length; i++) {
+        final player = _players[i];
+        final name = _playerNameCtrls[i].text.trim();
+        final playerHoleScores = player.holes
+            .map((h) => HoleScore(
+                  hole: h.hole,
+                  par: h.par,
+                  score: h.score,
+                  putts: 0,
+                  fairwayHit: false,
+                  gir: false,
+                ))
+            .toList();
 
-      await RoundService.saveAllHoleScores(roundId, holeScores);
+        final roundId = await RoundService.startRound(
+          courseName: courseName.isEmpty ? 'Imported Round' : courseName,
+          courseLocation: location,
+          totalHoles: _totalHoles,
+          courseRating: rating,
+          slopeRating: slope,
+          playerName: i == 0 ? null : (name.isEmpty ? 'Player ${i + 1}' : name),
+        );
 
-      // Backdate round to the user-selected date
-      await FirebaseFirestore.instance
-          .collection('rounds')
-          .doc(roundId)
-          .update({'startedAt': Timestamp.fromDate(_roundDate)});
+        await RoundService.saveAllHoleScores(roundId, playerHoleScores);
 
-      await RoundService.completeRound(roundId);
+        await FirebaseFirestore.instance
+            .collection('rounds')
+            .doc(roundId)
+            .update({'startedAt': Timestamp.fromDate(_roundDate)});
+
+        await RoundService.completeRound(roundId);
+
+        if (i == 0) firstRoundId = roundId;
+      }
 
       if (!mounted) return;
 
-      // Fetch the saved round and navigate to detail
+      // Fetch the saved round for player 1 and navigate to detail
       final snap = await FirebaseFirestore.instance
           .collection('rounds')
-          .doc(roundId)
+          .doc(firstRoundId)
           .get();
       final round = Round.fromFirestore(snap);
 
@@ -835,6 +864,12 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
             _buildWarningBanner(c, warning),
           ],
           const SizedBox(height: 16),
+          if (_players.length > 1) ...[
+            _buildPlayerTabStrip(c, sw),
+            const SizedBox(height: 12),
+            _buildPlayerNameField(c),
+            const SizedBox(height: 12),
+          ],
           _buildHoleTable(c),
           const SizedBox(height: 20),
           _buildTotalsRow(c),
@@ -1174,6 +1209,83 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  // ── Player tab strip ───────────────────────────────────────────────────────
+
+  Widget _buildPlayerTabStrip(AppColors c, double sw) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (int i = 0; i < _players.length; i++) ...[
+            GestureDetector(
+              onTap: () => setState(() => _activePlayer = i),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: _activePlayer == i
+                      ? c.accent.withValues(alpha: 0.15)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: _activePlayer == i ? c.accent : c.cardBorder,
+                    width: _activePlayer == i ? 1.5 : 1.0,
+                  ),
+                ),
+                child: Text(
+                  _playerNameCtrls[i].text.trim().isNotEmpty
+                      ? _playerNameCtrls[i].text.trim()
+                      : 'Player ${i + 1}',
+                  style: TextStyle(
+                    fontFamily: 'Nunito',
+                    color: _activePlayer == i ? c.accent : c.secondaryText,
+                    fontSize: 13,
+                    fontWeight: _activePlayer == i
+                        ? FontWeight.w700
+                        : FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+            if (i < _players.length - 1) const SizedBox(width: 8),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ── Player name field ──────────────────────────────────────────────────────
+
+  Widget _buildPlayerNameField(AppColors c) {
+    return TextField(
+      controller: _playerNameCtrls[_activePlayer],
+      style: TextStyle(color: c.primaryText, fontSize: 14),
+      decoration: InputDecoration(
+        labelText: _activePlayer == 0
+            ? 'Your name (optional)'
+            : 'Player ${_activePlayer + 1} name (optional)',
+        labelStyle: TextStyle(color: c.tertiaryText, fontSize: 13),
+        filled: true,
+        fillColor: c.cardBg,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: c.cardBorder),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: c.cardBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: c.accent, width: 1.5),
+        ),
+      ),
+      onChanged: (_) => setState(() {}), // refresh tab labels
     );
   }
 

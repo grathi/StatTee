@@ -28,6 +28,9 @@ class Round {
   final double? lng;
   /// Group round session this round belongs to. Null for solo rounds.
   final String? sessionId;
+  /// Name of a companion player imported alongside the current user.
+  /// Null for the current user's own rounds.
+  final String? playerName;
 
   const Round({
     this.id,
@@ -48,6 +51,7 @@ class Round {
     this.lat,
     this.lng,
     this.sessionId,
+    this.playerName,
   });
 
   // ── Computed stats ──────────────────────────────────────────────────────
@@ -114,6 +118,7 @@ class Round {
         if (lat != null) 'lat': lat,
         if (lng != null) 'lng': lng,
         if (sessionId != null) 'sessionId': sessionId,
+        if (playerName != null) 'playerName': playerName,
       };
 
   factory Round.fromFirestore(DocumentSnapshot doc) {
@@ -146,6 +151,7 @@ class Round {
       lat: (d['lat'] as num?)?.toDouble(),
       lng: (d['lng'] as num?)?.toDouble(),
       sessionId: d['sessionId'] as String?,
+      playerName: d['playerName'] as String?,
     );
   }
 
@@ -163,6 +169,7 @@ class Round {
     double? lat,
     double? lng,
     String? sessionId,
+    String? playerName,
   }) =>
       Round(
         id: id ?? this.id,
@@ -183,5 +190,6 @@ class Round {
         lat: lat ?? this.lat,
         lng: lng ?? this.lng,
         sessionId: sessionId ?? this.sessionId,
+        playerName: playerName ?? this.playerName,
       );
 }

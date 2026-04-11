@@ -26,6 +26,7 @@ class RoundService {
     double? lat,
     double? lng,
     String? sessionId,
+    String? playerName,
   }) async {
     final doc = await _col.add(Round(
       userId: _uid,
@@ -42,6 +43,7 @@ class RoundService {
       lat: lat,
       lng: lng,
       sessionId: sessionId,
+      playerName: playerName,
     ).toFirestore());
     return doc.id;
   }
