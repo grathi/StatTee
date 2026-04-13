@@ -819,5 +819,58 @@
     "placeholders": {
       "days": { "type": "int" }
     }
+  },
+
+  "greetingPerfectTeeTime": "Heure de départ idéale ⛳",
+  "greetingSunnyBreezy": "Ensoleillé mais venteux ⛳",
+  "greetingToughWeather": "Météo difficile en vue 🌧️",
+  "greetingGoodScoring": "Bon temps pour scorer ⛅",
+  "greetingPlaySmart": "Jouez intelligemment aujourd'hui 💨",
+  "greetingEarlyTeeTime": "Départ matinal",
+  "greetingMorningRound": "Tour du matin",
+  "greetingPerfectMorning": "Matinée parfaite",
+  "greetingMiddayFairways": "Fairways de midi",
+  "greetingAfternoonLinks": "Links de l'après-midi",
+  "greetingEveningRound": "Tour du soir",
+  "greetingClubbouseTime": "Heure du club-house",
+
+  "insightWetCourse": "🌧️ Parcours mouillé — prenez un club de plus",
+  "insightIdealConditions": "💡 Conditions idéales — fiez-vous à vos distances",
+  "insightTry7Iron": "💡 Essayez un fer 7 aujourd'hui (vent {wind})",
+  "@insightTry7Iron": {
+    "placeholders": { "wind": { "type": "String" } }
+  },
+  "insightClubUp": "💨 Prenez un club de plus — vent {wind}",
+  "@insightClubUp": {
+    "placeholders": { "wind": { "type": "String" } }
+  },
+  "insightWindConservative": "💨 Vent {wind} — jouez prudemment",
+  "@insightWindConservative": {
+    "placeholders": { "wind": { "type": "String" } }
+  },
+  "insightPuttingImproved": "📈 Putting amélioré — gardez le rythme",
+  "insightFocusPutts": "💡 Concentrez-vous sur les courts putts ce tour",
+  "insightReadyToPlay": "🏌️ Prêt à jouer",
+
+  "subtitlePuttingImproved": "Votre putting a progressé de {sign}{pct}% cette semaine",
+  "@subtitlePuttingImproved": {
+    "placeholders": {
+      "sign": { "type": "String" },
+      "pct":  { "type": "int" }
+    }
+  },
+  "subtitlePuttingUp": "Votre putting en hausse de {sign}{pct}% cette semaine",
+  "@subtitlePuttingUp": {
+    "placeholders": {
+      "sign": { "type": "String" },
+      "pct":  { "type": "int" }
+    }
+  },
+  "subtitleGirDelta": "GIR {sign}{pct}% vs 4 derniers tours",
+  "@subtitleGirDelta": {
+    "placeholders": {
+      "sign": { "type": "String" },
+      "pct":  { "type": "int" }
+    }
   }
 }

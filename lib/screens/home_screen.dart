@@ -23,6 +23,8 @@ import '../widgets/resume_round_card.dart';
 import 'swing_analyzer_screen.dart';
 import '../widgets/shimmer_widgets.dart';
 import '../widgets/weather_widgets.dart';
+import '../widgets/animated_hero_card.dart';
+import '../services/weather_service.dart';
 import '../widgets/tour_overlay.dart';
 import '../services/onboarding_service.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
@@ -413,6 +415,7 @@ class _HomeTabState extends State<_HomeTab>
   String?   _locationName;
   double?   _customLat;
   double?   _customLng;
+  WeatherNow? _heroWeather;
 
   late Future<List<NewsArticle>> _newsFuture;
   List<GolfCourseDetail> _nearbyCourses = [];
@@ -509,6 +512,10 @@ class _HomeTabState extends State<_HomeTab>
       _nearbyCourses = result?.courses ?? [];
       _loadingNearby = false;
     });
+    // Fetch weather for the animated hero card — fire and forget
+    WeatherService.getCurrentWeather(pos.latitude, pos.longitude)
+        .then((w) { if (mounted) setState(() => _heroWeather = w); })
+        .catchError((_) {});
   }
 
   Future<void> _showLocationPicker() async {
@@ -764,15 +771,90 @@ class _HomeTabState extends State<_HomeTab>
     super.dispose();
   }
 
-  String get _greeting {
+  String _greeting(WeatherNow? weather, BuildContext ctx) {
+    final l = ctx.l10n;
     final hour = DateTime.now().hour;
-    if (hour < 6)  return 'Early tee time';
-    if (hour < 10) return 'Morning round';
-    if (hour < 12) return 'Perfect morning';
-    if (hour < 14) return 'Midday fairways';
-    if (hour < 17) return 'Afternoon links';
-    if (hour < 20) return 'Evening round';
-    return 'Clubhouse time';
+    // Weather-aware greeting overrides
+    if (weather != null) {
+      final cond = weather.condition.toLowerCase();
+      final wind = weather.windSpeed;
+      if (cond.contains('clear') || cond.contains('sunny')) {
+        return wind < 8 ? l.greetingPerfectTeeTime : l.greetingSunnyBreezy;
+      }
+      if (cond.contains('rain') || cond.contains('drizzle')) return l.greetingToughWeather;
+      if (cond.contains('cloud')) return l.greetingGoodScoring;
+      if (wind >= 15) return l.greetingPlaySmart;
+    }
+    // Time-of-day fallback
+    if (hour < 6)  return l.greetingEarlyTeeTime;
+    if (hour < 10) return l.greetingMorningRound;
+    if (hour < 12) return l.greetingPerfectMorning;
+    if (hour < 14) return l.greetingMiddayFairways;
+    if (hour < 17) return l.greetingAfternoonLinks;
+    if (hour < 20) return l.greetingEveningRound;
+    return l.greetingClubbouseTime;
+  }
+
+  /// Wind-based AI club suggestion + weather insight for the header chip.
+  String _headerInsight(WeatherNow? weather, List<Round> allRounds, BuildContext ctx) {
+    final l = ctx.l10n;
+    if (weather != null) {
+      final wind = weather.windSpeed;
+      final cond = weather.condition.toLowerCase();
+      if (cond.contains('rain')) return l.insightWetCourse;
+      if (wind < 5)   return l.insightIdealConditions;
+      if (wind < 10)  return l.insightTry7Iron(weather.windLabel);
+      if (wind < 18)  return l.insightClubUp(weather.windLabel);
+      return l.insightWindConservative(weather.windLabel);
+    }
+    // Stat-based insight fallback
+    if (allRounds.length >= 4) {
+      final recent = allRounds.take(4).toList();
+      final older  = allRounds.skip(4).take(4).toList();
+      if (recent.isNotEmpty && older.isNotEmpty) {
+        final recentPutts = recent.fold(0.0, (s, r) => s + r.avgPutts) / recent.length;
+        final olderPutts  = older.fold(0.0,  (s, r) => s + r.avgPutts) / older.length;
+        final delta = olderPutts - recentPutts; // positive = fewer putts = better
+        if (delta > 0.15) return l.insightPuttingImproved;
+        if (delta < -0.15) return l.insightFocusPutts;
+      }
+    }
+    return l.insightReadyToPlay;
+  }
+
+  /// Second subtitle line — stat-based weekly improvement.
+  String? _statSubtitle(List<Round> allRounds, BuildContext ctx) {
+    final l = ctx.l10n;
+    if (allRounds.length < 4) return null;
+    final recent = allRounds.take(4).toList();
+    final older  = allRounds.skip(4).take(4).toList();
+    if (older.isEmpty) return null;
+
+    // Putting delta — only if rounds actually have putt data
+    final recentWithPutts = recent.where((r) => r.avgPutts > 0).toList();
+    final olderWithPutts  = older.where((r)  => r.avgPutts > 0).toList();
+    if (recentWithPutts.isNotEmpty && olderWithPutts.isNotEmpty) {
+      final recentPutts = recentWithPutts.fold(0.0, (s, r) => s + r.avgPutts) / recentWithPutts.length;
+      final olderPutts  = olderWithPutts.fold(0.0,  (s, r) => s + r.avgPutts) / olderWithPutts.length;
+      final puttDelta   = olderPutts - recentPutts; // positive = improved
+      if (puttDelta.abs() > 0.1 && olderPutts > 0 && puttDelta.isFinite) {
+        final sign = puttDelta > 0 ? '↓' : '↑';
+        final pct  = (puttDelta.abs() / olderPutts * 100).round().clamp(1, 99);
+        return puttDelta > 0
+            ? l.subtitlePuttingImproved(sign, pct)
+            : l.subtitlePuttingUp(sign, pct);
+      }
+    }
+
+    // GIR delta fallback
+    final recentGir = recent.fold(0.0, (s, r) => s + r.girPct) / recent.length;
+    final olderGir  = older.fold(0.0,  (s, r) => s + r.girPct) / older.length;
+    final girDelta  = recentGir - olderGir;
+    if (girDelta.isFinite && girDelta.abs() > 3) {
+      final sign = girDelta > 0 ? '+' : '';
+      return l.subtitleGirDelta(sign, girDelta.round());
+    }
+    return null;
   }
 
   String get _firstName {
@@ -884,8 +966,8 @@ class _HomeTabState extends State<_HomeTab>
                               floating: true,
                               snap: true,
                               automaticallyImplyLeading: false,
-                              toolbarHeight: _sh * 0.030 + (_sw * 0.115).clamp(40.0, 52.0),
-                              flexibleSpace: _buildHeader(c),
+                              toolbarHeight: _sh * 0.030 + (_sw * 0.115).clamp(40.0, 52.0) + 36,
+                              flexibleSpace: _buildHeader(c, allSnap.data ?? [], stats),
                             ),
                             SliverToBoxAdapter(
                               child: Column(
@@ -1050,7 +1132,11 @@ class _HomeTabState extends State<_HomeTab>
   }
 
   // ── Header ─────────────────────────────────────────────────────────────────
-  Widget _buildHeader(AppColors c) {
+  Widget _buildHeader(AppColors c, List<Round> allRounds, AppStats stats) {
+    final greetingText = _greeting(_heroWeather, context);
+    final insightText  = _headerInsight(_heroWeather, allRounds, context);
+    final subtitle     = _statSubtitle(allRounds, context);
+
     return Padding(
       padding: EdgeInsets.fromLTRB(_hPad, _sh * 0.018, _hPad, _sh * 0.012),
       child: Row(
@@ -1091,7 +1177,7 @@ class _HomeTabState extends State<_HomeTab>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '$_greeting,',
+                  '$greetingText,',
                   style: TextStyle(
                     color: c.secondaryText,
                     fontSize: _labelSize,
@@ -1106,6 +1192,35 @@ class _HomeTabState extends State<_HomeTab>
                     fontSize: (_sw * 0.050).clamp(17.0, 22.0),
                     fontWeight: FontWeight.w800,
                     height: 1.1,
+                  ),
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: c.accent.withValues(alpha: 0.85),
+                      fontSize: _labelSize * 0.88,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 5),
+                // AI insight chip
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: c.accentBg,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: c.accentBorder),
+                  ),
+                  child: Text(
+                    insightText,
+                    style: TextStyle(
+                      color: c.accent,
+                      fontSize: _labelSize * 0.84,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -1312,12 +1427,14 @@ class _HomeTabState extends State<_HomeTab>
 
   // ── Start Round CTA (shown only when no active round) ─────────────────────
   Widget _buildStartRoundCTA(Round? activeRound) {
-    return HeroActionCard(
+    return AnimatedHeroCard(
       hPad: _hPad,
       sw: _sw,
       sh: _sh,
       labelSize: _labelSize,
       bodySize: _bodySize,
+      weather: _heroWeather,
+      activeRound: activeRound,
       onTap: () => Navigator.push(context, MaterialPageRoute(
         builder: (_) => StartRoundScreen(
           initialPosition: _userPosition,
@@ -2110,7 +2227,7 @@ class _HomeTabState extends State<_HomeTab>
           Skeletonizer(
             enabled: _loadingNearby,
             child: SizedBox(
-              height: (_sh * 0.215).clamp(162.0, 182.0),
+              height: (_sh * 0.265).clamp(200.0, 220.0),
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: EdgeInsets.symmetric(horizontal: _hPad),
@@ -2185,11 +2302,81 @@ class _HomeTabState extends State<_HomeTab>
     );
   }
 
+  // ── Nearby course helpers ────────────────────────────────────────────────
+
+  String? _distanceMi(GolfCourseDetail course) {
+    final uLat = _userPosition?.latitude ?? _customLat;
+    final uLng = _userPosition?.longitude ?? _customLng;
+    if (uLat == null || uLng == null || course.lat == null || course.lng == null) return null;
+    final meters = Geolocator.distanceBetween(uLat, uLng, course.lat!, course.lng!);
+    final miles  = meters / 1609.34;
+    return miles < 10 ? '${miles.toStringAsFixed(1)} mi' : '${miles.round()} mi';
+  }
+
+  String _difficulty(GolfCourseDetail course) {
+    final p = course.priceLevel ?? 2;
+    if (p <= 1) return 'Beginner';
+    if (p == 2) return 'Medium';
+    return 'Challenging';
+  }
+
+  Color _difficultyColor(String d) => switch (d) {
+    'Beginner'    => const Color(0xFF4CAF50),
+    'Challenging' => const Color(0xFFE57373),
+    _             => const Color(0xFFFFB300),
+  };
+
+  List<String> _courseTags(GolfCourseDetail course) {
+    final tags = <String>[];
+    if ((course.rating ?? 0) >= 4.5)       tags.add('🏆 Top rated');
+    if ((course.reviewCount ?? 0) >= 200)   tags.add('⭐ Popular');
+    if ((course.priceLevel ?? 2) <= 1)      tags.add('💰 Great value');
+    final wind = _heroWeather?.windSpeed ?? 0;
+    final cond = _heroWeather?.condition.toLowerCase() ?? '';
+    if (wind >= 15)                tags.add('💨 Windy today');
+    else if (cond.contains('rain')) tags.add('🌧️ Wet today');
+    if (_difficulty(course) == 'Beginner')  tags.add('🟢 Beginner friendly');
+    if (tags.isEmpty) tags.add('⛳ Fast play');
+    return tags.take(3).toList();
+  }
+
+  Widget _buildStarRow(double rating, int? reviews, AppColors c) {
+    final fullStars  = rating.floor();
+    final hasHalf    = (rating - fullStars) >= 0.5;
+    final emptyStars = 5 - fullStars - (hasHalf ? 1 : 0);
+    const starColor  = Color(0xFFFFC107);
+    final starSize   = (_labelSize * 0.95).clamp(10.0, 13.0);
+
+    return Row(
+      children: [
+        ...List.generate(fullStars,  (_) => Icon(Icons.star_rounded,       color: starColor, size: starSize)),
+        if (hasHalf)                      Icon(Icons.star_half_rounded,    color: starColor, size: starSize),
+        ...List.generate(emptyStars, (_) => Icon(Icons.star_border_rounded, color: starColor, size: starSize)),
+        const SizedBox(width: 4),
+        Text(
+          rating.toStringAsFixed(1),
+          style: TextStyle(color: c.primaryText, fontSize: _labelSize * 0.88, fontWeight: FontWeight.w700),
+        ),
+        if (reviews != null && reviews > 0) ...[
+          const SizedBox(width: 3),
+          Text(
+            '($reviews)',
+            style: TextStyle(color: c.tertiaryText, fontSize: _labelSize * 0.82),
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _buildNearbyCourseCard(GolfCourseDetail course, AppColors c) {
-    final cardW = (_sw * 0.60).clamp(200.0, 260.0);
-    final pad   = (_sw * 0.04).clamp(12.0, 18.0);
-    final playBadge = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    final cardW    = (_sw * 0.68).clamp(220.0, 290.0);
+    final pad      = (_sw * 0.04).clamp(12.0, 18.0);
+    final diff     = _difficulty(course);
+    final diffCol  = _difficultyColor(diff);
+    final tags     = _courseTags(course);
+
+    final startHereBadge = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: ShapeDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF5A9E1F), Color(0xFF7BC344)],
@@ -2200,17 +2387,74 @@ class _HomeTabState extends State<_HomeTab>
         mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(Icons.sports_golf_rounded, color: Colors.white, size: 11),
-          const SizedBox(width: 3),
+          const SizedBox(width: 4),
           Text(
-            'Play',
+            'Start Here',
             style: TextStyle(
               color: Colors.white,
-              fontSize: _labelSize * 0.9,
-              fontWeight: FontWeight.w600,
+              fontSize: _labelSize * 0.88,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
       ),
+    );
+
+    Widget imageBlock(Widget fallback) => Stack(
+      children: [
+        fallback,
+        // Bottom gradient so name area blends
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.transparent, Colors.black.withValues(alpha: 0.18)],
+              ),
+            ),
+          ),
+        ),
+        Positioned(top: 8, right: 8, child: startHereBadge),
+        // Star rating overlay — bottom-right of image
+        if (course.rating != null)
+          Positioned(
+            bottom: 7,
+            right: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.55),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.star_rounded, color: Color(0xFFFFC107), size: 11),
+                  const SizedBox(width: 3),
+                  Text(
+                    course.rating!.toStringAsFixed(1),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (course.reviewCount != null && course.reviewCount! > 0) ...[
+                    const SizedBox(width: 3),
+                    Text(
+                      '(${course.reviewCount})',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.75),
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+      ],
     );
 
     return GestureDetector(
@@ -2244,47 +2488,37 @@ class _HomeTabState extends State<_HomeTab>
           children: [
             // ── Banner image ────────────────────────────────────────────
             if (course.photoUrl != null)
-              Stack(
-                children: [
-                  Image.network(
-                    course.photoUrl!,
+              imageBlock(
+                Image.network(
+                  course.photoUrl!,
+                  width: cardW,
+                  height: 90,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
                     width: cardW,
-                    height: 80,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      width: cardW,
-                      height: 80,
-                      color: c.accentBg,
-                      child: Icon(Icons.golf_course_rounded,
-                          color: c.accent, size: 36),
-                    ),
+                    height: 90,
+                    color: c.accentBg,
+                    child: Icon(Icons.golf_course_rounded, color: c.accent, size: 36),
                   ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: playBadge,
-                  ),
-                ],
+                ),
               )
             else
-              Stack(
-                children: [
-                  Container(
-                    width: cardW,
-                    height: 80,
-                    color: c.accentBg,
-                    child: Icon(Icons.golf_course_rounded,
-                        color: c.accent, size: 36),
-                  ),
-                  Positioned(top: 8, right: 8, child: playBadge),
-                ],
+              imageBlock(
+                Container(
+                  width: cardW,
+                  height: 90,
+                  color: c.accentBg,
+                  child: Icon(Icons.golf_course_rounded, color: c.accent, size: 36),
+                ),
               ),
-            // ── Name + address ──────────────────────────────────────────
+
+            // ── Content ─────────────────────────────────────────────────
             Padding(
-              padding: EdgeInsets.fromLTRB(pad, pad * 0.7, pad, pad * 0.8),
+              padding: EdgeInsets.fromLTRB(pad, pad * 0.55, pad, pad * 0.65),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Course name
                   Text(
                     course.name,
                     style: TextStyle(
@@ -2296,25 +2530,58 @@ class _HomeTabState extends State<_HomeTab>
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (course.address.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Row(
+
+                  // Difficulty pill
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: diffCol.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: diffCol.withValues(alpha: 0.35), width: 0.8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.location_on_rounded,
-                            color: c.tertiaryText, size: _labelSize),
-                        const SizedBox(width: 2),
-                        Expanded(
-                          child: Text(
-                            course.address,
-                            style: TextStyle(
-                                color: c.tertiaryText, fontSize: _labelSize),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(color: diffCol, shape: BoxShape.circle),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Difficulty: $diff',
+                          style: TextStyle(
+                            color: diffCol,
+                            fontSize: _labelSize * 0.82,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
                     ),
-                  ],
+                  ),
+
+                  // Quick tags
+                  const SizedBox(height: 5),
+                  Wrap(
+                    spacing: 5,
+                    runSpacing: 5,
+                    children: tags.map((tag) => Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: c.accentBg,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        tag,
+                        style: TextStyle(
+                          color: c.accent,
+                          fontSize: _labelSize * 0.80,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    )).toList(),
+                  ),
                 ],
               ),
             ),

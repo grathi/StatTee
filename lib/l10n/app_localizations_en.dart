@@ -279,6 +279,88 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeTapToTeeOff => 'Tap to tee off';
 
   @override
+  String get greetingPerfectTeeTime => 'Perfect tee time ⛳';
+
+  @override
+  String get greetingSunnyBreezy => 'Sunny but breezy ⛳';
+
+  @override
+  String get greetingToughWeather => 'Tough weather ahead 🌧️';
+
+  @override
+  String get greetingGoodScoring => 'Good scoring weather ⛅';
+
+  @override
+  String get greetingPlaySmart => 'Play smart today 💨';
+
+  @override
+  String get greetingEarlyTeeTime => 'Early tee time';
+
+  @override
+  String get greetingMorningRound => 'Morning round';
+
+  @override
+  String get greetingPerfectMorning => 'Perfect morning';
+
+  @override
+  String get greetingMiddayFairways => 'Midday fairways';
+
+  @override
+  String get greetingAfternoonLinks => 'Afternoon links';
+
+  @override
+  String get greetingEveningRound => 'Evening round';
+
+  @override
+  String get greetingClubbouseTime => 'Clubhouse time';
+
+  @override
+  String get insightWetCourse => '🌧️ Wet course — drop a club';
+
+  @override
+  String get insightIdealConditions =>
+      '💡 Ideal conditions — trust your yardages';
+
+  @override
+  String insightTry7Iron(String wind) {
+    return '💡 Try a 7 iron today (wind $wind)';
+  }
+
+  @override
+  String insightClubUp(String wind) {
+    return '💨 Club up — wind $wind';
+  }
+
+  @override
+  String insightWindConservative(String wind) {
+    return '💨 Wind $wind — play conservatively';
+  }
+
+  @override
+  String get insightPuttingImproved => '📈 Putting improved — keep the pace';
+
+  @override
+  String get insightFocusPutts => '💡 Focus on short putts this round';
+
+  @override
+  String get insightReadyToPlay => '🏌️ Ready to play';
+
+  @override
+  String subtitlePuttingImproved(String sign, int pct) {
+    return 'Your putting improved $sign$pct% this week';
+  }
+
+  @override
+  String subtitlePuttingUp(String sign, int pct) {
+    return 'Your putting up $sign$pct% this week';
+  }
+
+  @override
+  String subtitleGirDelta(String sign, int pct) {
+    return 'GIR $sign$pct% vs last 4 rounds';
+  }
+
+  @override
   String get homeGolfNews => 'Golf News';
 
   @override

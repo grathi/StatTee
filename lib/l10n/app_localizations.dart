@@ -620,6 +620,144 @@ abstract class AppLocalizations {
   /// **'Tap to tee off'**
   String get homeTapToTeeOff;
 
+  /// No description provided for @greetingPerfectTeeTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Perfect tee time ⛳'**
+  String get greetingPerfectTeeTime;
+
+  /// No description provided for @greetingSunnyBreezy.
+  ///
+  /// In en, this message translates to:
+  /// **'Sunny but breezy ⛳'**
+  String get greetingSunnyBreezy;
+
+  /// No description provided for @greetingToughWeather.
+  ///
+  /// In en, this message translates to:
+  /// **'Tough weather ahead 🌧️'**
+  String get greetingToughWeather;
+
+  /// No description provided for @greetingGoodScoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Good scoring weather ⛅'**
+  String get greetingGoodScoring;
+
+  /// No description provided for @greetingPlaySmart.
+  ///
+  /// In en, this message translates to:
+  /// **'Play smart today 💨'**
+  String get greetingPlaySmart;
+
+  /// No description provided for @greetingEarlyTeeTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Early tee time'**
+  String get greetingEarlyTeeTime;
+
+  /// No description provided for @greetingMorningRound.
+  ///
+  /// In en, this message translates to:
+  /// **'Morning round'**
+  String get greetingMorningRound;
+
+  /// No description provided for @greetingPerfectMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Perfect morning'**
+  String get greetingPerfectMorning;
+
+  /// No description provided for @greetingMiddayFairways.
+  ///
+  /// In en, this message translates to:
+  /// **'Midday fairways'**
+  String get greetingMiddayFairways;
+
+  /// No description provided for @greetingAfternoonLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Afternoon links'**
+  String get greetingAfternoonLinks;
+
+  /// No description provided for @greetingEveningRound.
+  ///
+  /// In en, this message translates to:
+  /// **'Evening round'**
+  String get greetingEveningRound;
+
+  /// No description provided for @greetingClubbouseTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Clubhouse time'**
+  String get greetingClubbouseTime;
+
+  /// No description provided for @insightWetCourse.
+  ///
+  /// In en, this message translates to:
+  /// **'🌧️ Wet course — drop a club'**
+  String get insightWetCourse;
+
+  /// No description provided for @insightIdealConditions.
+  ///
+  /// In en, this message translates to:
+  /// **'💡 Ideal conditions — trust your yardages'**
+  String get insightIdealConditions;
+
+  /// No description provided for @insightTry7Iron.
+  ///
+  /// In en, this message translates to:
+  /// **'💡 Try a 7 iron today (wind {wind})'**
+  String insightTry7Iron(String wind);
+
+  /// No description provided for @insightClubUp.
+  ///
+  /// In en, this message translates to:
+  /// **'💨 Club up — wind {wind}'**
+  String insightClubUp(String wind);
+
+  /// No description provided for @insightWindConservative.
+  ///
+  /// In en, this message translates to:
+  /// **'💨 Wind {wind} — play conservatively'**
+  String insightWindConservative(String wind);
+
+  /// No description provided for @insightPuttingImproved.
+  ///
+  /// In en, this message translates to:
+  /// **'📈 Putting improved — keep the pace'**
+  String get insightPuttingImproved;
+
+  /// No description provided for @insightFocusPutts.
+  ///
+  /// In en, this message translates to:
+  /// **'💡 Focus on short putts this round'**
+  String get insightFocusPutts;
+
+  /// No description provided for @insightReadyToPlay.
+  ///
+  /// In en, this message translates to:
+  /// **'🏌️ Ready to play'**
+  String get insightReadyToPlay;
+
+  /// No description provided for @subtitlePuttingImproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Your putting improved {sign}{pct}% this week'**
+  String subtitlePuttingImproved(String sign, int pct);
+
+  /// No description provided for @subtitlePuttingUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Your putting up {sign}{pct}% this week'**
+  String subtitlePuttingUp(String sign, int pct);
+
+  /// No description provided for @subtitleGirDelta.
+  ///
+  /// In en, this message translates to:
+  /// **'GIR {sign}{pct}% vs last 4 rounds'**
+  String subtitleGirDelta(String sign, int pct);
+
   /// No description provided for @homeGolfNews.
   ///
   /// In en, this message translates to:

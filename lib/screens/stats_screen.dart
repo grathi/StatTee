@@ -14,8 +14,27 @@ import '../services/onboarding_service.dart';
 import '../utils/l10n_extension.dart';
 import '../widgets/pressure_score_card.dart';
 
-class StatsScreen extends StatelessWidget {
+class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
+
+  @override
+  State<StatsScreen> createState() => _StatsScreenState();
+}
+
+class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStateMixin {
+  late final TabController _tabCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabCtrl = TabController(length: 4, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,76 +61,183 @@ class StatsScreen extends StatelessWidget {
           ),
           child: SafeArea(
             bottom: false,
-            child: RefreshIndicator(
-              onRefresh: () async => await Future.delayed(const Duration(milliseconds: 600)),
-              color: const Color(0xFF5A9E1F),
-              backgroundColor: Colors.white,
-              displacement: 20,
-              child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(
-                  parent: BouncingScrollPhysics()),
-              slivers: [
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _StickyTitleDelegate(
-                    title: 'Statistics',
-                    topPad: sh * 0.022,
-                    hPad: hPad,
-                    fontSize: (sw * 0.068).clamp(24.0, 30.0),
-                    c: c,
+            child: Column(
+              children: [
+                // ── Sticky header ──────────────────────────────────────────
+                Padding(
+                  padding: EdgeInsets.fromLTRB(hPad, sh * 0.022, hPad, 0),
+                  child: Text(
+                    'Statistics',
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      color: c.primaryText,
+                      fontSize: (sw * 0.068).clamp(24.0, 30.0),
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
-                SliverToBoxAdapter(
-                  child: TipBanner(
-                    title: context.l10n.statsHub,
-                    body: context.l10n.statsPlayMoreRounds,
-                    hasSeenFn: OnboardingService.hasSeenStatsTip,
-                    markSeenFn: OnboardingService.markStatsTipSeen,
+                SizedBox(height: sh * 0.012),
+                // ── Tab bar ────────────────────────────────────────────────
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: hPad),
+                  child: TabBar(
+                    controller: _tabCtrl,
+                    isScrollable: true,
+                    tabAlignment: TabAlignment.start,
+                    indicatorColor: c.accent,
+                    indicatorWeight: 2.5,
+                    labelColor: c.accent,
+                    unselectedLabelColor: c.tertiaryText,
+                    labelStyle: TextStyle(
+                      fontFamily: 'Nunito',
+                      fontSize: (sw * 0.032).clamp(12.0, 14.0),
+                      fontWeight: FontWeight.w700,
+                    ),
+                    unselectedLabelStyle: TextStyle(
+                      fontFamily: 'Nunito',
+                      fontSize: (sw * 0.032).clamp(12.0, 14.0),
+                      fontWeight: FontWeight.w500,
+                    ),
+                    dividerColor: c.divider,
+                    tabs: const [
+                      Tab(text: 'Overview'),
+                      Tab(text: 'Courses'),
+                      Tab(text: 'Mental'),
+                      Tab(text: 'Clubs'),
+                    ],
                   ),
                 ),
-                SliverToBoxAdapter(
-                  child: Skeletonizer(
-                    enabled: isLoading,
-                    child: Padding(
-                          padding: EdgeInsets.fromLTRB(hPad, 0, hPad, sh * 0.14),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(height: sh * 0.024),
-                              _buildHandicapCard(context, c, sw, sh, isLoading ? AppStats.empty : stats),
-                              SizedBox(height: sh * 0.022),
-                              if (!isLoading && rounds.length >= 3) ...[
-                                _buildHandicapTrend(context, c, sw, sh, rounds),
-                                SizedBox(height: sh * 0.022),
-                              ],
-                              _buildOverviewGrid(context, c, sw, sh, isLoading ? AppStats.empty : stats),
-                              SizedBox(height: sh * 0.022),
-                              if (!isLoading && rounds.isNotEmpty) ...[
-                                _buildScoreDistribution(context, c, sw, sh, rounds),
-                                SizedBox(height: sh * 0.022),
-                                _buildScoringTrend(context, c, sw, sh, rounds),
-                                SizedBox(height: sh * 0.022),
-                                _buildStrokesGained(context, c, sw, sh, rounds),
-                                SizedBox(height: sh * 0.022),
-                                PressureScoreCard(rounds: rounds),
-                                SizedBox(height: sh * 0.022),
-                                if (_hasClubData(rounds)) ...[
-                                  _buildClubStats(context, c, sw, sh, rounds),
-                                  SizedBox(height: sh * 0.022),
-                                ],
-                              ],
-                              _buildDetailedStats(context, c, sw, sh, isLoading ? AppStats.empty : stats),
-                            ],
-                          ),
-                        ),
-                  ),  // Skeletonizer
+                // ── Tab views ──────────────────────────────────────────────
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabCtrl,
+                    children: [
+                      // ── Overview tab ──────────────────────────────────
+                      _buildOverviewTab(context, c, sw, sh, hPad, rounds, stats, isLoading),
+                      // ── Courses tab ───────────────────────────────────
+                      _buildCoursesTab(context, c, sw, sh, hPad, rounds, isLoading),
+                      // ── Mental tab ────────────────────────────────────
+                      _buildMentalTab(context, c, sw, sh, hPad, rounds, isLoading),
+                      // ── Clubs tab ─────────────────────────────────────
+                      _buildClubsTab(context, c, sw, sh, hPad, rounds, stats, isLoading),
+                    ],
+                  ),
                 ),
               ],
-            ),  // CustomScrollView
-            ),  // RefreshIndicator
-          ),    // SafeArea
-        );      // Container
+            ),
+          ),
+        );
       },
+    );
+  }
+
+  // ── Overview tab ─────────────────────────────────────────────────────────
+  Widget _buildOverviewTab(BuildContext context, AppColors c, double sw, double sh,
+      double hPad, List<Round> rounds, AppStats stats, bool isLoading) {
+    return RefreshIndicator(
+      onRefresh: () async => await Future.delayed(const Duration(milliseconds: 600)),
+      color: const Color(0xFF5A9E1F),
+      backgroundColor: Colors.white,
+      displacement: 20,
+      child: Skeletonizer(
+        enabled: isLoading,
+        child: ListView(
+          padding: EdgeInsets.fromLTRB(hPad, sh * 0.020, hPad, sh * 0.14),
+          children: [
+            TipBanner(
+              title: context.l10n.statsHub,
+              body: context.l10n.statsPlayMoreRounds,
+              hasSeenFn: OnboardingService.hasSeenStatsTip,
+              markSeenFn: OnboardingService.markStatsTipSeen,
+            ),
+            SizedBox(height: sh * 0.018),
+            _buildHandicapCard(context, c, sw, sh, isLoading ? AppStats.empty : stats),
+            if (!isLoading && rounds.length >= 3) ...[
+              SizedBox(height: sh * 0.022),
+              _buildHandicapTrend(context, c, sw, sh, rounds),
+            ],
+            SizedBox(height: sh * 0.022),
+            _buildOverviewGrid(context, c, sw, sh, isLoading ? AppStats.empty : stats, rounds),
+            if (!isLoading && rounds.isNotEmpty) ...[
+              SizedBox(height: sh * 0.022),
+              _buildScoreDistribution(context, c, sw, sh, rounds),
+              SizedBox(height: sh * 0.022),
+              _buildScoringTrend(context, c, sw, sh, rounds),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Courses tab ──────────────────────────────────────────────────────────
+  Widget _buildCoursesTab(BuildContext context, AppColors c, double sw, double sh,
+      double hPad, List<Round> rounds, bool isLoading) {
+    return ListView(
+      padding: EdgeInsets.fromLTRB(hPad, sh * 0.020, hPad, sh * 0.14),
+      children: [
+        if (isLoading || rounds.isEmpty)
+          Padding(
+            padding: EdgeInsets.only(top: sh * 0.1),
+            child: Center(
+              child: Text(
+                rounds.isEmpty ? 'Play more rounds to see\nyour course breakdown' : '',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: c.tertiaryText, fontSize: (sw * 0.036).clamp(13.0, 16.0)),
+              ),
+            ),
+          )
+        else ...[
+          SizedBox(height: sh * 0.004),
+          _buildCoursePerformance(context, c, sw, sh, rounds),
+        ],
+      ],
+    );
+  }
+
+  // ── Mental tab ───────────────────────────────────────────────────────────
+  Widget _buildMentalTab(BuildContext context, AppColors c, double sw, double sh,
+      double hPad, List<Round> rounds, bool isLoading) {
+    return Skeletonizer(
+      enabled: isLoading,
+      child: ListView(
+        padding: EdgeInsets.fromLTRB(hPad, sh * 0.020, hPad, sh * 0.14),
+        children: [
+          if (!isLoading && rounds.isNotEmpty) ...[
+            _buildStrokesGained(context, c, sw, sh, rounds),
+            SizedBox(height: sh * 0.022),
+            PressureScoreCard(rounds: rounds),
+          ] else
+            Padding(
+              padding: EdgeInsets.only(top: sh * 0.1),
+              child: Center(
+                child: Text(
+                  'Play more rounds to unlock\nmental game analytics',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: c.tertiaryText, fontSize: (sw * 0.036).clamp(13.0, 16.0)),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ── Clubs tab ────────────────────────────────────────────────────────────
+  Widget _buildClubsTab(BuildContext context, AppColors c, double sw, double sh,
+      double hPad, List<Round> rounds, AppStats stats, bool isLoading) {
+    return Skeletonizer(
+      enabled: isLoading,
+      child: ListView(
+        padding: EdgeInsets.fromLTRB(hPad, sh * 0.020, hPad, sh * 0.14),
+        children: [
+          if (!isLoading && rounds.isNotEmpty && _hasClubData(rounds)) ...[
+            _buildClubStats(context, c, sw, sh, rounds),
+            SizedBox(height: sh * 0.022),
+          ],
+          _buildDetailedStats(context, c, sw, sh, isLoading ? AppStats.empty : stats),
+        ],
+      ),
     );
   }
 
@@ -194,8 +320,14 @@ class StatsScreen extends StatelessWidget {
   }
 
   // ── Overview 2x2 grid ─────────────────────────────────────────────────────
-  Widget _buildOverviewGrid(BuildContext context, AppColors c, double sw, double sh, AppStats stats) {
+  Widget _buildOverviewGrid(BuildContext context, AppColors c, double sw, double sh, AppStats stats, List<Round> rounds) {
     final hasData = stats.totalRounds > 0;
+
+    // Sparkline data — last 8 rounds (oldest → newest)
+    final recent8 = rounds.reversed.take(8).toList().reversed.toList();
+    final scoreSpark   = recent8.map((r) => r.scoreDiff.toDouble()).toList();
+    final birdieSpark  = recent8.map((r) => r.birdies.toDouble()).toList();
+
     final items = [
       _OverviewItem(context.l10n.statsAvgScore, stats.avgScoreLabel, Icons.trending_up_rounded,
           const Color(0xFF8FD44E)),
@@ -218,15 +350,18 @@ class StatsScreen extends StatelessWidget {
       mainAxisSpacing: 12,
       mainAxisExtent: (sh * 0.115).clamp(96.0, 116.0),
       children: [
-        _buildOverviewTile(c, sw, sh, items[0], const Color(0xFF64B5F6)),
+        _buildOverviewTile(c, sw, sh, items[0], const Color(0xFF64B5F6),
+            sparkData: scoreSpark, lowerIsBetter: true),
         _buildOverviewTile(c, sw, sh, items[1], const Color(0xFF6DBD35)),
         _buildOverviewTile(c, sw, sh, items[2], const Color(0xFF8FD44E)),
-        _buildOverviewTile(c, sw, sh, items[3], const Color(0xFFFFD700)),
+        _buildOverviewTile(c, sw, sh, items[3], const Color(0xFFFFD700),
+            sparkData: birdieSpark, lowerIsBetter: false),
       ],
     );
   }
 
-  Widget _buildOverviewTile(AppColors c, double sw, double sh, _OverviewItem item, Color tileColor) {
+  Widget _buildOverviewTile(AppColors c, double sw, double sh, _OverviewItem item, Color tileColor,
+      {List<double>? sparkData, bool lowerIsBetter = true}) {
     final body = (sw * 0.036).clamp(13.0, 16.0);
     final label = (sw * 0.030).clamp(11.0, 13.0);
     return ClipSuperellipse(
@@ -281,6 +416,15 @@ class StatsScreen extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (sparkData != null && sparkData.length >= 3)
+                  SizedBox(
+                    width: 36,
+                    height: 20,
+                    child: _SparklineWidget(
+                      values: sparkData,
+                      lowerIsBetter: lowerIsBetter,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -555,6 +699,149 @@ class StatsScreen extends StatelessWidget {
                   TextStyle(color: c.tertiaryText, fontSize: label * 0.85),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  // ── Course Performance ────────────────────────────────────────────────────
+  Widget _buildCoursePerformance(BuildContext context, AppColors c, double sw, double sh, List<Round> rounds) {
+    final body  = (sw * 0.036).clamp(13.0, 16.0);
+    final label = (sw * 0.030).clamp(11.0, 13.0);
+
+    // Group rounds by course name
+    final Map<String, List<Round>> grouped = {};
+    for (final r in rounds) {
+      grouped.putIfAbsent(r.courseName, () => []).add(r);
+    }
+    if (grouped.isEmpty) return const SizedBox.shrink();
+
+    // Build per-course summaries, sorted by times played
+    final courses = grouped.entries.map((e) {
+      final group = e.value;
+      group.sort((a, b) => a.startedAt.compareTo(b.startedAt));
+      final avgDiff = group.map((r) => r.scoreDiff).reduce((a, b) => a + b) / group.length;
+      final bestDiff = group.map((r) => r.scoreDiff).reduce((a, b) => a < b ? a : b);
+      // Trend: avg of last 3 vs avg of earlier
+      double? trend;
+      if (group.length >= 4) {
+        final last3 = group.reversed.take(3).map((r) => r.scoreDiff).reduce((a, b) => a + b) / 3.0;
+        final earlier = group.reversed.skip(3).map((r) => r.scoreDiff).reduce((a, b) => a + b) /
+            (group.length - 3).toDouble();
+        trend = earlier - last3; // positive = improving
+      }
+      return _CoursePerf(
+        name: e.key,
+        timesPlayed: group.length,
+        avgDiff: avgDiff,
+        bestDiff: bestDiff,
+        trend: trend,
+      );
+    }).toList()
+      ..sort((a, b) => b.timesPlayed.compareTo(a.timesPlayed));
+
+    return Container(
+      decoration: ShapeDecoration(
+        gradient: LinearGradient(colors: c.cardGradient, begin: Alignment.topCenter, end: Alignment.bottomCenter),
+        shape: SuperellipseShape(
+          borderRadius: BorderRadius.circular(48),
+          side: BorderSide(color: c.cardBorder),
+        ),
+        shadows: c.cardShadow,
+      ),
+      padding: EdgeInsets.all((sw * 0.055).clamp(18.0, 24.0)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text('Course Performance',
+                    style: TextStyle(fontFamily: 'Nunito',
+                        color: c.primaryText, fontSize: body, fontWeight: FontWeight.w700)),
+              ),
+              Text('${courses.length} courses',
+                  style: TextStyle(color: c.tertiaryText, fontSize: label * 0.9)),
+            ],
+          ),
+          SizedBox(height: sh * 0.018),
+          ...courses.map((course) {
+            final avgStr = course.avgDiff >= 0
+                ? '+${course.avgDiff.toStringAsFixed(1)}'
+                : course.avgDiff.toStringAsFixed(1);
+            final bestStr = course.bestDiff >= 0
+                ? '+${course.bestDiff}'
+                : '${course.bestDiff}';
+            final avgColor = course.avgDiff <= -1
+                ? const Color(0xFF5A9E1F)
+                : course.avgDiff <= 2
+                    ? const Color(0xFF64B5F6)
+                    : const Color(0xFFFFB74D);
+
+            return Padding(
+              padding: EdgeInsets.only(bottom: sh * 0.014),
+              child: Container(
+                padding: EdgeInsets.all((sw * 0.04).clamp(12.0, 16.0)),
+                decoration: ShapeDecoration(
+                  color: c.fieldBg,
+                  shape: SuperellipseShape(
+                    borderRadius: BorderRadius.circular(24),
+                    side: BorderSide(color: c.cardBorder.withValues(alpha: 0.6)),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(course.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(color: c.primaryText,
+                                  fontSize: label, fontWeight: FontWeight.w700)),
+                          SizedBox(height: sh * 0.004),
+                          Text('${course.timesPlayed} rounds · best $bestStr',
+                              style: TextStyle(color: c.tertiaryText, fontSize: label * 0.88)),
+                        ],
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(avgStr,
+                                style: TextStyle(fontFamily: 'Nunito',
+                                    color: avgColor, fontSize: body,
+                                    fontWeight: FontWeight.w800)),
+                            const SizedBox(width: 4),
+                            if (course.trend != null)
+                              Icon(
+                                course.trend! > 0.3
+                                    ? Icons.trending_up_rounded
+                                    : course.trend! < -0.3
+                                        ? Icons.trending_down_rounded
+                                        : Icons.trending_flat_rounded,
+                                size: label,
+                                color: course.trend! > 0.3
+                                    ? const Color(0xFF5A9E1F)
+                                    : course.trend! < -0.3
+                                        ? const Color(0xFFE53935)
+                                        : c.tertiaryText,
+                              ),
+                          ],
+                        ),
+                        Text('avg vs par',
+                            style: TextStyle(color: c.tertiaryText, fontSize: label * 0.82)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
         ],
       ),
     );
@@ -1375,50 +1662,90 @@ class _HandicapTrendPainter extends CustomPainter {
       old.data != data || old.goal != goal;
 }
 
-// ── Sticky title delegate ─────────────────────────────────────────────────────
+// ── Sparkline widget ──────────────────────────────────────────────────────────
 
-class _StickyTitleDelegate extends SliverPersistentHeaderDelegate {
-  const _StickyTitleDelegate({
-    required this.title,
-    required this.topPad,
-    required this.hPad,
-    required this.fontSize,
-    required this.c,
-  });
+class _SparklineWidget extends StatelessWidget {
+  final List<double> values;
+  final bool lowerIsBetter;
 
-  final String title;
-  final double topPad;
-  final double hPad;
-  final double fontSize;
-  final AppColors c;
-
-  double get _extent => topPad + fontSize * 1.6 + 14;
+  const _SparklineWidget({required this.values, this.lowerIsBetter = true});
 
   @override
-  double get minExtent => _extent;
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _SparklinePainter(values: values, lowerIsBetter: lowerIsBetter),
+    );
+  }
+}
+
+class _SparklinePainter extends CustomPainter {
+  final List<double> values;
+  final bool lowerIsBetter;
+
+  const _SparklinePainter({required this.values, required this.lowerIsBetter});
 
   @override
-  double get maxExtent => _extent;
+  void paint(Canvas canvas, Size size) {
+    if (values.length < 2) return;
+    final n = values.length;
+    final minV = values.reduce((a, b) => a < b ? a : b);
+    final maxV = values.reduce((a, b) => a > b ? a : b);
+    final range = maxV - minV;
 
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Container(
-      color: c.bgGradient[0],
-      alignment: Alignment.bottomLeft,
-      padding: EdgeInsets.fromLTRB(hPad, topPad, hPad, 14),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontFamily: 'Nunito',
-          color: c.primaryText,
-          fontSize: fontSize,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
+    double toX(int i) => size.width * i / (n - 1);
+    double toY(double v) => range == 0
+        ? size.height / 2
+        : size.height * (1 - (v - minV) / range);
+
+    // Determine trend colour: endpoint vs midpoint mean
+    final midMean = values.reduce((a, b) => a + b) / n;
+    final endpoint = values.last;
+    final improving = lowerIsBetter ? endpoint < midMean : endpoint > midMean;
+    final lineColor = improving ? const Color(0xFF5A9E1F) : const Color(0xFFFFB74D);
+
+    final path = Path();
+    path.moveTo(toX(0), toY(values[0]));
+    for (int i = 1; i < n; i++) {
+      final cx = (toX(i - 1) + toX(i)) / 2;
+      path.quadraticBezierTo(cx, toY(values[i - 1]), toX(i), toY(values[i]));
+    }
+
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = lineColor
+        ..strokeWidth = 1.5
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round,
+    );
+
+    // Endpoint dot
+    canvas.drawCircle(
+      Offset(toX(n - 1), toY(values.last)),
+      2.5,
+      Paint()..color = lineColor,
     );
   }
 
   @override
-  bool shouldRebuild(_StickyTitleDelegate old) =>
-      old.title != title || old.c != c;
+  bool shouldRepaint(_SparklinePainter old) => old.values != values;
 }
+
+// ── Course performance data class ─────────────────────────────────────────────
+
+class _CoursePerf {
+  final String name;
+  final int timesPlayed;
+  final double avgDiff;
+  final int bestDiff;
+  final double? trend; // positive = improving
+
+  const _CoursePerf({
+    required this.name,
+    required this.timesPlayed,
+    required this.avgDiff,
+    required this.bestDiff,
+    this.trend,
+  });
+}
+

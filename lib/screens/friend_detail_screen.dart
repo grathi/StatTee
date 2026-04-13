@@ -4,6 +4,7 @@ import '../models/friend_profile.dart';
 import '../models/round.dart';
 import '../services/friends_service.dart';
 import '../services/stats_service.dart';
+import '../services/pressure_score_service.dart';
 import '../theme/app_theme.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -32,13 +33,16 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
     final results = await Future.wait([
       FriendsService.loadStatsForUser(friend.uid),
       FriendsService.loadStatsForUser(meUid),
-      FriendsService.loadRecentRoundsForUser(friend.uid),
+      FriendsService.loadRecentRoundsForUser(friend.uid, limit: 50),
+      FriendsService.loadRecentRoundsForUser(meUid, limit: 50),
     ]);
 
     return _DetailData(
       friendStats: results[0] as AppStats,
       myStats: results[1] as AppStats,
       recentRounds: results[2] as List<Round>,
+      friendRounds: results[2] as List<Round>,
+      myRounds: results[3] as List<Round>,
     );
   }
 
@@ -155,6 +159,8 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
                           friendName: widget.friend.displayName,
                           myStats: snap.data!.myStats,
                           friendStats: snap.data!.friendStats,
+                          myRounds: snap.data!.myRounds,
+                          friendRounds: snap.data!.friendRounds,
                         ),
                       ),
                     ),
@@ -371,21 +377,74 @@ class _HeadToHead extends StatelessWidget {
     required this.friendName,
     required this.myStats,
     required this.friendStats,
+    required this.myRounds,
+    required this.friendRounds,
   });
 
   final AppColors c;
   final double body, label;
   final String friendName;
   final AppStats myStats, friendStats;
+  final List<Round> myRounds, friendRounds;
 
   @override
   Widget build(BuildContext context) {
+    // Score badge — count categories where each player wins
+    int myWins = 0, theirWins = 0;
+    void tally(bool iWin, bool theyWin) {
+      if (iWin)    myWins++;
+      if (theyWin) theirWins++;
+    }
+    tally(
+      myStats.handicapIndex != null && friendStats.handicapIndex != null &&
+          myStats.handicapIndex! < friendStats.handicapIndex!,
+      myStats.handicapIndex != null && friendStats.handicapIndex != null &&
+          friendStats.handicapIndex! < myStats.handicapIndex!,
+    );
+    tally(myStats.avgScore < friendStats.avgScore, friendStats.avgScore < myStats.avgScore);
+    tally(myStats.totalBirdies > friendStats.totalBirdies, friendStats.totalBirdies > myStats.totalBirdies);
+    tally(myStats.girPct > friendStats.girPct, friendStats.girPct > myStats.girPct);
+    tally(myStats.avgPutts < friendStats.avgPutts, friendStats.avgPutts < myStats.avgPutts);
+
+    // Pressure scores
+    final myPressure     = PressureScoreService.compute(myRounds);
+    final friendPressure = PressureScoreService.compute(friendRounds);
+    final myPS    = myPressure.compositeScore;
+    final themPS  = friendPressure.compositeScore;
+    final psIWin    = myRounds.length >= 5 && friendRounds.length >= 5 && myPS > themPS;
+    final psTheyWin = myRounds.length >= 5 && friendRounds.length >= 5 && themPS > myPS;
+    if (psIWin)    myWins++;
+    if (psTheyWin) theirWins++;
+
+    // Course duel — find courses both players have played
+    final myCourses     = <String, List<Round>>{};
+    final friendCourses = <String, List<Round>>{};
+    for (final r in myRounds)     myCourses.putIfAbsent(r.courseName, () => []).add(r);
+    for (final r in friendRounds) friendCourses.putIfAbsent(r.courseName, () => []).add(r);
+    final sharedCourses = myCourses.keys.where(friendCourses.containsKey).toList();
+    // Pick the shared course with most combined rounds
+    String? duelCourse;
+    if (sharedCourses.isNotEmpty) {
+      sharedCourses.sort((a, b) =>
+          ((myCourses[b]?.length ?? 0) + (friendCourses[b]?.length ?? 0))
+              .compareTo((myCourses[a]?.length ?? 0) + (friendCourses[a]?.length ?? 0)));
+      duelCourse = sharedCourses.first;
+    }
+
+    double _avg(List<Round> rs) {
+      if (rs.isEmpty) return 0;
+      return rs.fold(0.0, (s, r) => s + r.scoreDiff) / rs.length;
+    }
+
+    final friendShort = friendName.length > 8
+        ? '${friendName.substring(0, 7)}…'
+        : friendName;
+
     final rows = [
       _H2HRow(
         stat: 'Handicap',
         mine: myStats.handicapLabel,
         theirs: friendStats.handicapLabel,
-        // lower wins; treat null (not yet established) as losing
         iWin: myStats.handicapIndex != null && friendStats.handicapIndex != null &&
               myStats.handicapIndex! < friendStats.handicapIndex!,
         theyWin: myStats.handicapIndex != null && friendStats.handicapIndex != null &&
@@ -402,7 +461,6 @@ class _HeadToHead extends StatelessWidget {
         stat: 'Birdies',
         mine: '${myStats.totalBirdies}',
         theirs: '${friendStats.totalBirdies}',
-        // higher wins
         iWin: myStats.totalBirdies > friendStats.totalBirdies,
         theyWin: friendStats.totalBirdies > myStats.totalBirdies,
       ),
@@ -417,59 +475,225 @@ class _HeadToHead extends StatelessWidget {
         stat: 'Avg Putts',
         mine: myStats.avgPutts.toStringAsFixed(1),
         theirs: friendStats.avgPutts.toStringAsFixed(1),
-        // lower wins
         iWin: myStats.avgPutts < friendStats.avgPutts,
         theyWin: friendStats.avgPutts < myStats.avgPutts,
       ),
+      _H2HRow(
+        stat: 'Pressure',
+        mine: myRounds.length >= 5 ? '$myPS' : '--',
+        theirs: friendRounds.length >= 5 ? '$themPS' : '--',
+        iWin: psIWin,
+        theyWin: psTheyWin,
+      ),
     ];
+
+    // Score badge text
+    String badgeText;
+    if (myWins > theirWins) {
+      badgeText = 'You lead $myWins–$theirWins';
+    } else if (theirWins > myWins) {
+      badgeText = '$friendShort leads $theirWins–$myWins';
+    } else {
+      badgeText = 'Tied $myWins–$theirWins';
+    }
+    final badgeColor = myWins > theirWins
+        ? c.accent
+        : theirWins > myWins
+            ? c.secondaryText
+            : const Color(0xFFFFB74D);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          decoration: ShapeDecoration(
+            color: c.cardBg,
+            shape: SuperellipseShape(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: c.cardBorder),
+            ),
+            shadows: c.cardShadow,
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // Score badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: badgeColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: badgeColor.withValues(alpha: 0.35)),
+                ),
+                child: Text(
+                  badgeText,
+                  style: TextStyle(
+                    color: badgeColor,
+                    fontSize: label,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Column headers
+              Row(
+                children: [
+                  Expanded(
+                    child: Text('You',
+                        style: TextStyle(
+                            color: c.accent,
+                            fontSize: label,
+                            fontWeight: FontWeight.w700),
+                        textAlign: TextAlign.center),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Text('Head to Head',
+                        style: TextStyle(
+                            color: c.primaryText,
+                            fontSize: label,
+                            fontWeight: FontWeight.w700),
+                        textAlign: TextAlign.center),
+                  ),
+                  Expanded(
+                    child: Text(
+                        friendShort,
+                        style: TextStyle(
+                            color: c.secondaryText,
+                            fontSize: label,
+                            fontWeight: FontWeight.w700),
+                        textAlign: TextAlign.center),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              ...rows.map((r) => _buildRow(r)),
+            ],
+          ),
+        ),
+
+        // Course duel card
+        if (duelCourse != null) ...[
+          const SizedBox(height: 12),
+          _buildCourseDuel(context, duelCourse,
+              _avg(myCourses[duelCourse]!), _avg(friendCourses[duelCourse]!),
+              myCourses[duelCourse]!.length, friendCourses[duelCourse]!.length,
+              friendShort),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildCourseDuel(BuildContext context, String course,
+      double myAvg, double theirAvg, int myCount, int theirCount, String theirName) {
+    final iWin = myAvg <= theirAvg;
+    final myStr   = myAvg == 0 ? 'E' : myAvg > 0 ? '+${myAvg.toStringAsFixed(1)}' : myAvg.toStringAsFixed(1);
+    final theyStr = theirAvg == 0 ? 'E' : theirAvg > 0 ? '+${theirAvg.toStringAsFixed(1)}' : theirAvg.toStringAsFixed(1);
 
     return Container(
       decoration: ShapeDecoration(
-        color: c.cardBg,
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF1A3A08).withValues(alpha: 0.85),
+            const Color(0xFF3D6E14).withValues(alpha: 0.85),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         shape: SuperellipseShape(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: c.cardBorder),
         ),
-        shadows: c.cardShadow,
+        shadows: [
+          BoxShadow(
+            color: const Color(0xFF5A9E1F).withValues(alpha: 0.25),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Column headers
           Row(
             children: [
-              Expanded(
-                child: Text('You',
-                    style: TextStyle(
-                        color: c.accent,
-                        fontSize: label,
-                        fontWeight: FontWeight.w700),
-                    textAlign: TextAlign.center),
-              ),
-              Expanded(
-                flex: 2,
-                child: Text('Head to Head',
-                    style: TextStyle(
-                        color: c.primaryText,
-                        fontSize: label,
-                        fontWeight: FontWeight.w700),
-                    textAlign: TextAlign.center),
-              ),
+              Icon(Icons.flag_rounded,
+                  color: Colors.white.withValues(alpha: 0.7), size: label * 1.1),
+              const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                    friendName.length > 8
-                        ? '${friendName.substring(0, 7)}…'
-                        : friendName,
-                    style: TextStyle(
-                        color: c.secondaryText,
-                        fontSize: label,
-                        fontWeight: FontWeight.w700),
-                    textAlign: TextAlign.center),
+                  course,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: label,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  iWin ? '✓ You win' : '$theirName wins',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: label * 0.9,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          ...rows.map((r) => _buildRow(r)),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('You',
+                        style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            fontSize: label * 0.85)),
+                    const SizedBox(height: 2),
+                    Text('avg $myStr ($myCount rounds)',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: label,
+                            fontWeight: iWin ? FontWeight.w800 : FontWeight.w500)),
+                  ],
+                ),
+              ),
+              Container(
+                width: 1,
+                height: 32,
+                color: Colors.white.withValues(alpha: 0.2),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(theirName,
+                        style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            fontSize: label * 0.85)),
+                    const SizedBox(height: 2),
+                    Text('avg $theyStr ($theirCount rounds)',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: label,
+                            fontWeight: !iWin ? FontWeight.w800 : FontWeight.w500)),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -670,9 +894,13 @@ class _DetailData {
   final AppStats friendStats;
   final AppStats myStats;
   final List<Round> recentRounds;
+  final List<Round> friendRounds;
+  final List<Round> myRounds;
 
   _DetailData(
       {required this.friendStats,
       required this.myStats,
-      required this.recentRounds});
+      required this.recentRounds,
+      required this.friendRounds,
+      required this.myRounds});
 }

@@ -103,6 +103,59 @@
   "homeReadyToPlay": "⛳  Ready to play?",
   "homeStartRound": "Start Round",
   "homeTapToTeeOff": "Tap to tee off",
+
+  "greetingPerfectTeeTime": "Perfect tee time ⛳",
+  "greetingSunnyBreezy": "Sunny but breezy ⛳",
+  "greetingToughWeather": "Tough weather ahead 🌧️",
+  "greetingGoodScoring": "Good scoring weather ⛅",
+  "greetingPlaySmart": "Play smart today 💨",
+  "greetingEarlyTeeTime": "Early tee time",
+  "greetingMorningRound": "Morning round",
+  "greetingPerfectMorning": "Perfect morning",
+  "greetingMiddayFairways": "Midday fairways",
+  "greetingAfternoonLinks": "Afternoon links",
+  "greetingEveningRound": "Evening round",
+  "greetingClubbouseTime": "Clubhouse time",
+
+  "insightWetCourse": "🌧️ Wet course — drop a club",
+  "insightIdealConditions": "💡 Ideal conditions — trust your yardages",
+  "insightTry7Iron": "💡 Try a 7 iron today (wind {wind})",
+  "@insightTry7Iron": {
+    "placeholders": { "wind": { "type": "String" } }
+  },
+  "insightClubUp": "💨 Club up — wind {wind}",
+  "@insightClubUp": {
+    "placeholders": { "wind": { "type": "String" } }
+  },
+  "insightWindConservative": "💨 Wind {wind} — play conservatively",
+  "@insightWindConservative": {
+    "placeholders": { "wind": { "type": "String" } }
+  },
+  "insightPuttingImproved": "📈 Putting improved — keep the pace",
+  "insightFocusPutts": "💡 Focus on short putts this round",
+  "insightReadyToPlay": "🏌️ Ready to play",
+
+  "subtitlePuttingImproved": "Your putting improved {sign}{pct}% this week",
+  "@subtitlePuttingImproved": {
+    "placeholders": {
+      "sign": { "type": "String" },
+      "pct":  { "type": "int" }
+    }
+  },
+  "subtitlePuttingUp": "Your putting up {sign}{pct}% this week",
+  "@subtitlePuttingUp": {
+    "placeholders": {
+      "sign": { "type": "String" },
+      "pct":  { "type": "int" }
+    }
+  },
+  "subtitleGirDelta": "GIR {sign}{pct}% vs last 4 rounds",
+  "@subtitleGirDelta": {
+    "placeholders": {
+      "sign": { "type": "String" },
+      "pct":  { "type": "int" }
+    }
+  },
   "homeGolfNews": "Golf News",
   "homeSeeAll": "See all",
   "homeRecentRounds": "Recent Rounds",

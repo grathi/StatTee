@@ -819,5 +819,58 @@
     "placeholders": {
       "days": { "type": "int" }
     }
+  },
+
+  "greetingPerfectTeeTime": "टी टाइम एकदम सही ⛳",
+  "greetingSunnyBreezy": "धूप और हल्की हवा ⛳",
+  "greetingToughWeather": "मुश्किल मौसम आगे 🌧️",
+  "greetingGoodScoring": "अच्छे स्कोर का मौसम ⛅",
+  "greetingPlaySmart": "आज समझदारी से खेलें 💨",
+  "greetingEarlyTeeTime": "सुबह की शुरुआत",
+  "greetingMorningRound": "सुबह का राउंड",
+  "greetingPerfectMorning": "बेहतरीन सुबह",
+  "greetingMiddayFairways": "दोपहर के फेयरवे",
+  "greetingAfternoonLinks": "दोपहर बाद के लिंक्स",
+  "greetingEveningRound": "शाम का राउंड",
+  "greetingClubbouseTime": "क्लबहाउस का समय",
+
+  "insightWetCourse": "🌧️ गीला कोर्स — एक क्लब कम लें",
+  "insightIdealConditions": "💡 आदर्श परिस्थितियाँ — अपनी दूरियों पर भरोसा रखें",
+  "insightTry7Iron": "💡 आज 7 आयरन आज़माएं (हवा {wind})",
+  "@insightTry7Iron": {
+    "placeholders": { "wind": { "type": "String" } }
+  },
+  "insightClubUp": "💨 एक क्लब बड़ा लें — हवा {wind}",
+  "@insightClubUp": {
+    "placeholders": { "wind": { "type": "String" } }
+  },
+  "insightWindConservative": "💨 हवा {wind} — सावधानी से खेलें",
+  "@insightWindConservative": {
+    "placeholders": { "wind": { "type": "String" } }
+  },
+  "insightPuttingImproved": "📈 पटिंग सुधरी — यही रफ्तार बनाए रखें",
+  "insightFocusPutts": "💡 इस राउंड में छोटे पट्ट पर ध्यान दें",
+  "insightReadyToPlay": "🏌️ खेलने के लिए तैयार",
+
+  "subtitlePuttingImproved": "इस हफ्ते आपकी पटिंग {sign}{pct}% बेहतर हुई",
+  "@subtitlePuttingImproved": {
+    "placeholders": {
+      "sign": { "type": "String" },
+      "pct":  { "type": "int" }
+    }
+  },
+  "subtitlePuttingUp": "इस हफ्ते पटिंग {sign}{pct}% ऊपर",
+  "@subtitlePuttingUp": {
+    "placeholders": {
+      "sign": { "type": "String" },
+      "pct":  { "type": "int" }
+    }
+  },
+  "subtitleGirDelta": "GIR {sign}{pct}% पिछले 4 राउंड की तुलना में",
+  "@subtitleGirDelta": {
+    "placeholders": {
+      "sign": { "type": "String" },
+      "pct":  { "type": "int" }
+    }
   }
 }

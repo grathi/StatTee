@@ -279,6 +279,88 @@ class AppLocalizationsHi extends AppLocalizations {
   String get homeTapToTeeOff => 'टी ऑफ के लिए टैप करें';
 
   @override
+  String get greetingPerfectTeeTime => 'टी टाइम एकदम सही ⛳';
+
+  @override
+  String get greetingSunnyBreezy => 'धूप और हल्की हवा ⛳';
+
+  @override
+  String get greetingToughWeather => 'मुश्किल मौसम आगे 🌧️';
+
+  @override
+  String get greetingGoodScoring => 'अच्छे स्कोर का मौसम ⛅';
+
+  @override
+  String get greetingPlaySmart => 'आज समझदारी से खेलें 💨';
+
+  @override
+  String get greetingEarlyTeeTime => 'सुबह की शुरुआत';
+
+  @override
+  String get greetingMorningRound => 'सुबह का राउंड';
+
+  @override
+  String get greetingPerfectMorning => 'बेहतरीन सुबह';
+
+  @override
+  String get greetingMiddayFairways => 'दोपहर के फेयरवे';
+
+  @override
+  String get greetingAfternoonLinks => 'दोपहर बाद के लिंक्स';
+
+  @override
+  String get greetingEveningRound => 'शाम का राउंड';
+
+  @override
+  String get greetingClubbouseTime => 'क्लबहाउस का समय';
+
+  @override
+  String get insightWetCourse => '🌧️ गीला कोर्स — एक क्लब कम लें';
+
+  @override
+  String get insightIdealConditions =>
+      '💡 आदर्श परिस्थितियाँ — अपनी दूरियों पर भरोसा रखें';
+
+  @override
+  String insightTry7Iron(String wind) {
+    return '💡 आज 7 आयरन आज़माएं (हवा $wind)';
+  }
+
+  @override
+  String insightClubUp(String wind) {
+    return '💨 एक क्लब बड़ा लें — हवा $wind';
+  }
+
+  @override
+  String insightWindConservative(String wind) {
+    return '💨 हवा $wind — सावधानी से खेलें';
+  }
+
+  @override
+  String get insightPuttingImproved => '📈 पटिंग सुधरी — यही रफ्तार बनाए रखें';
+
+  @override
+  String get insightFocusPutts => '💡 इस राउंड में छोटे पट्ट पर ध्यान दें';
+
+  @override
+  String get insightReadyToPlay => '🏌️ खेलने के लिए तैयार';
+
+  @override
+  String subtitlePuttingImproved(String sign, int pct) {
+    return 'इस हफ्ते आपकी पटिंग $sign$pct% बेहतर हुई';
+  }
+
+  @override
+  String subtitlePuttingUp(String sign, int pct) {
+    return 'इस हफ्ते पटिंग $sign$pct% ऊपर';
+  }
+
+  @override
+  String subtitleGirDelta(String sign, int pct) {
+    return 'GIR $sign$pct% पिछले 4 राउंड की तुलना में';
+  }
+
+  @override
   String get homeGolfNews => 'गोल्फ समाचार';
 
   @override

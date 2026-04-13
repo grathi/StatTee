@@ -819,5 +819,58 @@
     "placeholders": {
       "days": { "type": "int" }
     }
+  },
+
+  "greetingPerfectTeeTime": "Hora de tee perfecta ⛳",
+  "greetingSunnyBreezy": "Soleado pero con brisa ⛳",
+  "greetingToughWeather": "Tiempo difícil por delante 🌧️",
+  "greetingGoodScoring": "Buen tiempo para puntuar ⛅",
+  "greetingPlaySmart": "Juega inteligente hoy 💨",
+  "greetingEarlyTeeTime": "Salida temprana",
+  "greetingMorningRound": "Ronda matutina",
+  "greetingPerfectMorning": "Mañana perfecta",
+  "greetingMiddayFairways": "Calle del mediodía",
+  "greetingAfternoonLinks": "Links de tarde",
+  "greetingEveningRound": "Ronda vespertina",
+  "greetingClubbouseTime": "Hora del club",
+
+  "insightWetCourse": "🌧️ Campo mojado — baja un palo",
+  "insightIdealConditions": "💡 Condiciones ideales — confía en tus yardas",
+  "insightTry7Iron": "💡 Prueba un hierro 7 hoy (viento {wind})",
+  "@insightTry7Iron": {
+    "placeholders": { "wind": { "type": "String" } }
+  },
+  "insightClubUp": "💨 Sube un palo — viento {wind}",
+  "@insightClubUp": {
+    "placeholders": { "wind": { "type": "String" } }
+  },
+  "insightWindConservative": "💨 Viento {wind} — juega con cautela",
+  "@insightWindConservative": {
+    "placeholders": { "wind": { "type": "String" } }
+  },
+  "insightPuttingImproved": "📈 Putting mejorado — mantén el ritmo",
+  "insightFocusPutts": "💡 Concéntrate en putts cortos esta ronda",
+  "insightReadyToPlay": "🏌️ Listo para jugar",
+
+  "subtitlePuttingImproved": "Tu putting mejoró {sign}{pct}% esta semana",
+  "@subtitlePuttingImproved": {
+    "placeholders": {
+      "sign": { "type": "String" },
+      "pct":  { "type": "int" }
+    }
+  },
+  "subtitlePuttingUp": "Tu putting subió {sign}{pct}% esta semana",
+  "@subtitlePuttingUp": {
+    "placeholders": {
+      "sign": { "type": "String" },
+      "pct":  { "type": "int" }
+    }
+  },
+  "subtitleGirDelta": "GIR {sign}{pct}% vs últimas 4 rondas",
+  "@subtitleGirDelta": {
+    "placeholders": {
+      "sign": { "type": "String" },
+      "pct":  { "type": "int" }
+    }
   }
 }

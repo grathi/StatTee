@@ -286,6 +286,90 @@ class AppLocalizationsFr extends AppLocalizations {
   String get homeTapToTeeOff => 'Appuyez pour partir';
 
   @override
+  String get greetingPerfectTeeTime => 'Heure de départ idéale ⛳';
+
+  @override
+  String get greetingSunnyBreezy => 'Ensoleillé mais venteux ⛳';
+
+  @override
+  String get greetingToughWeather => 'Météo difficile en vue 🌧️';
+
+  @override
+  String get greetingGoodScoring => 'Bon temps pour scorer ⛅';
+
+  @override
+  String get greetingPlaySmart => 'Jouez intelligemment aujourd\'hui 💨';
+
+  @override
+  String get greetingEarlyTeeTime => 'Départ matinal';
+
+  @override
+  String get greetingMorningRound => 'Tour du matin';
+
+  @override
+  String get greetingPerfectMorning => 'Matinée parfaite';
+
+  @override
+  String get greetingMiddayFairways => 'Fairways de midi';
+
+  @override
+  String get greetingAfternoonLinks => 'Links de l\'après-midi';
+
+  @override
+  String get greetingEveningRound => 'Tour du soir';
+
+  @override
+  String get greetingClubbouseTime => 'Heure du club-house';
+
+  @override
+  String get insightWetCourse =>
+      '🌧️ Parcours mouillé — prenez un club de plus';
+
+  @override
+  String get insightIdealConditions =>
+      '💡 Conditions idéales — fiez-vous à vos distances';
+
+  @override
+  String insightTry7Iron(String wind) {
+    return '💡 Essayez un fer 7 aujourd\'hui (vent $wind)';
+  }
+
+  @override
+  String insightClubUp(String wind) {
+    return '💨 Prenez un club de plus — vent $wind';
+  }
+
+  @override
+  String insightWindConservative(String wind) {
+    return '💨 Vent $wind — jouez prudemment';
+  }
+
+  @override
+  String get insightPuttingImproved => '📈 Putting amélioré — gardez le rythme';
+
+  @override
+  String get insightFocusPutts =>
+      '💡 Concentrez-vous sur les courts putts ce tour';
+
+  @override
+  String get insightReadyToPlay => '🏌️ Prêt à jouer';
+
+  @override
+  String subtitlePuttingImproved(String sign, int pct) {
+    return 'Votre putting a progressé de $sign$pct% cette semaine';
+  }
+
+  @override
+  String subtitlePuttingUp(String sign, int pct) {
+    return 'Votre putting en hausse de $sign$pct% cette semaine';
+  }
+
+  @override
+  String subtitleGirDelta(String sign, int pct) {
+    return 'GIR $sign$pct% vs 4 derniers tours';
+  }
+
+  @override
   String get homeGolfNews => 'Actualités golf';
 
   @override

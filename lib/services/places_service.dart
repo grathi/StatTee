@@ -69,6 +69,9 @@ class GolfCourseDetail {
   final double? lat;
   final double? lng;
   final String? photoUrl;
+  final double? rating;       // 0–5 from Google Places
+  final int?    reviewCount;  // user_ratings_total
+  final int?    priceLevel;   // 0–4, used as difficulty heuristic
 
   const GolfCourseDetail({
     required this.placeId,
@@ -77,6 +80,9 @@ class GolfCourseDetail {
     this.lat,
     this.lng,
     this.photoUrl,
+    this.rating,
+    this.reviewCount,
+    this.priceLevel,
   });
 }
 
@@ -305,6 +311,9 @@ class PlacesService {
               lat: (geo?['lat'] as num?)?.toDouble(),
               lng: (geo?['lng'] as num?)?.toDouble(),
               photoUrl: _firstPhotoUrl(r as Map<String, dynamic>),
+              rating:      (r['rating'] as num?)?.toDouble(),
+              reviewCount: r['user_ratings_total'] as int?,
+              priceLevel:  r['price_level'] as int?,
             );
           })
           .toList();
@@ -388,6 +397,9 @@ class PlacesService {
           lat: (geo?['lat'] as num?)?.toDouble(),
           lng: (geo?['lng'] as num?)?.toDouble(),
           photoUrl: _firstPhotoUrl(r as Map<String, dynamic>),
+          rating:      (r['rating'] as num?)?.toDouble(),
+          reviewCount: r['user_ratings_total'] as int?,
+          priceLevel:  r['price_level'] as int?,
         );
       }).toList();
     } catch (_) {
