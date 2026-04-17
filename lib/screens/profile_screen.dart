@@ -10,7 +10,6 @@ import '../services/user_profile_service.dart';
 import '../theme/app_theme.dart';
 import '../services/notification_service.dart';
 import '../screens/notification_preferences_screen.dart';
-import '../screens/golf_world_map_screen.dart';
 import '../widgets/shimmer_widgets.dart';
 import '../widgets/tip_banner.dart';
 import '../services/onboarding_service.dart';
@@ -125,17 +124,6 @@ class ProfileScreen extends StatelessWidget {
 
                     // Settings section
                     _buildSection(c, sw, sh, body, label, context.l10n.profileAccount, [
-                      _MenuItem(
-                        icon: Icons.map_rounded,
-                        label: context.l10n.profileGolfPlaces,
-                        color: const Color(0xFF5A9E1F),
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const GolfWorldMap(),
-                          ),
-                        ),
-                      ),
                       _MenuItem(
                         icon: Icons.person_outline_rounded,
                         label: context.l10n.profileEditProfile,

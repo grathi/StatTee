@@ -29,6 +29,8 @@ import '../widgets/tour_overlay.dart';
 import '../services/onboarding_service.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 import '../models/group_round.dart';
 import '../models/friend_profile.dart';
 import '../services/group_round_service.dart';
@@ -2489,12 +2491,17 @@ class _HomeTabState extends State<_HomeTab>
             // ── Banner image ────────────────────────────────────────────
             if (course.photoUrl != null)
               imageBlock(
-                Image.network(
-                  course.photoUrl!,
+                CachedNetworkImage(
+                  imageUrl: course.photoUrl!,
                   width: cardW,
                   height: 90,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
+                  placeholder: (_, __) => Shimmer.fromColors(
+                    baseColor: Colors.grey.shade300,
+                    highlightColor: Colors.grey.shade100,
+                    child: Container(width: cardW, height: 90, color: Colors.grey.shade300),
+                  ),
+                  errorWidget: (_, __, ___) => Container(
                     width: cardW,
                     height: 90,
                     color: c.accentBg,
