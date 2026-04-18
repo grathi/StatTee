@@ -377,8 +377,10 @@ class PracticeScreen extends StatelessWidget {
     return '${months[d.month]} ${d.year}'.toUpperCase();
   }
 
-  String _formatDate(DateTime d) =>
-      '${d.month}/${d.day}/${d.year}';
+  String _formatDate(DateTime d) {
+    final l = d.toLocal();
+    return '${l.month}/${l.day}/${l.year}';
+  }
 
   Color _typeColor(PracticeType t) {
     switch (t) {

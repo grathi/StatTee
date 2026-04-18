@@ -243,7 +243,7 @@ class _TournamentCard extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime d) => '${d.month}/${d.day}/${d.year}';
+  String _formatDate(DateTime d) { final l = d.toLocal(); return '${l.month}/${l.day}/${l.year}'; }
 }
 
 // ── Tournament Detail Screen ───────────────────────────────────────────────
@@ -389,7 +389,7 @@ class _TournamentDetailScreen extends StatelessWidget {
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis),
                                       Text(
-                                        '${r.startedAt.month}/${r.startedAt.day}/${r.startedAt.year}',
+                                        '${r.startedAt.toLocal().month}/${r.startedAt.toLocal().day}/${r.startedAt.toLocal().year}',
                                         style: TextStyle(
                                             color: c.tertiaryText,
                                             fontSize: label * 0.88),

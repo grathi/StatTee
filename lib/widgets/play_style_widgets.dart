@@ -227,12 +227,15 @@ class _CardContent extends StatelessWidget {
   }
 
   static String _formatDate(DateTime d) {
-    final now  = DateTime.now();
-    final diff = now.difference(d);
-    if (diff.inDays == 0) return 'today';
-    if (diff.inDays == 1) return 'yesterday';
-    if (diff.inDays < 7)  return '${diff.inDays}d ago';
-    return '${d.day}/${d.month}/${d.year}';
+    final local = d.toLocal();
+    final now   = DateTime.now();
+    final nowDate  = DateTime(now.year, now.month, now.day);
+    final thatDate = DateTime(local.year, local.month, local.day);
+    final diff = nowDate.difference(thatDate).inDays;
+    if (diff == 0) return 'today';
+    if (diff == 1) return 'yesterday';
+    if (diff < 7)  return '${diff}d ago';
+    return '${local.day}/${local.month}/${local.year}';
   }
 }
 

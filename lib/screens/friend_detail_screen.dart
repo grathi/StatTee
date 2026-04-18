@@ -840,11 +840,12 @@ class _RoundRow extends StatelessWidget {
   }
 
   String _formatDate(DateTime d) {
+    final l = d.toLocal();
     const months = [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
-    return '${months[d.month - 1]} ${d.day}, ${d.year}';
+    return '${months[l.month - 1]} ${l.day}, ${l.year}';
   }
 }
 

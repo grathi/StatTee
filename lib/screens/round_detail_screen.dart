@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:screenshot/screenshot.dart';
@@ -7,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
 import '../models/round.dart';
 import '../models/hole_score.dart';
+import '../models/group_round.dart';
 import '../services/round_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/l10n_extension.dart';
@@ -23,7 +25,55 @@ class RoundDetailScreen extends StatefulWidget {
 
 class _RoundDetailScreenState extends State<RoundDetailScreen> {
   final _screenshotController = ScreenshotController();
+  final _shareButtonKey = GlobalKey();
   bool _sharing = false;
+
+  // ── Group round (joint scorecard) ─────────────────────────────────────────
+  GroupRound? _groupRound;
+  /// uid → their Round (null if fetch failed)
+  final Map<String, Round?> _peerRounds = {};
+  bool _loadingGroupData = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final sid = widget.round.sessionId;
+    if (sid != null && sid.isNotEmpty) {
+      _loadGroupData(sid);
+    }
+  }
+
+  Future<void> _loadGroupData(String sessionId) async {
+    if (!mounted) return;
+    setState(() => _loadingGroupData = true);
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('groupRounds')
+          .doc(sessionId)
+          .get();
+      if (!doc.exists || !mounted) return;
+      final gr = GroupRound.fromFirestore(doc);
+
+      // Fetch each other player's Round for hole-by-hole scores.
+      for (final player in gr.players.values) {
+        final rid = player.roundId;
+        if (rid == null || rid == widget.round.id) continue;
+        try {
+          final rdoc = await FirebaseFirestore.instance
+              .collection('rounds')
+              .doc(rid)
+              .get();
+          _peerRounds[player.uid] = rdoc.exists ? Round.fromFirestore(rdoc) : null;
+        } catch (_) {
+          _peerRounds[player.uid] = null;
+        }
+      }
+
+      if (mounted) setState(() { _groupRound = gr; _loadingGroupData = false; });
+    } catch (_) {
+      if (mounted) setState(() => _loadingGroupData = false);
+    }
+  }
 
   double get _sw => MediaQuery.of(context).size.width;
   double get _sh => MediaQuery.of(context).size.height;
@@ -38,9 +88,10 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
   }
 
   String _formatDate(DateTime dt) {
+    final local = dt.toLocal();
     const months = ['Jan','Feb','Mar','Apr','May','Jun',
                     'Jul','Aug','Sep','Oct','Nov','Dec'];
-    return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
+    return '${months[local.month - 1]} ${local.day}, ${local.year}';
   }
 
   // ── Share as PNG ──────────────────────────────────────────────────────────
@@ -52,10 +103,26 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
       final dir = await getTemporaryDirectory();
       final file = File('${dir.path}/scorecard_${widget.round.id}.png');
       await file.writeAsBytes(bytes);
+
+      // Compute share origin from the button's render box (required on iOS 16+).
+      Rect? origin;
+      final box = _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
+      if (box != null) {
+        final pos = box.localToGlobal(Offset.zero);
+        origin = pos & box.size;
+      }
+
       await Share.shareXFiles(
         [XFile(file.path)],
         text: '${widget.round.courseName} — ${widget.round.scoreDiffLabel} (${widget.round.totalScore})',
+        sharePositionOrigin: origin,
       );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not share: $e')),
+        );
+      }
     } finally {
       if (mounted) setState(() => _sharing = false);
     }
@@ -213,6 +280,7 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
             )
           else
             IconButton(
+              key: _shareButtonKey,
               icon: Icon(Icons.ios_share_rounded, color: c.accent, size: 22),
               onPressed: _share,
               tooltip: context.l10n.roundDetailShare,
@@ -445,11 +513,110 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
               child: _buildScorecardTable(c, round, body, label),
             ),
 
+            // ── Joint scorecard (group rounds) ────────────────────────────
+            if (widget.round.sessionId != null &&
+                widget.round.sessionId!.isNotEmpty)
+              _buildJointScorecardSection(c, round, body, label),
+
             // ── Shot trails section ────────────────────────────────────────
             _buildShotTrailsSection(c, round, body, label),
           ],
         ),
       ),
+    );
+  }
+
+  // ── Joint scorecard section ────────────────────────────────────────────────
+  Widget _buildJointScorecardSection(
+      AppColors c, Round round, double body, double label) {
+    if (_loadingGroupData) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(height: _sh * 0.022),
+          Text(
+            'Group Scorecard',
+            style: TextStyle(
+              fontFamily: 'Nunito',
+              color: c.primaryText,
+              fontSize: body * 1.1,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(height: _sh * 0.012),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: CircularProgressIndicator(color: c.accent, strokeWidth: 2),
+            ),
+          ),
+        ],
+      );
+    }
+
+    final gr = _groupRound;
+    if (gr == null) return const SizedBox.shrink();
+
+    // Build ordered list: current user first, then others by displayName.
+    final myUid = round.userId;
+    final ordered = <(GroupRoundPlayer, Round?)>[];
+    final me = gr.players[myUid];
+    if (me != null) ordered.add((me, round));
+    final others = gr.players.values
+        .where((p) => p.uid != myUid && p.roundId != null)
+        .toList()
+      ..sort((a, b) => a.displayName.compareTo(b.displayName));
+    for (final p in others) {
+      ordered.add((p, _peerRounds[p.uid]));
+    }
+    if (ordered.length < 2) return const SizedBox.shrink();
+
+    // Par data: prefer GroupRound.holes, fall back to user's own scores.
+    final Map<int, int> parByHole = {};
+    if (gr.holes.isNotEmpty) {
+      for (final h in gr.holes) parByHole[h.hole] = h.par;
+    } else {
+      for (final h in round.scores) parByHole[h.hole] = h.par;
+    }
+
+    final totalHoles = round.totalHoles;
+    final holes = List.generate(totalHoles, (i) => i + 1);
+    final front = holes.take(9).toList();
+    final back = totalHoles > 9 ? holes.skip(9).toList() : <int>[];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(height: _sh * 0.028),
+        Text(
+          'Group Scorecard',
+          style: TextStyle(
+            fontFamily: 'Nunito',
+            color: c.primaryText,
+            fontSize: body * 1.1,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '${gr.players.values.where((p) => p.status == 'completed').length} players · ${gr.courseName}',
+          style: TextStyle(
+            color: c.secondaryText,
+            fontSize: label,
+          ),
+        ),
+        SizedBox(height: _sh * 0.012),
+        _JointScorecardTable(
+          c: c,
+          ordered: ordered,
+          parByHole: parByHole,
+          front: front,
+          back: back,
+          bodySize: body,
+          labelSize: label,
+          scoreColor: _scoreColor,
+        ),
+      ],
     );
   }
 
@@ -804,6 +971,419 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
         Text(label,
             style: TextStyle(
                 color: c.tertiaryText, fontSize: fontSize * 0.85)),
+      ],
+    );
+  }
+}
+
+// ── Joint scorecard table widget ──────────────────────────────────────────────
+
+class _JointScorecardTable extends StatelessWidget {
+  final AppColors c;
+  final List<(GroupRoundPlayer, Round?)> ordered;
+  final Map<int, int> parByHole;
+  final List<int> front;
+  final List<int> back;
+  final double bodySize;
+  final double labelSize;
+  final Color Function(int diff) scoreColor;
+
+  const _JointScorecardTable({
+    required this.c,
+    required this.ordered,
+    required this.parByHole,
+    required this.front,
+    required this.back,
+    required this.bodySize,
+    required this.labelSize,
+    required this.scoreColor,
+  });
+
+  // Returns the score for a given player+hole, or null if not available.
+  int? _score(Round? r, int hole) =>
+      r?.scores.firstWhere((h) => h.hole == hole,
+          orElse: () => HoleScore(hole: hole, par: 0, score: 0, putts: 0, fairwayHit: false, gir: false)).score;
+
+  bool _scoreExists(Round? r, int hole) =>
+      r?.scores.any((h) => h.hole == hole) ?? false;
+
+  // Sum scores for a list of holes.
+  int? _sum(Round? r, List<int> holes) {
+    if (r == null) return null;
+    if (!holes.every((h) => _scoreExists(r, h))) return null;
+    return holes.fold<int>(0, (s, h) => s + (_score(r, h) ?? 0));
+  }
+
+  int? _parSum(List<int> holes) {
+    if (holes.any((h) => !parByHole.containsKey(h))) return null;
+    return holes.fold<int>(0, (s, h) => s + parByHole[h]!);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const nameColW = 88.0;
+    const holeColW = 30.0;
+    const subtotalW = 36.0;
+
+    const headerGreen = Color(0xFF3D6B10);
+    const parRowColor = Color(0xFF517A20);
+    const altRow = Color(0xFFF4FAF0);
+
+    // Build a section (front 9 / back 9 with subtotals).
+    Widget buildSection(List<int> holeNums, String label) {
+      if (holeNums.isEmpty) return const SizedBox.shrink();
+      final parTotal = _parSum(holeNums);
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Hole header row ─────────────────────────────────────────────
+          Container(
+            color: headerGreen,
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: nameColW,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 10),
+                    child: Text(
+                      'PLAYER',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: labelSize * 0.78,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ),
+                ...holeNums.map((h) => SizedBox(
+                      width: holeColW,
+                      child: Text(
+                        '$h',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: labelSize * 0.82,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    )),
+                SizedBox(
+                  width: subtotalW,
+                  child: Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: labelSize * 0.82,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // ── Par row ─────────────────────────────────────────────────────
+          Container(
+            color: parRowColor,
+            padding: const EdgeInsets.symmetric(vertical: 5),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: nameColW,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 10),
+                    child: Text(
+                      'PAR',
+                      style: TextStyle(
+                        color: Colors.white60,
+                        fontSize: labelSize * 0.78,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ),
+                ...holeNums.map((h) => SizedBox(
+                      width: holeColW,
+                      child: Text(
+                        '${parByHole[h] ?? '-'}',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: labelSize * 0.82,
+                        ),
+                      ),
+                    )),
+                SizedBox(
+                  width: subtotalW,
+                  child: Text(
+                    '${parTotal ?? '-'}',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: labelSize * 0.82,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // ── Player rows ─────────────────────────────────────────────────
+          ...ordered.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final (player, round) = entry.value;
+            final subtotal = _sum(round, holeNums);
+            final parSub = _parSum(holeNums);
+            final subtotalDiff =
+                (subtotal != null && parSub != null) ? subtotal - parSub : null;
+
+            return Container(
+              color: idx.isOdd ? altRow : Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  // Name
+                  SizedBox(
+                    width: nameColW,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 10),
+                      child: Text(
+                        player.displayName.split(' ').first,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: c.primaryText,
+                          fontSize: labelSize * 0.88,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Per-hole scores
+                  ...holeNums.map((h) {
+                    if (!_scoreExists(round, h)) {
+                      return SizedBox(
+                        width: holeColW,
+                        child: Text('–',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                color: c.tertiaryText,
+                                fontSize: labelSize * 0.82)),
+                      );
+                    }
+                    final sc = _score(round, h)!;
+                    final par = parByHole[h] ?? sc;
+                    final diff = sc - par;
+                    return SizedBox(
+                      width: holeColW,
+                      child: Center(child: _ScoreBadge(score: sc, diff: diff, size: holeColW - 4)),
+                    );
+                  }),
+                  // Subtotal
+                  SizedBox(
+                    width: subtotalW,
+                    child: Center(
+                      child: subtotal == null
+                          ? Text('–',
+                              style: TextStyle(
+                                  color: c.tertiaryText,
+                                  fontSize: labelSize * 0.82))
+                          : _SubtotalChip(
+                              score: subtotal,
+                              diff: subtotalDiff,
+                              c: c,
+                              labelSize: labelSize,
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      );
+    }
+
+    // Render each player's total separately below the table
+    Widget buildPlayerTotals() {
+      final allHoles = [...front, ...back];
+      // Total row width must exactly match buildSection rows:
+      //   nameColW + front.length*holeColW + subtotalW + back.length*holeColW + (back.isNotEmpty ? subtotalW : 0)
+      final dataW = front.length * holeColW +
+          subtotalW +
+          back.length * holeColW +
+          (back.isNotEmpty ? subtotalW : 0);
+      final playerW =
+          ordered.isNotEmpty ? dataW / ordered.length : dataW;
+      return Container(
+        color: const Color(0xFF3D6B10),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          children: [
+            SizedBox(
+              width: nameColW,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 10),
+                child: Text(
+                  'TOTAL',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: labelSize * 0.82,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ),
+            ...ordered.map((entry) {
+              final (player, round) = entry;
+              final total = _sum(round, allHoles) ?? player.totalScore;
+
+              return SizedBox(
+                width: playerW,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${total ?? '–'}',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        color: Colors.white,
+                        fontSize: bodySize * 0.95,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      player.displayName.split(' ').first,
+                      style: TextStyle(
+                        color: Colors.white60,
+                        fontSize: labelSize * 0.78,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
+      );
+    }
+
+    final squircle = SuperellipseShape(
+      borderRadius: BorderRadius.circular(40),
+      side: BorderSide(color: c.cardBorder),
+    );
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Container(
+        decoration: ShapeDecoration(
+          color: c.cardBg,
+          shape: squircle,
+          shadows: c.cardShadow,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            buildSection(front, 'OUT'),
+            if (back.isNotEmpty) ...[
+              const SizedBox(height: 1),
+              buildSection(back, 'IN'),
+            ],
+            buildPlayerTotals(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Score badge — superellipse (squircle) shape mimicking real scorecard markings.
+class _ScoreBadge extends StatelessWidget {
+  final int score;
+  final int diff;
+  final double size;
+  const _ScoreBadge({required this.score, required this.diff, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = diff <= -2
+        ? const Color(0xFFFFD700)    // eagle+: gold
+        : diff == -1
+            ? const Color(0xFF4CAF82) // birdie: green
+            : diff == 0
+                ? const Color(0xFF64B5F6) // par: blue
+                : diff == 1
+                    ? const Color(0xFFFFB74D) // bogey: amber
+                    : const Color(0xFFE53935); // double+: red
+
+    final double badgeSize = size * 0.82;
+
+    return Container(
+      width: badgeSize,
+      height: badgeSize,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        shape: BoxShape.circle,
+        border: Border.all(color: color.withValues(alpha: 0.4), width: 1.3),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        '$score',
+        style: TextStyle(
+          fontFamily: 'Nunito',
+          color: color,
+          fontSize: badgeSize * 0.50,
+          fontWeight: FontWeight.w700,
+          height: 1.0,
+        ),
+      ),
+    );
+  }
+}
+
+// Subtotal chip (OUT / IN column).
+class _SubtotalChip extends StatelessWidget {
+  final int score;
+  final int? diff;
+  final AppColors c;
+  final double labelSize;
+  const _SubtotalChip(
+      {required this.score, required this.diff, required this.c, required this.labelSize});
+
+  @override
+  Widget build(BuildContext context) {
+    final diffColor = diff == null
+        ? c.primaryText
+        : diff! < 0
+            ? const Color(0xFF4CAF82)
+            : diff! == 0
+                ? const Color(0xFF64B5F6)
+                : const Color(0xFFFFB74D);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '$score',
+          style: TextStyle(
+            fontFamily: 'Nunito',
+            color: c.primaryText,
+            fontSize: labelSize * 0.88,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        if (diff != null)
+          Text(
+            diff == 0 ? 'E' : diff! > 0 ? '+$diff' : '$diff',
+            style: TextStyle(
+              color: diffColor,
+              fontSize: labelSize * 0.72,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
       ],
     );
   }

@@ -902,14 +902,18 @@ class _HomeTabState extends State<_HomeTab>
   }
 
   String _timeAgo(DateTime dt) {
-    final diff = DateTime.now().difference(dt);
-    if (diff.inDays == 0) return context.l10n.homeToday;
-    if (diff.inDays == 1) return context.l10n.homeYesterday;
-    if (diff.inDays < 7) return context.l10n.homeDaysAgo(diff.inDays);
-    if (diff.inDays < 14) return context.l10n.homeWeekAgo;
-    if (diff.inDays < 21) return context.l10n.homeTwoWeeksAgo;
-    if (diff.inDays < 30) return context.l10n.homeThreeWeeksAgo;
-    return context.l10n.homeMonthsAgo((diff.inDays / 30).floor());
+    final local = dt.toLocal();
+    final now   = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final day   = DateTime(local.year, local.month, local.day);
+    final diff  = today.difference(day).inDays;
+    if (diff == 0) return context.l10n.homeToday;
+    if (diff == 1) return context.l10n.homeYesterday;
+    if (diff < 7)  return context.l10n.homeDaysAgo(diff);
+    if (diff < 14) return context.l10n.homeWeekAgo;
+    if (diff < 21) return context.l10n.homeTwoWeeksAgo;
+    if (diff < 30) return context.l10n.homeThreeWeeksAgo;
+    return context.l10n.homeMonthsAgo((diff / 30).floor());
   }
 
   Color _diffColor(int diff) {
@@ -1177,6 +1181,7 @@ class _HomeTabState extends State<_HomeTab>
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   '$greetingText,',
@@ -1197,7 +1202,7 @@ class _HomeTabState extends State<_HomeTab>
                   ),
                 ),
                 if (subtitle != null) ...[
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 2),
                   Text(
                     subtitle,
                     style: TextStyle(
@@ -1207,24 +1212,26 @@ class _HomeTabState extends State<_HomeTab>
                     ),
                   ),
                 ],
-                const SizedBox(height: 5),
-                // AI insight chip
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: c.accentBg,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: c.accentBorder),
-                  ),
-                  child: Text(
-                    insightText,
-                    style: TextStyle(
-                      color: c.accent,
-                      fontSize: _labelSize * 0.84,
-                      fontWeight: FontWeight.w600,
+                // AI insight chip — hidden when subtitle already occupies the space
+                if (subtitle == null) ...[
+                  const SizedBox(height: 3),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: c.accentBg,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: c.accentBorder),
+                    ),
+                    child: Text(
+                      insightText,
+                      style: TextStyle(
+                        color: c.accent,
+                        fontSize: _labelSize * 0.84,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -3663,11 +3670,16 @@ class _NewsHCard extends StatelessWidget {
   });
 
   String _timeAgo(DateTime dt) {
-    final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 60)  return '${diff.inMinutes}m ago';
-    if (diff.inHours   < 24)  return '${diff.inHours}h ago';
-    if (diff.inDays    < 7)   return '${diff.inDays}d ago';
-    return '${dt.day}/${dt.month}';
+    final local = dt.toLocal();
+    final diff  = DateTime.now().difference(local);
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours   < 24) return '${diff.inHours}h ago';
+    final now   = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final day   = DateTime(local.year, local.month, local.day);
+    final days  = today.difference(day).inDays;
+    if (days < 7) return '${days}d ago';
+    return '${local.day}/${local.month}';
   }
 
   @override
