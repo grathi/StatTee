@@ -872,5 +872,24 @@
       "sign": { "type": "String" },
       "pct":  { "type": "int" }
     }
+  },
+
+  "nearbyTitle": "À proximité",
+  "nearbyCheckInTitle": "Trouver des Golfeurs Proches",
+  "nearbyCheckInBody": "Enregistrez-vous sur votre parcours pour découvrir des joueurs cherchant un groupe",
+  "nearbyCheckIn": "S'enregistrer",
+  "nearbyCheckedIn": "Vous êtes enregistré",
+  "nearbyLookingForGroup": "Cherche un groupe",
+  "nearbyLeave": "Quitter",
+  "nearbyNoOneNearby": "Aucun golfeur ne cherche de groupe pour l'instant",
+  "nearbyTogglePrompt": "Activez 'Cherche un groupe' ci-dessus pour découvrir les golfeurs proches",
+  "nearbyRequestJoin": "Demander à rejoindre",
+  "nearbyRequestSent": "Envoyé",
+  "nearbyNotAtCourse": "Aucun parcours de golf détecté dans 1 km. Rapprochez-vous d'un parcours.",
+  "nearbyHcp": "HCP : {value}",
+  "@nearbyHcp": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
   }
 }

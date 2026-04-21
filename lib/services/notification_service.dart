@@ -157,6 +157,13 @@ class NotificationService {
       notification.body,
       _details(payload: payload),
     );
+
+    // For action routes (groupRound, joinRequest) also navigate immediately
+    // so the user doesn't have to tap the banner when the app is in foreground.
+    final route = msg.data['route'] as String?;
+    if (route == 'groupRound' || route == 'joinRequest') {
+      onNotificationTap?.call(msg.data);
+    }
   }
 
   // ── FCM token ─────────────────────────────────────────────────────────────

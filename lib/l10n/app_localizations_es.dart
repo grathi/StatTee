@@ -1922,4 +1922,48 @@ class AppLocalizationsEs extends AppLocalizations {
   String timeDaysAgo(int days) {
     return 'hace ${days}d';
   }
+
+  @override
+  String get nearbyTitle => 'Cerca';
+
+  @override
+  String get nearbyCheckInTitle => 'Encontrar Golfistas Cercanos';
+
+  @override
+  String get nearbyCheckInBody =>
+      'Haz check-in en tu campo para descubrir jugadores que buscan grupo';
+
+  @override
+  String get nearbyCheckIn => 'Check-in';
+
+  @override
+  String get nearbyCheckedIn => 'Estás registrado';
+
+  @override
+  String get nearbyLookingForGroup => 'Buscando grupo';
+
+  @override
+  String get nearbyLeave => 'Salir';
+
+  @override
+  String get nearbyNoOneNearby => 'Ningún golfista busca grupo ahora mismo';
+
+  @override
+  String get nearbyTogglePrompt =>
+      'Activa \'Buscando grupo\' arriba para descubrir golfistas cercanos';
+
+  @override
+  String get nearbyRequestJoin => 'Solicitar unirse';
+
+  @override
+  String get nearbyRequestSent => 'Enviado';
+
+  @override
+  String get nearbyNotAtCourse =>
+      'No se detectó ningún campo de golf en 1 km. Acércate más a un campo.';
+
+  @override
+  String nearbyHcp(String value) {
+    return 'HCP: $value';
+  }
 }

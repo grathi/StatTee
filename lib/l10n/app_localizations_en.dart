@@ -1900,4 +1900,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String timeDaysAgo(int days) {
     return '${days}d ago';
   }
+
+  @override
+  String get nearbyTitle => 'Nearby';
+
+  @override
+  String get nearbyCheckInTitle => 'Find Golfers Nearby';
+
+  @override
+  String get nearbyCheckInBody =>
+      'Check in at your course to discover players looking for a group';
+
+  @override
+  String get nearbyCheckIn => 'Check In';
+
+  @override
+  String get nearbyCheckedIn => 'You are checked in';
+
+  @override
+  String get nearbyLookingForGroup => 'Looking for group';
+
+  @override
+  String get nearbyLeave => 'Leave';
+
+  @override
+  String get nearbyNoOneNearby => 'No golfers looking for a group right now';
+
+  @override
+  String get nearbyTogglePrompt =>
+      'Toggle \'Looking for group\' above to discover nearby golfers';
+
+  @override
+  String get nearbyRequestJoin => 'Request to Join';
+
+  @override
+  String get nearbyRequestSent => 'Sent';
+
+  @override
+  String get nearbyNotAtCourse =>
+      'No golf course detected within 1 km. Move closer to a course to check in.';
+
+  @override
+  String nearbyHcp(String value) {
+    return 'HCP: $value';
+  }
 }

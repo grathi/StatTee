@@ -872,5 +872,24 @@
       "sign": { "type": "String" },
       "pct":  { "type": "int" }
     }
+  },
+
+  "nearbyTitle": "Cerca",
+  "nearbyCheckInTitle": "Encontrar Golfistas Cercanos",
+  "nearbyCheckInBody": "Haz check-in en tu campo para descubrir jugadores que buscan grupo",
+  "nearbyCheckIn": "Check-in",
+  "nearbyCheckedIn": "Estás registrado",
+  "nearbyLookingForGroup": "Buscando grupo",
+  "nearbyLeave": "Salir",
+  "nearbyNoOneNearby": "Ningún golfista busca grupo ahora mismo",
+  "nearbyTogglePrompt": "Activa 'Buscando grupo' arriba para descubrir golfistas cercanos",
+  "nearbyRequestJoin": "Solicitar unirse",
+  "nearbyRequestSent": "Enviado",
+  "nearbyNotAtCourse": "No se detectó ningún campo de golf en 1 km. Acércate más a un campo.",
+  "nearbyHcp": "HCP: {value}",
+  "@nearbyHcp": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
   }
 }

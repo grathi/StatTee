@@ -3487,6 +3487,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{days}d ago'**
   String timeDaysAgo(int days);
+
+  /// No description provided for @nearbyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearby'**
+  String get nearbyTitle;
+
+  /// No description provided for @nearbyCheckInTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Find Golfers Nearby'**
+  String get nearbyCheckInTitle;
+
+  /// No description provided for @nearbyCheckInBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Check in at your course to discover players looking for a group'**
+  String get nearbyCheckInBody;
+
+  /// No description provided for @nearbyCheckIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Check In'**
+  String get nearbyCheckIn;
+
+  /// No description provided for @nearbyCheckedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'You are checked in'**
+  String get nearbyCheckedIn;
+
+  /// No description provided for @nearbyLookingForGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Looking for group'**
+  String get nearbyLookingForGroup;
+
+  /// No description provided for @nearbyLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave'**
+  String get nearbyLeave;
+
+  /// No description provided for @nearbyNoOneNearby.
+  ///
+  /// In en, this message translates to:
+  /// **'No golfers looking for a group right now'**
+  String get nearbyNoOneNearby;
+
+  /// No description provided for @nearbyTogglePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle \'Looking for group\' above to discover nearby golfers'**
+  String get nearbyTogglePrompt;
+
+  /// No description provided for @nearbyRequestJoin.
+  ///
+  /// In en, this message translates to:
+  /// **'Request to Join'**
+  String get nearbyRequestJoin;
+
+  /// No description provided for @nearbyRequestSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get nearbyRequestSent;
+
+  /// No description provided for @nearbyNotAtCourse.
+  ///
+  /// In en, this message translates to:
+  /// **'No golf course detected within 1 km. Move closer to a course to check in.'**
+  String get nearbyNotAtCourse;
+
+  /// No description provided for @nearbyHcp.
+  ///
+  /// In en, this message translates to:
+  /// **'HCP: {value}'**
+  String nearbyHcp(String value);
 }
 
 class _AppLocalizationsDelegate

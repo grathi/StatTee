@@ -8,16 +8,18 @@ import '../services/stats_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/l10n_extension.dart';
 import 'friend_detail_screen.dart';
+import 'nearby_players_screen.dart';
 
 class FriendsScreen extends StatefulWidget {
-  const FriendsScreen({super.key});
+  const FriendsScreen({super.key, this.initialTab = 0});
+  final int initialTab;
 
   @override
   State<FriendsScreen> createState() => _FriendsScreenState();
 }
 
 class _FriendsScreenState extends State<FriendsScreen> {
-  int _tab = 0;
+  late int _tab;
 
   // Search
   final _emailCtrl = TextEditingController();
@@ -32,6 +34,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
   @override
   void initState() {
     super.initState();
+    _tab = widget.initialTab;
     FriendsService.ensureProfileSynced();
   }
 
@@ -144,6 +147,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                     children: [
                       _tabBtn(c, body, context.l10n.friends, Icons.people_rounded, 0),
                       _tabBtn(c, body, context.l10n.friendsLeaderboard, Icons.leaderboard_rounded, 1),
+                      _tabBtn(c, body, context.l10n.nearbyTitle, Icons.location_on_rounded, 2),
                     ],
                   ),
                 ),
@@ -178,21 +182,30 @@ class _FriendsScreenState extends State<FriendsScreen> {
                               builder: (_) => FriendDetailScreen(friend: f)),
                         ),
                       )
-                    : _LeaderboardTab(
-                        c: c,
-                        sw: sw,
-                        sh: sh,
-                        hPad: hPad,
-                        body: body,
-                        label: label,
-                        sortIdx: _lbSort,
-                        onSortChanged: (i) => setState(() => _lbSort = i),
-                        onTapFriend: (f) => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => FriendDetailScreen(friend: f)),
-                        ),
-                      ),
+                    : _tab == 1
+                        ? _LeaderboardTab(
+                            c: c,
+                            sw: sw,
+                            sh: sh,
+                            hPad: hPad,
+                            body: body,
+                            label: label,
+                            sortIdx: _lbSort,
+                            onSortChanged: (i) => setState(() => _lbSort = i),
+                            onTapFriend: (f) => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => FriendDetailScreen(friend: f)),
+                            ),
+                          )
+                        : NearbyPlayersScreen(
+                            c: c,
+                            sw: sw,
+                            sh: sh,
+                            hPad: hPad,
+                            body: body,
+                            label: label,
+                          ),
               ),
             ],
           ),
