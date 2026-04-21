@@ -81,7 +81,7 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
   // ── Score colour coding ───────────────────────────────────────────────────
   Color _scoreColor(int diff) {
     if (diff <= -2) return const Color(0xFFFFD700);   // eagle or better → gold
-    if (diff == -1) return const Color(0xFF4CAF82);   // birdie → teal
+    if (diff == -1) return const Color(0xFF5A9E1F);   // birdie → teal
     if (diff == 0)  return const Color(0xFF64B5F6);   // par → blue
     if (diff == 1)  return const Color(0xFFFFB74D);   // bogey → amber
     return const Color(0xFFE53935);                    // double bogey+ → red
@@ -104,12 +104,15 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
       final file = File('${dir.path}/scorecard_${widget.round.id}.png');
       await file.writeAsBytes(bytes);
 
-      // Compute share origin from the button's render box (required on iOS 16+).
-      Rect? origin;
+      // Compute share origin from the button's render box (required on iOS).
+      // Falls back to top-right of screen if button is scrolled out of view.
+      Rect origin;
       final box = _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
-      if (box != null) {
-        final pos = box.localToGlobal(Offset.zero);
-        origin = pos & box.size;
+      if (box != null && box.hasSize && box.size.width > 0) {
+        origin = box.localToGlobal(Offset.zero) & box.size;
+      } else {
+        final sz = MediaQuery.of(context).size;
+        origin = Rect.fromLTWH(sz.width - 60, MediaQuery.of(context).padding.top + 8, 44, 44);
       }
 
       await Share.shareXFiles(
@@ -260,6 +263,10 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
           statusBarBrightness: Brightness.light,
         ),
         automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: c.primaryText, size: 20),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         title: Text(
           round.courseName,
           style: TextStyle(fontFamily: 'Nunito',
@@ -470,7 +477,7 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _statChip(c, '${round.birdies}', context.l10n.roundsBirdies,
-                      const Color(0xFF4CAF82), label),
+                      const Color(0xFF5A9E1F), label),
                   _statChip(c, '${round.pars}', context.l10n.roundsPars,
                       const Color(0xFF5A9E1F), label),
                   _statChip(c, '${round.bogeys}', context.l10n.roundsBogeys,
@@ -1021,12 +1028,13 @@ class _JointScorecardTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     const nameColW = 88.0;
     const holeColW = 30.0;
     const subtotalW = 36.0;
 
-    const headerGreen = Color(0xFF3D6B10);
-    const parRowColor = Color(0xFF517A20);
+    const headerGreen = Color(0xFF1A3A08);
+    const parRowColor = Color(0xFF2E6B10);
     const altRow = Color(0xFFF4FAF0);
 
     // Build a section (front 9 / back 9 with subtotals).
@@ -1219,7 +1227,7 @@ class _JointScorecardTable extends StatelessWidget {
       final playerW =
           ordered.isNotEmpty ? dataW / ordered.length : dataW;
       return Container(
-        color: const Color(0xFF3D6B10),
+        color: c.cardBorder.withValues(alpha: 0.3),
         padding: const EdgeInsets.symmetric(vertical: 10),
         child: Row(
           children: [
@@ -1230,7 +1238,7 @@ class _JointScorecardTable extends StatelessWidget {
                 child: Text(
                   'TOTAL',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: c.secondaryText,
                     fontSize: labelSize * 0.82,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.5,
@@ -1251,7 +1259,7 @@ class _JointScorecardTable extends StatelessWidget {
                       '${total ?? '–'}',
                       style: TextStyle(
                         fontFamily: 'Nunito',
-                        color: Colors.white,
+                        color: c.primaryText,
                         fontSize: bodySize * 0.95,
                         fontWeight: FontWeight.w800,
                       ),
@@ -1259,7 +1267,7 @@ class _JointScorecardTable extends StatelessWidget {
                     Text(
                       player.displayName.split(' ').first,
                       style: TextStyle(
-                        color: Colors.white60,
+                        color: c.tertiaryText,
                         fontSize: labelSize * 0.78,
                       ),
                     ),
@@ -1313,7 +1321,7 @@ class _ScoreBadge extends StatelessWidget {
     final color = diff <= -2
         ? const Color(0xFFFFD700)    // eagle+: gold
         : diff == -1
-            ? const Color(0xFF4CAF82) // birdie: green
+            ? const Color(0xFF5A9E1F) // birdie: green
             : diff == 0
                 ? const Color(0xFF64B5F6) // par: blue
                 : diff == 1
@@ -1359,7 +1367,7 @@ class _SubtotalChip extends StatelessWidget {
     final diffColor = diff == null
         ? c.primaryText
         : diff! < 0
-            ? const Color(0xFF4CAF82)
+            ? const Color(0xFF5A9E1F)
             : diff! == 0
                 ? const Color(0xFF64B5F6)
                 : const Color(0xFFFFB74D);

@@ -3,6 +3,11 @@ allprojects {
         google()
         mavenCentral()
     }
+    // Force kotlin-metadata-jvm to a version that understands Kotlin 2.3.x metadata,
+    // overriding the older copy bundled with AGP.
+    configurations.all {
+        resolutionStrategy.force("org.jetbrains.kotlin:kotlin-metadata-jvm:2.3.10")
+    }
 }
 
 val newBuildDir: Directory =

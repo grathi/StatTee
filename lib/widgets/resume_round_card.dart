@@ -195,13 +195,13 @@ class ResumeRoundCard extends StatelessWidget {
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF1A3A08), Color(0xFF2E5E10), Color(0xFF3D7A14)],
+            colors: [Color(0xFF1A3A08), Color(0xFF2E5E10), Color(0xFF3D6E14)],
             stops: [0.0, 0.5, 1.0],
           ),
           shape: SuperellipseShape(borderRadius: BorderRadius.circular(40)),
           shadows: [
             BoxShadow(
-              color: const Color(0xFF3D7A14).withValues(alpha: 0.35),
+              color: const Color(0xFF3D6E14).withValues(alpha: 0.35),
               blurRadius: 20,
               offset: const Offset(0, 6),
             ),

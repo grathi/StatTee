@@ -66,13 +66,16 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
                 // ── Sticky header ──────────────────────────────────────────
                 Padding(
                   padding: EdgeInsets.fromLTRB(hPad, sh * 0.022, hPad, 0),
-                  child: Text(
-                    'Statistics',
-                    style: TextStyle(
-                      fontFamily: 'Nunito',
-                      color: c.primaryText,
-                      fontSize: (sw * 0.068).clamp(24.0, 30.0),
-                      fontWeight: FontWeight.w800,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Statistics',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        color: c.primaryText,
+                        fontSize: (sw * 0.068).clamp(24.0, 30.0),
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                 ),

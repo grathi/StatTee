@@ -485,11 +485,14 @@ class _ScorecardScreenState extends State<ScorecardScreen>
             children: [
               _buildTopBar(c),
               _buildProgressDots(c),
-              TipBanner(
-                title: context.l10n.scorecardScoringARound,
-                body: context.l10n.scorecardInstructions,
-                hasSeenFn: OnboardingService.hasSeenScorecardTip,
-                markSeenFn: OnboardingService.markScorecardTipSeen,
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: _hPad),
+                child: TipBanner(
+                  title: context.l10n.scorecardScoringARound,
+                  body: context.l10n.scorecardInstructions,
+                  hasSeenFn: OnboardingService.hasSeenScorecardTip,
+                  markSeenFn: OnboardingService.markScorecardTipSeen,
+                ),
               ),
               SizedBox(height: _sh * 0.012),
               Expanded(
@@ -671,7 +674,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
       if (par == null) return c.accent; // putts — always accent
       final d = v - par;
       if (d <= -2) return const Color(0xFFFFD700);       // eagle+
-      if (d == -1) return const Color(0xFF4CAF82);       // birdie
+      if (d == -1) return const Color(0xFF5A9E1F);       // birdie
       if (d == 0)  return const Color(0xFF64B5F6);       // par
       if (d == 1)  return const Color(0xFFFFB74D);       // bogey
       return const Color(0xFFE53935);                    // double+
@@ -1923,7 +1926,7 @@ class _ScorecardScreenState extends State<ScorecardScreen>
   // ── Helpers ────────────────────────────────────────────────────────────────
   Color _scoreColor(int diff) {
     if (diff <= -2) return const Color(0xFFFFD700); // Eagle+
-    if (diff == -1) return const Color(0xFF4CAF82); // Birdie
+    if (diff == -1) return const Color(0xFF5A9E1F); // Birdie
     if (diff == 0)  return const Color(0xFF64B5F6); // Par
     if (diff == 1)  return const Color(0xFFFFB74D); // Bogey
     return const Color(0xFFE53935);                 // Double+

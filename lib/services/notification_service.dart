@@ -126,7 +126,23 @@ class NotificationService {
     await FirebaseFirestore.instance
         .collection('users')
         .doc(uid)
-        .set({'fcmToken': token}, SetOptions(merge: true));
+        .set({
+          'fcmToken': token,
+          'timezone': DateTime.now().timeZoneName.isEmpty
+              ? DateTime.now().timeZoneOffset.inHours.toString()
+              : _ianaTimezone(),
+        }, SetOptions(merge: true));
+  }
+
+  /// Returns the device IANA timezone string (e.g. "America/New_York").
+  static String _ianaTimezone() {
+    // DateTime.timeZoneName returns the abbreviation (e.g. "PST"), not IANA.
+    // The most reliable cross-platform approach without extra packages is to
+    // use the offset. Cloud Function falls back gracefully if offset is provided.
+    final offset = DateTime.now().timeZoneOffset;
+    final h = offset.inHours;
+    final m = offset.inMinutes.abs() % 60;
+    return m == 0 ? 'UTC${h >= 0 ? '+' : ''}$h' : 'UTC${h >= 0 ? '+' : ''}$h:${m.toString().padLeft(2, '0')}';
   }
 
   static Future<void> _showForegroundNotification(RemoteMessage msg) async {

@@ -73,11 +73,14 @@ class _RoundsScreenState extends State<RoundsScreen> {
               hasScrollBody: true,
               child: Column(
                 children: [
-                  TipBanner(
-                    title: context.l10n.roundsHistoryTitle,
-                    body: context.l10n.roundsHistorySubtitle,
-                    hasSeenFn: OnboardingService.hasSeenRoundsTip,
-                    markSeenFn: OnboardingService.markRoundsTipSeen,
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: hPad),
+                    child: TipBanner(
+                      title: context.l10n.roundsHistoryTitle,
+                      body: context.l10n.roundsHistorySubtitle,
+                      hasSeenFn: OnboardingService.hasSeenRoundsTip,
+                      markSeenFn: OnboardingService.markRoundsTipSeen,
+                    ),
                   ),
                   // Active round banner (only in Rounds tab)
                   AnimatedSize(
@@ -394,7 +397,7 @@ class _RoundCard extends StatelessWidget {
 
   Color get _diffColor {
     final d = round.scoreDiff;
-    if (d < 0)  return const Color(0xFF4CAF82);  // under par
+    if (d < 0)  return const Color(0xFF5A9E1F);  // under par
     if (d == 0) return const Color(0xFF64B5F6);  // par
     return const Color(0xFFE53935);              // over par
   }

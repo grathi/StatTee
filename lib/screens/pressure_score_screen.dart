@@ -452,7 +452,7 @@ class _PressureScoreScreenState extends State<PressureScoreScreen> {
     return Container(
       decoration: ShapeDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF1A3A08), Color(0xFF2E5C10), Color(0xFF3D7A14)],
+          colors: [Color(0xFF1A3A08), Color(0xFF2E5C10), Color(0xFF3D6E14)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),

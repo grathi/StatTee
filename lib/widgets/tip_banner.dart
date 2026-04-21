@@ -68,16 +68,12 @@ class _TipBannerState extends State<TipBanner>
 
     final c  = AppColors.of(context);
     final sw = MediaQuery.of(context).size.width;
-    final hPad = (sw * 0.055).clamp(18.0, 28.0);
     final body  = (sw * 0.034).clamp(12.5, 15.0);
     final label = (sw * 0.028).clamp(10.5, 12.5);
 
     return FadeTransition(
       opacity: _fade,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(hPad, (sw * 0.03).clamp(10.0, 14.0), hPad, 0),
-        // ClipRRect handles rounded corners; BoxDecoration uses uniform border
-        child: ClipRRect(
+      child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: Container(
             decoration: BoxDecoration(
@@ -99,7 +95,7 @@ class _TipBannerState extends State<TipBanner>
                 children: [
                   // Green left stripe — fills card height via stretch
                   Container(width: 4, color: const Color(0xFF7BC344)),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
 
                   // Icon
                   Padding(
@@ -159,7 +155,7 @@ class _TipBannerState extends State<TipBanner>
                   GestureDetector(
                     onTap: _dismiss,
                     child: Padding(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.fromLTRB(4, 12, 10, 12),
                       child: Icon(
                         Icons.close_rounded,
                         color: c.tertiaryText,
@@ -171,9 +167,7 @@ class _TipBannerState extends State<TipBanner>
               ),
             ),
           ),
-        ),
       ),
-
     );
   }
 }

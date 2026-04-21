@@ -75,11 +75,14 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             SliverToBoxAdapter(
-              child: TipBanner(
-                title: context.l10n.profileSubtitle,
-                body: context.l10n.profileDescription,
-                hasSeenFn: OnboardingService.hasSeenProfileTip,
-                markSeenFn: OnboardingService.markProfileTipSeen,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: hPad),
+                child: TipBanner(
+                  title: context.l10n.profileSubtitle,
+                  body: context.l10n.profileDescription,
+                  hasSeenFn: OnboardingService.hasSeenProfileTip,
+                  markSeenFn: OnboardingService.markProfileTipSeen,
+                ),
               ),
             ),
             SliverToBoxAdapter(

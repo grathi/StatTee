@@ -33,6 +33,7 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
   int _progressPct = 0;
   StreamSubscription<SwingJobStatus>? _jobSub;
   final ScreenshotController _screenshotController = ScreenshotController();
+  final _shareKey = GlobalKey();
 
   // Ball hint state
   File? _pendingVideoFile;
@@ -204,9 +205,12 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
     final file = File('${dir.path}/swing_tracer.png');
     await file.writeAsBytes(bytes);
     if (mounted) {
+      final shareBox = _shareKey.currentContext?.findRenderObject() as RenderBox?;
+      final shareOrigin = shareBox == null ? null : shareBox.localToGlobal(Offset.zero) & shareBox.size;
       await Share.shareXFiles(
         [XFile(file.path)],
         text: context.l10n.swingAnalyzerShareText,
+        sharePositionOrigin: shareOrigin,
       );
     }
   }
@@ -257,6 +261,7 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
               tooltip: context.l10n.swingAnalyzerSaveToGallery,
             ),
             IconButton(
+              key: _shareKey,
               icon: const Icon(Icons.share_rounded),
               onPressed: _shareFrame,
               tooltip: context.l10n.swingAnalyzerShare,

@@ -85,6 +85,8 @@ void _handleNotificationTap(Map<String, dynamic> data) {
   switch (route) {
     case 'rounds':
       nav.push(MaterialPageRoute(builder: (_) => const RoundsScreen()));
+    case 'weeklyDigest':
+      nav.push(MaterialPageRoute(builder: (_) => const RoundsScreen()));
     case 'groupRound':
       final sessionId = data['sessionId'] as String?;
       if (sessionId != null) {

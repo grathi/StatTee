@@ -540,7 +540,7 @@ class _StartRoundScreenState extends State<StartRoundScreen>
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFF2E6B10), Color(0xFF4E9E20), Color(0xFF7BC344)],
+                  colors: [Color(0xFF2E6B10), Color(0xFF5A9E1F), Color(0xFF7BC344)],
                   stops: [0.0, 0.55, 1.0],
                 ),
                 shape: SuperellipseShape(

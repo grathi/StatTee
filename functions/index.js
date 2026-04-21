@@ -1,5 +1,6 @@
 const { onDocumentWritten, onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { onCall, HttpsError }                   = require('firebase-functions/v2/https');
+const { onSchedule }                           = require('firebase-functions/v2/scheduler');
 const { defineSecret }                         = require('firebase-functions/params');
 const { logger }                               = require('firebase-functions');
 const admin                                    = require('firebase-admin');
@@ -245,5 +246,134 @@ exports.onFriendRequest = onDocumentCreated(
     } catch (err) {
       logger.error(`[friendRequest] FCM failed for uid=${recipientUid}: ${err.message}`);
     }
+  },
+);
+
+/**
+ * Runs every hour. For each user whose local time is currently Monday 9am,
+ * sends a personalised FCM push summarising their past 7 days.
+ * Each user's timezone is stored as an IANA string in users/{uid}.timezone
+ * (e.g. "America/New_York"). Falls back to UTC if missing.
+ */
+exports.weeklyDigest = onSchedule(
+  { schedule: 'every 1 hours', timeoutSeconds: 300 },
+  async () => {
+    const db  = admin.firestore();
+    const now = new Date();
+
+    const usersSnap = await db.collection('users')
+      .where('fcmToken', '!=', null)
+      .get();
+
+    logger.info(`[weeklyDigest] Checking ${usersSnap.size} users`);
+
+    const jobs = usersSnap.docs.map(userDoc => {
+      const data     = userDoc.data();
+      const timezone = data.timezone ?? 'UTC';
+
+      // Convert current UTC time to the user's local time.
+      // Supports both IANA names ("America/New_York") and UTC offset strings ("UTC+5:30").
+      let localHour, weekday;
+      try {
+        const localStr = now.toLocaleString('en-US', {
+          timeZone: timezone, hour12: false,
+          weekday: 'long', hour: 'numeric',
+        });
+        [weekday, localHour] = localStr.split(', ');
+        localHour = parseInt(localHour, 10);
+      } catch (_) {
+        // Fallback: parse "UTC+5" / "UTC+5:30" manually
+        const match = timezone.match(/UTC([+-]\d+)(?::(\d+))?/);
+        if (match) {
+          const offsetMins = parseInt(match[1], 10) * 60 + (match[2] ? parseInt(match[2], 10) : 0);
+          const local = new Date(now.getTime() + offsetMins * 60000);
+          localHour = local.getUTCHours();
+          weekday = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][local.getUTCDay()];
+        } else {
+          return Promise.resolve(); // can't determine timezone — skip
+        }
+      }
+
+      if (weekday !== 'Monday' || localHour !== 9) return Promise.resolve();
+
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      return sendWeeklyDigest(userDoc.id, data.fcmToken, weekAgo, db);
+    });
+
+    await Promise.allSettled(jobs);
+    logger.info('[weeklyDigest] Done');
+  },
+);
+
+async function sendWeeklyDigest(uid, token, weekAgo, db) {
+  try {
+    const snap = await db.collection('rounds')
+      .where('userId',     '==', uid)
+      .where('status',     '==', 'completed')
+      .where('isPractice', '==', false)
+      .where('completedAt', '>=', admin.firestore.Timestamp.fromDate(weekAgo))
+      .get();
+
+    if (snap.empty) return; // no rounds this week — skip
+
+    const rounds = snap.docs.map(d => d.data());
+    const count  = rounds.length;
+
+    // Score diffs (score - par per round)
+    const diffs   = rounds.map(r => (r.totalScore ?? 0) - (r.totalPar ?? 0));
+    const avgDiff = diffs.reduce((a, b) => a + b, 0) / count;
+
+    // Best round (lowest score vs par)
+    const bestRound = rounds.reduce((best, r) => {
+      const d = (r.totalScore ?? 99) - (r.totalPar ?? 72);
+      return d < ((best.totalScore ?? 99) - (best.totalPar ?? 72)) ? r : best;
+    });
+
+    // Total birdies across all rounds
+    const totalBirdies = rounds.reduce((sum, r) => {
+      return sum + (r.scores ?? []).filter(h => h.score - h.par === -1).length;
+    }, 0);
+
+    // Format diff strings
+    const fmt    = n => n === 0 ? 'E' : n > 0 ? `+${n.toFixed(1)}` : n.toFixed(1);
+    const fmtInt = n => n === 0 ? 'E' : n > 0 ? `+${n}` : `${n}`;
+    const avgStr   = fmt(avgDiff);
+    const bestDiff = (bestRound.totalScore ?? 0) - (bestRound.totalPar ?? 0);
+    const bestStr  = fmtInt(bestDiff);
+
+    const birdieTxt = `${totalBirdies} birdie${totalBirdies !== 1 ? 's' : ''}`;
+    const body = count === 1
+      ? `1 round · ${bestRound.totalScore ?? '?'} at ${bestRound.courseName} (${bestStr}) · ${birdieTxt}`
+      : `${count} rounds · avg ${avgStr} · best ${bestRound.totalScore ?? '?'} at ${bestRound.courseName} · ${birdieTxt}`;
+
+    await admin.messaging().send({
+      token,
+      notification: { title: '⛳ Your Week in Golf', body },
+      data:         { route: 'weeklyDigest' },
+      apns:         { payload: { aps: { sound: 'default' } } },
+      android:      { notification: { sound: 'default' } },
+    });
+    logger.info(`[weeklyDigest] Sent to uid=${uid}: ${body}`);
+  } catch (err) {
+    logger.error(`[weeklyDigest] Failed for uid=${uid}: ${err.message}`);
+  }
+}
+
+/**
+ * Runs every 5 minutes. Deletes stale presence documents older than 10 minutes.
+ * Guards against clients that crash without calling goOffline().
+ */
+exports.cleanupPresence = onSchedule(
+  { schedule: 'every 5 minutes', timeoutSeconds: 60 },
+  async () => {
+    const db     = admin.firestore();
+    const cutoff = new Date(Date.now() - 2 * 60 * 60 * 1000); // 2 hours ago
+    const snap   = await db.collection('presence')
+      .where('updatedAt', '<', admin.firestore.Timestamp.fromDate(cutoff))
+      .get();
+
+    const deletes = snap.docs.map(d => d.ref.delete());
+    await Promise.all(deletes);
+    logger.info(`[cleanupPresence] Deleted ${snap.size} stale presence docs`);
   },
 );
