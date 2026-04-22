@@ -1,23 +1,4 @@
 {
-  "indexes": [
-    {
-      "collectionGroup": "active_sessions",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "currentCourseId",  "order": "ASCENDING"  },
-        { "fieldPath": "isLookingForGroup", "order": "ASCENDING"  },
-        { "fieldPath": "updatedAt",         "order": "ASCENDING"  }
-      ]
-    },
-    {
-      "collectionGroup": "joinRequests",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "toUserId",   "order": "ASCENDING" },
-        { "fieldPath": "status",     "order": "ASCENDING" },
-        { "fieldPath": "createdAt",  "order": "ASCENDING" }
-      ]
-    }
-  ],
+  "indexes": [],
   "fieldOverrides": []
 }

@@ -849,24 +849,5 @@
     "placeholders": {
       "days": { "type": "int" }
     }
-  },
-
-  "nearbyTitle": "In der Nähe",
-  "nearbyCheckInTitle": "Golfer in der Nähe finden",
-  "nearbyCheckInBody": "Check-in auf deinem Platz, um Spieler zu entdecken, die eine Gruppe suchen",
-  "nearbyCheckIn": "Einchecken",
-  "nearbyCheckedIn": "Du bist eingecheckt",
-  "nearbyLookingForGroup": "Gruppe suchen",
-  "nearbyLeave": "Verlassen",
-  "nearbyNoOneNearby": "Gerade sucht kein Golfer eine Gruppe",
-  "nearbyTogglePrompt": "Schalte 'Gruppe suchen' oben ein, um Golfer in der Nähe zu entdecken",
-  "nearbyRequestJoin": "Anfrage senden",
-  "nearbyRequestSent": "Gesendet",
-  "nearbyNotAtCourse": "Kein Golfplatz im Umkreis von 1 km gefunden. Komm näher an einen Platz heran.",
-  "nearbyHcp": "HCP: {value}",
-  "@nearbyHcp": {
-    "placeholders": {
-      "value": { "type": "String" }
-    }
   }
 }

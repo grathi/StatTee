@@ -158,10 +158,9 @@ class NotificationService {
       _details(payload: payload),
     );
 
-    // For action routes (groupRound, joinRequest) also navigate immediately
-    // so the user doesn't have to tap the banner when the app is in foreground.
+    // For groupRound route, also navigate immediately when app is in foreground.
     final route = msg.data['route'] as String?;
-    if (route == 'groupRound' || route == 'joinRequest') {
+    if (route == 'groupRound') {
       onNotificationTap?.call(msg.data);
     }
   }

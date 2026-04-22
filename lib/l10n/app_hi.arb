@@ -872,24 +872,5 @@
       "sign": { "type": "String" },
       "pct":  { "type": "int" }
     }
-  },
-
-  "nearbyTitle": "पास में",
-  "nearbyCheckInTitle": "पास के गोल्फर खोजें",
-  "nearbyCheckInBody": "अपने कोर्स पर चेक-इन करें और ग्रुप खोज रहे खिलाड़ियों को देखें",
-  "nearbyCheckIn": "चेक-इन",
-  "nearbyCheckedIn": "आप चेक-इन हैं",
-  "nearbyLookingForGroup": "ग्रुप की तलाश में",
-  "nearbyLeave": "छोड़ें",
-  "nearbyNoOneNearby": "अभी कोई गोल्फर ग्रुप नहीं खोज रहा",
-  "nearbyTogglePrompt": "पास के गोल्फर देखने के लिए ऊपर 'ग्रुप की तलाश में' चालू करें",
-  "nearbyRequestJoin": "जुड़ने का अनुरोध",
-  "nearbyRequestSent": "भेजा गया",
-  "nearbyNotAtCourse": "1 किमी के भीतर कोई गोल्फ कोर्स नहीं मिला। किसी कोर्स के पास जाएं।",
-  "nearbyHcp": "HCP: {value}",
-  "@nearbyHcp": {
-    "placeholders": {
-      "value": { "type": "String" }
-    }
   }
 }

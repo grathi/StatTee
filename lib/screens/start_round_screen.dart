@@ -27,10 +27,6 @@ class StartRoundScreen extends StatefulWidget {
   final Position? initialPosition;
   final double? initialCustomLat;
   final double? initialCustomLng;
-  // Pre-invited player from a Nearby join-request accept
-  final String? preInvitedUid;
-  final String? preInvitedName;
-  final String? preInvitedAvatar;
 
   const StartRoundScreen({
     super.key,
@@ -42,9 +38,6 @@ class StartRoundScreen extends StatefulWidget {
     this.initialPosition,
     this.initialCustomLat,
     this.initialCustomLng,
-    this.preInvitedUid,
-    this.preInvitedName,
-    this.preInvitedAvatar,
   });
 
   @override
@@ -67,8 +60,6 @@ class _StartRoundScreenState extends State<StartRoundScreen>
   // Invite friends
   List<FriendProfile> _acceptedFriends = [];
   final Set<String> _invitedUids = {};
-  // Pre-invited players (from Nearby join-request accept) — not necessarily friends
-  final Map<String, FriendProfile> _preInvitedProfiles = {};
   final _friendSearchCtrl = TextEditingController();
   String _friendQuery = '';
   bool _loadingFriends = false;
@@ -142,19 +133,6 @@ class _StartRoundScreenState extends State<StartRoundScreen>
           });
         }
       });
-    }
-
-    // Pre-invite a player from a Nearby join-request accept
-    if (widget.preInvitedUid != null) {
-      _invitedUids.add(widget.preInvitedUid!);
-      _preInvitedProfiles[widget.preInvitedUid!] = FriendProfile(
-        uid: widget.preInvitedUid!,
-        displayName: widget.preInvitedName ?? 'Golfer',
-        email: '',
-        avatarUrl: widget.preInvitedAvatar,
-        status: 'accepted',
-        addedAt: DateTime.now(),
-      );
     }
 
     // Pre-fill if launched from a nearby course card
@@ -412,9 +390,6 @@ class _StartRoundScreenState extends State<StartRoundScreen>
       String? sessionId;
       final invitees = [
         ..._acceptedFriends.where((f) => _invitedUids.contains(f.uid)),
-        ..._preInvitedProfiles.values
-            .where((p) => _invitedUids.contains(p.uid))
-            .where((p) => !_acceptedFriends.any((f) => f.uid == p.uid)),
       ];
       if (invitees.isNotEmpty) {
         sessionId = await GroupRoundService.createSession(

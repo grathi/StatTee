@@ -877,24 +877,5 @@
     "placeholders": {
       "days": { "type": "int" }
     }
-  },
-
-  "nearbyTitle": "Nearby",
-  "nearbyCheckInTitle": "Find Golfers Nearby",
-  "nearbyCheckInBody": "Check in at your course to discover players looking for a group",
-  "nearbyCheckIn": "Check In",
-  "nearbyCheckedIn": "You are checked in",
-  "nearbyLookingForGroup": "Looking for group",
-  "nearbyLeave": "Leave",
-  "nearbyNoOneNearby": "No golfers looking for a group right now",
-  "nearbyTogglePrompt": "Toggle 'Looking for group' above to discover nearby golfers",
-  "nearbyRequestJoin": "Request to Join",
-  "nearbyRequestSent": "Sent",
-  "nearbyNotAtCourse": "No golf course detected within 1 km. Move closer to a course to check in.",
-  "nearbyHcp": "HCP: {value}",
-  "@nearbyHcp": {
-    "placeholders": {
-      "value": { "type": "String" }
-    }
   }
 }

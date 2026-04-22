@@ -1899,48 +1899,4 @@ class AppLocalizationsHi extends AppLocalizations {
   String timeDaysAgo(int days) {
     return '$days दिन पहले';
   }
-
-  @override
-  String get nearbyTitle => 'पास में';
-
-  @override
-  String get nearbyCheckInTitle => 'पास के गोल्फर खोजें';
-
-  @override
-  String get nearbyCheckInBody =>
-      'अपने कोर्स पर चेक-इन करें और ग्रुप खोज रहे खिलाड़ियों को देखें';
-
-  @override
-  String get nearbyCheckIn => 'चेक-इन';
-
-  @override
-  String get nearbyCheckedIn => 'आप चेक-इन हैं';
-
-  @override
-  String get nearbyLookingForGroup => 'ग्रुप की तलाश में';
-
-  @override
-  String get nearbyLeave => 'छोड़ें';
-
-  @override
-  String get nearbyNoOneNearby => 'अभी कोई गोल्फर ग्रुप नहीं खोज रहा';
-
-  @override
-  String get nearbyTogglePrompt =>
-      'पास के गोल्फर देखने के लिए ऊपर \'ग्रुप की तलाश में\' चालू करें';
-
-  @override
-  String get nearbyRequestJoin => 'जुड़ने का अनुरोध';
-
-  @override
-  String get nearbyRequestSent => 'भेजा गया';
-
-  @override
-  String get nearbyNotAtCourse =>
-      '1 किमी के भीतर कोई गोल्फ कोर्स नहीं मिला। किसी कोर्स के पास जाएं।';
-
-  @override
-  String nearbyHcp(String value) {
-    return 'HCP: $value';
-  }
 }

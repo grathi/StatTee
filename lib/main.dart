@@ -94,10 +94,6 @@ void _handleNotificationTap(Map<String, dynamic> data) {
           builder: (_) => GroupRoundInviteScreen(sessionId: sessionId),
         ));
       }
-    case 'joinRequest':
-      nav.push(MaterialPageRoute(
-        builder: (_) => const FriendsScreen(initialTab: 2),
-      ));
     case 'friendRequest':
       nav.push(MaterialPageRoute(builder: (_) => const FriendsScreen()));
     default:
