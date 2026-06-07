@@ -524,34 +524,17 @@ class _SwingAnalyzerScreenState extends State<SwingAnalyzerScreen> {
                   color: c.secondaryText, fontSize: 14, height: 1.5),
             ),
             const SizedBox(height: 40),
-            GestureDetector(
-              onTap: () => _showUpcomingDialog(c),
-              child: Opacity(
-                opacity: 0.5,
-                child: Container(
-                  width: double.infinity,
-                  height: 54,
-                  alignment: Alignment.center,
-                  decoration: ShapeDecoration(
-                    color: c.accent,
-                    shape: SuperellipseShape(
-                      borderRadius: BorderRadius.circular(28),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.videocam_rounded, color: Colors.white, size: 20),
-                      const SizedBox(width: 10),
-                      Text(context.l10n.swingAnalyzerButton,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700)),
-                    ],
-                  ),
-                ),
-              ),
+            _sourceButton(
+              icon: Icons.videocam_rounded,
+              label: context.l10n.swingAnalyzerButton,
+              onTap: _recordNewSwing,
+            ),
+            const SizedBox(height: 12),
+            _sourceButton(
+              icon: Icons.photo_library_rounded,
+              label: context.l10n.swingAnalyzerUploadLibrary,
+              onTap: _pickFromLibrary,
+              primary: false,
             ),
           ],
         ),

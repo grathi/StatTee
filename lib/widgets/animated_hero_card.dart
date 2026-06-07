@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:superellipse_shape/superellipse_shape.dart';
@@ -19,8 +20,9 @@ class AnimatedHeroCard extends StatefulWidget {
   final double labelSize;
   final double bodySize;
   final VoidCallback onTap;
-  final WeatherNow? weather;    // null → default green mode
-  final Round? activeRound;     // null → "Start Round"
+  final WeatherNow? weather;       // null → default green mode
+  final Round? activeRound;        // null → "Start Round"
+  final String? locationName;      // e.g. "Pleasanton Golf Center"
 
   const AnimatedHeroCard({
     super.key,
@@ -32,6 +34,7 @@ class AnimatedHeroCard extends StatefulWidget {
     required this.onTap,
     this.weather,
     this.activeRound,
+    this.locationName,
   });
 
   @override
@@ -116,21 +119,37 @@ class _AnimatedHeroCardState extends State<AnimatedHeroCard>
     return _TimeOfDayTint.night;
   }
 
-  /// AI insight chip text
-  String get _insightText {
-    if (!_hasWeather) return '🏌️ Ready to play';
-    if (_isRainy)    return '🌧️ Wet course — drop a club';
-    if (_isFoggy)    return '🌫️ Low visibility — play safe';
-    if (_windSpeed >= 15) return '💨 Wind: ${widget.weather!.windLabel}';
-    if (_isSunny && _windSpeed < 5) return '💡 Ideal conditions today';
-    return '🏌️ ${widget.weather!.conditionSummary}';
+  /// Weather condition icon
+  String get _weatherIcon {
+    if (!_hasWeather) return '⛳';
+    if (_isRainy)     return '🌧️';
+    if (_isFoggy)     return '🌫️';
+    if (_isSunny && _windSpeed < 5) return '☀️';
+    if (_isSunny)     return '🌤️';
+    if (_isCloudy)    return '⛅';
+    return '🌤️';
+  }
+
+  /// CTA heading — concise, top-left title
+  String get _headingText {
+    final r = widget.activeRound;
+    if (r != null) return 'Resume Your Round';
+    return 'Start a New Round';
+  }
+
+  /// Location subtitle
+  String get _locationText {
+    if (widget.locationName != null && widget.locationName!.isNotEmpty) {
+      return widget.locationName!;
+    }
+    return 'Near you';
   }
 
   /// CTA button label based on activeRound state
   String get _ctaLabel {
     final r = widget.activeRound;
     if (r == null) return 'Start Round';
-    if (r.status == RoundStatus.active) return 'Resume Round – Hole ${r.currentHole}';
+    if (r.status == RoundStatus.active) return 'Resume – Hole ${r.currentHole}';
     return 'Continue Round';
   }
 
@@ -297,48 +316,13 @@ class _AnimatedHeroCardState extends State<AnimatedHeroCard>
                 ),
               ),
 
-              // ── Layer 9: UI — chip + heading + CTA ──────────────────────
+              // ── Layer 9: UI — CTA button pinned to bottom-left ──────────
               Padding(
                 padding: EdgeInsets.all(innerPad),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    // AI insight chip
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: ShapeDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        shape: SuperellipseShape(
-                            borderRadius: BorderRadius.circular(40)),
-                      ),
-                      child: Text(
-                        _insightText,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.95),
-                          fontSize: widget.labelSize,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-
-                    SizedBox(height: sh * 0.012),
-
-                    // Heading
-                    Text(
-                      'Start Round',
-                      style: TextStyle(
-                        fontFamily: 'Nunito',
-                        color: Colors.white,
-                        fontSize: (sw * 0.075).clamp(26.0, 34.0),
-                        fontWeight: FontWeight.w800,
-                        height: 1.1,
-                      ),
-                    ),
-
-                    SizedBox(height: sh * 0.010),
-
-                    // CTA pill button with tap feedback
+                    const Spacer(),
                     _CTAButton(
                       label: _ctaLabel,
                       labelSize: widget.labelSize,
@@ -393,16 +377,21 @@ class _CTAButtonState extends State<_CTAButton> {
       },
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedScale(
-        scale: _pressed ? 0.95 : 1.0,
+        scale: _pressed ? 0.97 : 1.0,
         duration: const Duration(milliseconds: 120),
         curve: Curves.easeOut,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.18),
+            color: Colors.white,
             borderRadius: BorderRadius.circular(50),
-            border: Border.all(
-                color: Colors.white.withValues(alpha: 0.35), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.18),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -410,16 +399,16 @@ class _CTAButtonState extends State<_CTAButton> {
               Text(
                 widget.label,
                 style: TextStyle(
-                  color: Colors.white,
-                  fontSize: widget.labelSize,
-                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF1A3A08),
+                  fontSize: widget.labelSize * 1.1,
+                  fontWeight: FontWeight.w800,
                   letterSpacing: 0.2,
                 ),
               ),
               const SizedBox(width: 6),
-              Icon(Icons.arrow_forward_rounded,
-                  color: Colors.white.withValues(alpha: 0.85),
-                  size: widget.labelSize * 1.15),
+              const Icon(Icons.arrow_forward_rounded,
+                  color: Color(0xFF3D6E14),
+                  size: 16),
             ],
           ),
         ),

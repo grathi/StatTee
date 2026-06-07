@@ -271,19 +271,31 @@ class GolfCourseApiService {
     final queryWords = cleanedName.split(' ').where((w) => w.length > 2).toSet();
     GolfApiCourse? best;
     int bestScore = 0;
+    bool bestFromCityFallback = false;
 
-    for (final q in queries) {
-      final results = await search(q);
+    for (int qi = 0; qi < queries.length; qi++) {
+      final isCityFallback = qi > 0;
+      final results = await search(queries[qi]);
       for (final r in results) {
         final nameWords = _normalize(r.clubName).split(' ').toSet();
         final overlap   = queryWords.intersection(nameWords).length;
-        if (overlap > bestScore) { bestScore = overlap; best = r; }
+        // City-fallback candidates must share ≥ 2 words with the original name.
+        // This prevents a broad city search (e.g. "pleasanton") from matching
+        // an unrelated course just because the city name appears in its title.
+        final threshold = isCityFallback ? 2 : 1;
+        if (overlap >= threshold && overlap > bestScore) {
+          bestScore = overlap;
+          best = r;
+          bestFromCityFallback = isCityFallback;
+        }
       }
-      // Stop early once we have a confident match
+      // Stop early once we have a confident match from the full-name query
       if (bestScore >= 2) break;
     }
 
-    if (best == null || bestScore < 1) return null;
+    // City-fallback matches require a higher minimum confidence (≥ 2 word overlap)
+    final minRequired = bestFromCityFallback ? 2 : 1;
+    if (best == null || bestScore < minRequired) return null;
     return getCourse(best.id);
   }
 

@@ -279,19 +279,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeTapToTeeOff => 'Tap to tee off';
 
   @override
-  String get greetingPerfectTeeTime => 'Perfect tee time ⛳';
+  String get greetingPerfectTeeTime => 'Perfect tee time';
 
   @override
-  String get greetingSunnyBreezy => 'Sunny but breezy ⛳';
+  String get greetingSunnyBreezy => 'Sunny but breezy';
 
   @override
-  String get greetingToughWeather => 'Tough weather ahead 🌧️';
+  String get greetingToughWeather => 'Tough weather ahead';
 
   @override
-  String get greetingGoodScoring => 'Good scoring weather ⛅';
+  String get greetingGoodScoring => 'Good scoring weather';
 
   @override
-  String get greetingPlaySmart => 'Play smart today 💨';
+  String get greetingPlaySmart => 'Play smart today';
 
   @override
   String get greetingEarlyTeeTime => 'Early tee time';
@@ -1477,7 +1477,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Record or upload a golf swing video.\nGemini AI will track the ball and overlay a live tracer.';
 
   @override
-  String get swingAnalyzerButton => 'Analyze Swing';
+  String get swingAnalyzerButton => 'Record New Swing';
+
+  @override
+  String get swingAnalyzerUploadLibrary => 'Upload from Library';
 
   @override
   String get swingAnalyzerComingSoon => 'Coming Soon';

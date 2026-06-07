@@ -8,6 +8,8 @@ import '../models/group_round.dart';
 import '../models/hole_score.dart';
 import '../models/round.dart';
 import '../models/scorecard_import_data.dart';
+import '../models/friend_profile.dart';
+import '../services/friends_service.dart';
 import '../services/group_round_service.dart';
 import '../services/places_service.dart';
 import '../services/round_service.dart';
@@ -421,6 +423,10 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
   late int _totalHoles;
   bool _saving = false;
 
+  // ── Friend linking (companion players) ───────────────────────────────────
+  /// Maps player index (1+) to the linked FriendProfile, if any.
+  final Map<int, FriendProfile> _linkedFriends = {};
+
   // ── Location autocomplete (mirrors StartRoundScreen) ──────────────────────
   final _courseNameFocus   = FocusNode();
   final _overlayController = OverlayPortalController();
@@ -763,6 +769,9 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
           courseRating: rating,
           slopeRating: slope,
           playerName: i == 0 ? null : (name.isEmpty ? 'Player ${i + 1}' : name),
+          sharedWith: i > 0 && _linkedFriends[i] != null
+              ? [_linkedFriends[i]!.uid]
+              : null,
         );
 
         await RoundService.saveAllHoleScores(roundId, playerHoleScores);
@@ -1260,32 +1269,152 @@ class _ScorecardImportScreenState extends State<ScorecardImportScreen> {
   // ── Player name field ──────────────────────────────────────────────────────
 
   Widget _buildPlayerNameField(AppColors c) {
-    return TextField(
-      controller: _playerNameCtrls[_activePlayer],
-      style: TextStyle(color: c.primaryText, fontSize: 14),
-      decoration: InputDecoration(
-        labelText: _activePlayer == 0
-            ? 'Your name (optional)'
-            : 'Player ${_activePlayer + 1} name (optional)',
-        labelStyle: TextStyle(color: c.tertiaryText, fontSize: 13),
-        filled: true,
-        fillColor: c.cardBg,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: c.cardBorder),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: _playerNameCtrls[_activePlayer],
+          style: TextStyle(color: c.primaryText, fontSize: 14),
+          decoration: InputDecoration(
+            labelText: _activePlayer == 0
+                ? 'Your name (optional)'
+                : 'Player ${_activePlayer + 1} name (optional)',
+            labelStyle: TextStyle(color: c.tertiaryText, fontSize: 13),
+            filled: true,
+            fillColor: c.cardBg,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: c.cardBorder),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: c.cardBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: c.accent, width: 1.5),
+            ),
+          ),
+          onChanged: (_) => setState(() {}), // refresh tab labels
         ),
-        enabledBorder: OutlineInputBorder(
+        // ── Friend link row (companion players only) ───────────────────────
+        if (_activePlayer > 0) ...[
+          const SizedBox(height: 10),
+          _buildLinkFriendRow(c),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildLinkFriendRow(AppColors c) {
+    final linked = _linkedFriends[_activePlayer];
+    return GestureDetector(
+      onTap: () => _showFriendPicker(_activePlayer),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        decoration: BoxDecoration(
+          color: c.cardBg,
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: c.cardBorder),
+          border: Border.all(
+            color: linked != null ? c.accent : c.cardBorder,
+            width: linked != null ? 1.5 : 1.0,
+          ),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: c.accent, width: 1.5),
+        child: Row(
+          children: [
+            Icon(
+              Icons.person_add_alt_1_rounded,
+              size: 18,
+              color: linked != null ? c.accent : c.tertiaryText,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: linked != null
+                  ? Row(
+                      children: [
+                        if (linked.avatarUrl != null &&
+                            linked.avatarUrl!.isNotEmpty)
+                          Container(
+                            width: 22,
+                            height: 22,
+                            margin: const EdgeInsets.only(right: 8),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              image: DecorationImage(
+                                image: NetworkImage(linked.avatarUrl!),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                        Expanded(
+                          child: Text(
+                            linked.displayName,
+                            style: TextStyle(
+                              fontFamily: 'Nunito',
+                              color: c.primaryText,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    )
+                  : Text(
+                      'Link to a friend (optional)',
+                      style: TextStyle(color: c.tertiaryText, fontSize: 13),
+                    ),
+            ),
+            if (linked != null)
+              GestureDetector(
+                onTap: () =>
+                    setState(() => _linkedFriends.remove(_activePlayer)),
+                child: Icon(Icons.close_rounded,
+                    size: 16, color: c.tertiaryText),
+              )
+            else
+              Icon(Icons.chevron_right_rounded,
+                  size: 16, color: c.tertiaryText),
+          ],
         ),
       ),
-      onChanged: (_) => setState(() {}), // refresh tab labels
+    );
+  }
+
+  Future<void> _showFriendPicker(int playerIndex) async {
+    final c = AppColors.of(context);
+    final friends = await FriendsService.friendsStream()
+        .where((list) => list.isNotEmpty)
+        .first
+        .timeout(const Duration(seconds: 5), onTimeout: () => []);
+
+    final accepted =
+        friends.where((f) => f.status == 'accepted').toList();
+
+    if (!mounted) return;
+
+    if (accepted.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No friends found. Add friends first.')),
+      );
+      return;
+    }
+
+    await showModalBottomSheet<FriendProfile>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _FriendPickerSheet(
+        friends: accepted,
+        c: c,
+        onSelected: (f) {
+          setState(() => _linkedFriends[playerIndex] = f);
+          Navigator.pop(context);
+        },
+      ),
     );
   }
 
@@ -1618,6 +1747,113 @@ class _StepBtn extends StatelessWidget {
             color: onTap != null
                 ? color
                 : color.withValues(alpha: 0.25)),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Friend picker sheet
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _FriendPickerSheet extends StatelessWidget {
+  final List<FriendProfile> friends;
+  final AppColors c;
+  final ValueChanged<FriendProfile> onSelected;
+
+  const _FriendPickerSheet({
+    required this.friends,
+    required this.c,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final sw = MediaQuery.of(context).size.width;
+    return Container(
+      decoration: BoxDecoration(
+        color: c.sheetBg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        border: Border(top: BorderSide(color: c.cardBorder)),
+      ),
+      padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: c.divider,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: sw * 0.05),
+            child: Row(
+              children: [
+                Text(
+                  'Link to a Friend',
+                  style: TextStyle(
+                    fontFamily: 'Nunito',
+                    color: c.primaryText,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.45,
+            ),
+            child: ListView.separated(
+              shrinkWrap: true,
+              padding: EdgeInsets.symmetric(
+                  horizontal: sw * 0.04, vertical: 8),
+              itemCount: friends.length,
+              separatorBuilder: (_, __) =>
+                  Divider(height: 1, color: c.divider),
+              itemBuilder: (_, i) {
+                final f = friends[i];
+                return ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 4),
+                  leading: CircleAvatar(
+                    radius: 20,
+                    backgroundColor: c.accentBg,
+                    backgroundImage: f.avatarUrl != null &&
+                            f.avatarUrl!.isNotEmpty
+                        ? NetworkImage(f.avatarUrl!)
+                        : null,
+                    child: (f.avatarUrl == null || f.avatarUrl!.isEmpty)
+                        ? Icon(Icons.person_rounded,
+                            color: c.accent, size: 20)
+                        : null,
+                  ),
+                  title: Text(
+                    f.displayName,
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      color: c.primaryText,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  onTap: () => onSelected(f),
+                );
+              },
+            ),
+          ),
+          SizedBox(
+              height: MediaQuery.of(context).padding.bottom + 16),
+        ],
       ),
     );
   }

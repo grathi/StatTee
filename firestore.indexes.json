@@ -1,4 +1,13 @@
 {
-  "indexes": [],
+  "indexes": [
+    {
+      "collectionGroup": "rounds",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "sharedWith", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "status",     "order": "ASCENDING" }
+      ]
+    }
+  ],
   "fieldOverrides": []
 }

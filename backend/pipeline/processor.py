@@ -3,15 +3,19 @@ Pipeline orchestrator. Runs all stages and updates Firestore progress.
 """
 from __future__ import annotations
 
+import logging
 import subprocess
 import tempfile
 import shutil
+import traceback
 from pathlib import Path
 
 import cv2
 
 import firebase_client as fc
 from pipeline import detector, tracker, trajectory, renderer
+
+logger = logging.getLogger(__name__)
 
 
 def process(job_id: str, input_url: str, user_id: str) -> None:
@@ -24,7 +28,17 @@ def process(job_id: str, input_url: str, user_id: str) -> None:
     try:
         _run(job_id, input_url, user_id, workdir)
     except Exception as exc:
-        fc.update_job(job_id, status="failed", errorMessage=str(exc))
+        logger.error(
+            "[processor] Pipeline failed for job %s: %s\n%s",
+            job_id, exc, traceback.format_exc(),
+        )
+        try:
+            fc.update_job(job_id, status="failed", errorMessage=str(exc))
+        except Exception as fe:
+            logger.error(
+                "[processor] ALSO failed to write status=failed to Firestore "
+                "for job %s: %s", job_id, fe
+            )
         raise
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
@@ -38,19 +52,24 @@ def _run(job_id: str, input_url: str, user_id: str, workdir: Path) -> None:
     frames_dir.mkdir()
 
     # ── Stage 1: Download ──────────────────────────────────────────────────
+    logger.info("[processor] Stage 1: downloading video for job %s", job_id)
     fc.update_job(job_id, status="processing", progress=5)
     raw_mp4 = workdir / "raw.mp4"
     fc.download_video(input_url, str(raw_mp4))
 
     # ── Stage 1b: Transcode to H.264 (handles Dolby Vision / HEVC / HDR) ───
+    logger.info("[processor] Stage 1b: transcoding to H.264")
     fc.update_job(job_id, progress=10)
     _transcode_to_h264(raw_mp4, input_mp4)
 
     # ── Stage 2: Extract frames (capped at 30 fps) ─────────────────────────
+    logger.info("[processor] Stage 2: extracting frames")
     fc.update_job(job_id, progress=15)
     fps, frame_w, frame_h = _extract_frames(input_mp4, frames_dir)
+    logger.info("[processor] Extracted frames: fps=%.1f  %dx%d", fps, frame_w, frame_h)
 
     # ── Stage 3: Detect ────────────────────────────────────────────────────
+    logger.info("[processor] Stage 3: detecting ball")
     fc.update_job(job_id, progress=20)
     job_doc   = fc.get_job(job_id)
     ball_hint = job_doc.get("ballHint")   # {'x': 0–1, 'y': 0–1} or None
@@ -62,6 +81,7 @@ def _run(job_id: str, input_url: str, user_id: str, workdir: Path) -> None:
     )
 
     # ── Stage 4: Track ─────────────────────────────────────────────────────
+    logger.info("[processor] Stage 4: tracking ball")
     fc.update_job(job_id, progress=50)
     hint_px = (
         (ball_hint["x"] * frame_w, ball_hint["y"] * frame_h)
@@ -73,25 +93,33 @@ def _run(job_id: str, input_url: str, user_id: str, workdir: Path) -> None:
         fps=fps,
         hint_px=hint_px,
     )
+    logger.info("[processor] Tracked %d points", len(tracked))
 
     # ── Stage 5: Smooth & metrics ──────────────────────────────────────────
+    logger.info("[processor] Stage 5: smoothing trajectory")
     fc.update_job(job_id, progress=60)
     ball_path, shot_data = trajectory.smooth(tracked, fps, frame_w, frame_h)
+    logger.info("[processor] Shot data: %s", shot_data)
 
     # ── Stage 6: Render overlay ────────────────────────────────────────────
+    logger.info("[processor] Stage 6: rendering overlay")
     fc.update_job(job_id, progress=70)
     renderer.draw_overlay(frames_dir, tracked, out_frames)
 
     # ── Stage 7: Encode output video ───────────────────────────────────────
+    logger.info("[processor] Stage 7: encoding output video")
     fc.update_job(job_id, progress=85)
     renderer.encode_video(out_frames, output_mp4, fps)
 
     # ── Stage 8: Upload output video ───────────────────────────────────────
+    logger.info("[processor] Stage 8: uploading output video")
     fc.update_job(job_id, progress=90)
     gs_dest = input_url.replace("/input.mp4", "/output.mp4")
     output_url = fc.upload_video(str(output_mp4), gs_dest)
+    logger.info("[processor] Uploaded output to %s", gs_dest)
 
     # ── Stage 9: Update Firestore ──────────────────────────────────────────
+    logger.info("[processor] Stage 9: marking job completed in Firestore")
     fc.update_job(
         job_id,
         status="completed",

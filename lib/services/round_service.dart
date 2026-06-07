@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/round.dart';
@@ -27,6 +28,7 @@ class RoundService {
     double? lng,
     String? sessionId,
     String? playerName,
+    List<String>? sharedWith,
   }) async {
     final doc = await _col.add(Round(
       userId: _uid,
@@ -44,6 +46,7 @@ class RoundService {
       lng: lng,
       sessionId: sessionId,
       playerName: playerName,
+      sharedWith: sharedWith ?? const [],
     ).toFirestore());
     return doc.id;
   }
@@ -65,7 +68,7 @@ class RoundService {
   }
 
   /// Stream of the last [limit] completed rounds for the current user.
-  /// Excludes practice rounds.
+  /// Excludes practice rounds and companion-imported rounds.
   static Stream<List<Round>> recentRoundsStream({int limit = 10}) {
     return _col
         .where('userId', isEqualTo: _uid)
@@ -73,7 +76,7 @@ class RoundService {
         .snapshots()
         .map((snap) {
           final rounds = snap.docs.map(Round.fromFirestore)
-              .where((r) => !r.isPractice)
+              .where((r) => !r.isPractice && r.playerName == null)
               .toList()
             ..sort((a, b) => b.startedAt.compareTo(a.startedAt));
           return rounds.take(limit).toList();
@@ -81,7 +84,7 @@ class RoundService {
   }
 
   /// Stream of ALL completed rounds — used for stat calculations.
-  /// Excludes practice rounds.
+  /// Excludes practice rounds and companion-imported rounds.
   static Stream<List<Round>> allCompletedRoundsStream() {
     return _col
         .where('userId', isEqualTo: _uid)
@@ -89,7 +92,7 @@ class RoundService {
         .snapshots()
         .map((snap) {
           final rounds = snap.docs.map(Round.fromFirestore)
-              .where((r) => !r.isPractice)
+              .where((r) => !r.isPractice && r.playerName == null)
               .toList()
             ..sort((a, b) => b.startedAt.compareTo(a.startedAt));
           return rounds;
@@ -123,6 +126,49 @@ class RoundService {
             ..sort((a, b) => a.startedAt.compareTo(b.startedAt));
           return rounds;
         });
+  }
+
+  /// Stream of completed rounds that were imported by a friend and shared
+  /// with the current user (i.e. current user's UID is in `sharedWith`).
+  static Stream<List<Round>> sharedWithMeStream() {
+    return _col
+        .where('sharedWith', arrayContains: _uid)
+        .where('status', isEqualTo: 'completed')
+        .snapshots()
+        .map((snap) => snap.docs.map(Round.fromFirestore).toList()
+          ..sort((a, b) => b.startedAt.compareTo(a.startedAt)));
+  }
+
+  /// Merged stream of the user's own completed rounds + rounds shared with them.
+  /// Deduplicates by document ID and sorts by date descending.
+  static Stream<List<Round>> allRoundsIncludingSharedStream() {
+    late StreamController<List<Round>> controller;
+    List<Round> own    = [];
+    List<Round> shared = [];
+
+    void emit() {
+      final seen = <String?>{};
+      final all  = [...own, ...shared]
+          .where((r) => seen.add(r.id))
+          .toList()
+        ..sort((a, b) => b.startedAt.compareTo(a.startedAt));
+      controller.add(all);
+    }
+
+    StreamSubscription<List<Round>>? s1, s2;
+    controller = StreamController<List<Round>>(
+      onListen: () {
+        s1 = allCompletedRoundsStream().listen((r) { own    = r; emit(); });
+        s2 = sharedWithMeStream()
+            .handleError((_) {}) // ignore permission errors — feature degrades gracefully
+            .listen((r) { shared = r; emit(); });
+      },
+      onCancel: () {
+        s1?.cancel();
+        s2?.cancel();
+      },
+    );
+    return controller.stream;
   }
 
   // ── Update ────────────────────────────────────────────────────────────────

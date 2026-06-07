@@ -1,0 +1,15 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ── Swing analysis videos ─────────────────────────────────────────────────
+    // Path: swings/{userId}/{jobId}/input.mp4   (uploaded by Flutter app)
+    //       swings/{userId}/{jobId}/output.mp4  (written by Cloud Run backend)
+    match /swings/{userId}/{jobId}/{file} {
+      // Only the owning user may upload or read their own swing videos
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId;
+    }
+  }
+}

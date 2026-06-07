@@ -1182,16 +1182,8 @@ class _HomeTabState extends State<_HomeTab>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  '$greetingText,',
-                  style: TextStyle(
-                    color: c.secondaryText,
-                    fontSize: _labelSize,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-                const SizedBox(height: 2),
                 Text(
                   _firstName,
                   style: TextStyle(fontFamily: 'Nunito',
@@ -1200,9 +1192,11 @@ class _HomeTabState extends State<_HomeTab>
                     fontWeight: FontWeight.w800,
                     height: 1.1,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 if (subtitle != null) ...[
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 1),
                   Text(
                     subtitle,
                     style: TextStyle(
@@ -1210,26 +1204,8 @@ class _HomeTabState extends State<_HomeTab>
                       fontSize: _labelSize * 0.88,
                       fontWeight: FontWeight.w500,
                     ),
-                  ),
-                ],
-                // AI insight chip — hidden when subtitle already occupies the space
-                if (subtitle == null) ...[
-                  const SizedBox(height: 3),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: c.accentBg,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: c.accentBorder),
-                    ),
-                    child: Text(
-                      insightText,
-                      style: TextStyle(
-                        color: c.accent,
-                        fontSize: _labelSize * 0.84,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ],
@@ -1444,6 +1420,7 @@ class _HomeTabState extends State<_HomeTab>
       bodySize: _bodySize,
       weather: _heroWeather,
       activeRound: activeRound,
+      locationName: _locationName,
       onTap: () => Navigator.push(context, MaterialPageRoute(
         builder: (_) => StartRoundScreen(
           initialPosition: _userPosition,

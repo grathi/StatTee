@@ -821,11 +821,11 @@
     }
   },
 
-  "greetingPerfectTeeTime": "टी टाइम एकदम सही ⛳",
-  "greetingSunnyBreezy": "धूप और हल्की हवा ⛳",
-  "greetingToughWeather": "मुश्किल मौसम आगे 🌧️",
-  "greetingGoodScoring": "अच्छे स्कोर का मौसम ⛅",
-  "greetingPlaySmart": "आज समझदारी से खेलें 💨",
+  "greetingPerfectTeeTime": "टी टाइम एकदम सही",
+  "greetingSunnyBreezy": "धूप और हल्की हवा",
+  "greetingToughWeather": "मुश्किल मौसम आगे",
+  "greetingGoodScoring": "अच्छे स्कोर का मौसम",
+  "greetingPlaySmart": "आज समझदारी से खेलें",
   "greetingEarlyTeeTime": "सुबह की शुरुआत",
   "greetingMorningRound": "सुबह का राउंड",
   "greetingPerfectMorning": "बेहतरीन सुबह",

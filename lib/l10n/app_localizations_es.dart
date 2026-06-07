@@ -286,19 +286,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String get homeTapToTeeOff => 'Toca para empezar';
 
   @override
-  String get greetingPerfectTeeTime => 'Hora de tee perfecta ⛳';
+  String get greetingPerfectTeeTime => 'Hora de tee perfecta';
 
   @override
-  String get greetingSunnyBreezy => 'Soleado pero con brisa ⛳';
+  String get greetingSunnyBreezy => 'Soleado pero con brisa';
 
   @override
-  String get greetingToughWeather => 'Tiempo difícil por delante 🌧️';
+  String get greetingToughWeather => 'Tiempo difícil por delante';
 
   @override
-  String get greetingGoodScoring => 'Buen tiempo para puntuar ⛅';
+  String get greetingGoodScoring => 'Buen tiempo para puntuar';
 
   @override
-  String get greetingPlaySmart => 'Juega inteligente hoy 💨';
+  String get greetingPlaySmart => 'Juega inteligente hoy';
 
   @override
   String get greetingEarlyTeeTime => 'Salida temprana';
@@ -1495,6 +1495,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get swingAnalyzerButton => 'Analizar swing';
+
+  @override
+  String get swingAnalyzerUploadLibrary => 'Upload from Library';
 
   @override
   String get swingAnalyzerComingSoon => 'Próximamente';

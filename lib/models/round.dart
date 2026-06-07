@@ -31,6 +31,9 @@ class Round {
   /// Name of a companion player imported alongside the current user.
   /// Null for the current user's own rounds.
   final String? playerName;
+  /// UIDs this round is shared with (imported for a friend).
+  /// Empty for own rounds.
+  final List<String> sharedWith;
 
   const Round({
     this.id,
@@ -52,6 +55,7 @@ class Round {
     this.lng,
     this.sessionId,
     this.playerName,
+    this.sharedWith = const [],
   });
 
   // ── Computed stats ──────────────────────────────────────────────────────
@@ -119,6 +123,7 @@ class Round {
         if (lng != null) 'lng': lng,
         if (sessionId != null) 'sessionId': sessionId,
         if (playerName != null) 'playerName': playerName,
+        if (sharedWith.isNotEmpty) 'sharedWith': sharedWith,
       };
 
   factory Round.fromFirestore(DocumentSnapshot doc) {
@@ -152,6 +157,7 @@ class Round {
       lng: (d['lng'] as num?)?.toDouble(),
       sessionId: d['sessionId'] as String?,
       playerName: d['playerName'] as String?,
+      sharedWith: List<String>.from(d['sharedWith'] as List? ?? []),
     );
   }
 
@@ -170,6 +176,7 @@ class Round {
     double? lng,
     String? sessionId,
     String? playerName,
+    List<String>? sharedWith,
   }) =>
       Round(
         id: id ?? this.id,
@@ -191,5 +198,6 @@ class Round {
         lng: lng ?? this.lng,
         sessionId: sessionId ?? this.sessionId,
         playerName: playerName ?? this.playerName,
+        sharedWith: sharedWith ?? this.sharedWith,
       );
 }

@@ -34,6 +34,7 @@ _FALLBACK   = "yolov8n.pt"          # COCO; class 32 = sports ball
 
 # ── Detection settings ────────────────────────────────────────────────────────
 _CONF            = 0.15    # low threshold — ball is small and partially blurred
+_CONF_POST       = 0.25    # higher threshold post-impact: suppress stationary range balls
 _IMGSZ           = 1280    # must use 1280; ball vanishes at 640
 
 # ── Directional cone filter ───────────────────────────────────────────────────
@@ -163,11 +164,13 @@ def detect_all(
 
         post_impact = (i >= impact_frame)
 
-        # Run YOLO inference
+        # Run YOLO inference — use higher confidence post-impact to filter
+        # out the many stationary range balls on the mat/ground
+        conf_thresh = _CONF_POST if post_impact else _CONF
         results = model.predict(
             img,
             imgsz=_IMGSZ,
-            conf=_CONF,
+            conf=conf_thresh,
             classes=_target_classes,
             verbose=False,
         )

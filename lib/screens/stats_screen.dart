@@ -248,7 +248,7 @@ class _StatsScreenState extends State<StatsScreen> with SingleTickerProviderStat
   Widget _buildHandicapCard(BuildContext context, AppColors c, double sw, double sh, AppStats stats) {
     final body = (sw * 0.036).clamp(13.0, 16.0);
     final label = (sw * 0.030).clamp(11.0, 13.0);
-    final hasData = stats.totalRounds > 0;
+    final hasData = stats.handicapIndex != null;
 
     return Container(
       width: double.infinity,

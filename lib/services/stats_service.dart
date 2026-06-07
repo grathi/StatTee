@@ -48,8 +48,8 @@ class StatsService {
   static AppStats calculate(List<Round> rounds) {
     if (rounds.isEmpty) return AppStats.empty;
 
-    // Only full 18-hole rounds for handicap calc
-    final full = rounds.where((r) => r.totalHoles == 18 && r.scores.length == 18).toList();
+    // All completed rounds with at least one score — used for handicap calc
+    final full = rounds.where((r) => r.scores.isNotEmpty).toList();
     final all  = rounds;
 
     // Avg score diff
@@ -82,13 +82,24 @@ class StatsService {
     // Total birdies
     final birdies = all.fold(0, (s, r) => s + r.birdies);
 
-    // Handicap Index — requires 20 completed 18-hole rounds (WHS rule).
-    // Returns null until threshold is met so UI can show progress instead.
-    final diffs = full.take(20).map((r) => r.scoreDifferential).toList()
-      ..sort();
-    final best8 = diffs.take(8).toList();
-    final handicap = full.length >= 20
-        ? (best8.fold(0.0, (s, d) => s + d) / best8.length)
+    // Handicap Index — WHS calculation.
+    // Requires minimum 3 completed rounds (18 or 9-hole treated as a pair).
+    // Number of best differentials used scales with rounds played.
+    final diffs = full.map((r) => r.scoreDifferential).toList()..sort();
+    final n = diffs.length;
+    int? bestCount;
+    if      (n >= 19) bestCount = 8;
+    else if (n >= 17) bestCount = 7;
+    else if (n >= 15) bestCount = 6;
+    else if (n >= 12) bestCount = 5;
+    else if (n >= 9)  bestCount = 4;
+    else if (n >= 7)  bestCount = 3;
+    else if (n >= 5)  bestCount = 2;
+    else if (n >= 3)  bestCount = 1;
+    else if (n >= 1)  bestCount = 1;
+    final best = bestCount != null ? diffs.take(bestCount).toList() : null;
+    final handicap = best != null
+        ? (best.fold(0.0, (s, d) => s + d) / best.length)
         : null;
 
     return AppStats(

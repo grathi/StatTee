@@ -623,31 +623,31 @@ abstract class AppLocalizations {
   /// No description provided for @greetingPerfectTeeTime.
   ///
   /// In en, this message translates to:
-  /// **'Perfect tee time ⛳'**
+  /// **'Perfect tee time'**
   String get greetingPerfectTeeTime;
 
   /// No description provided for @greetingSunnyBreezy.
   ///
   /// In en, this message translates to:
-  /// **'Sunny but breezy ⛳'**
+  /// **'Sunny but breezy'**
   String get greetingSunnyBreezy;
 
   /// No description provided for @greetingToughWeather.
   ///
   /// In en, this message translates to:
-  /// **'Tough weather ahead 🌧️'**
+  /// **'Tough weather ahead'**
   String get greetingToughWeather;
 
   /// No description provided for @greetingGoodScoring.
   ///
   /// In en, this message translates to:
-  /// **'Good scoring weather ⛅'**
+  /// **'Good scoring weather'**
   String get greetingGoodScoring;
 
   /// No description provided for @greetingPlaySmart.
   ///
   /// In en, this message translates to:
-  /// **'Play smart today 💨'**
+  /// **'Play smart today'**
   String get greetingPlaySmart;
 
   /// No description provided for @greetingEarlyTeeTime.
@@ -2729,8 +2729,14 @@ abstract class AppLocalizations {
   /// No description provided for @swingAnalyzerButton.
   ///
   /// In en, this message translates to:
-  /// **'Analyze Swing'**
+  /// **'Record New Swing'**
   String get swingAnalyzerButton;
+
+  /// No description provided for @swingAnalyzerUploadLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload from Library'**
+  String get swingAnalyzerUploadLibrary;
 
   /// No description provided for @swingAnalyzerComingSoon.
   ///

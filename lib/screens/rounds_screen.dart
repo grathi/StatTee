@@ -246,7 +246,7 @@ class _RoundsScreenState extends State<RoundsScreen> {
   Widget _buildRoundsList(BuildContext context, AppColors c, double sw,
       double sh, double hPad, double body, double label) {
     return StreamBuilder<List<Round>>(
-      stream: RoundService.allCompletedRoundsStream(),
+      stream: RoundService.allRoundsIncludingSharedStream(),
       builder: (context, snap) {
         final loading = snap.connectionState == ConnectionState.waiting;
         final rounds = snap.data ?? [];
@@ -278,6 +278,8 @@ class _RoundsScreenState extends State<RoundsScreen> {
           separatorBuilder: (_, __) => SizedBox(height: sh * 0.012),
           itemBuilder: (ctx, i) {
             final r = displayRounds[i];
+            // Rounds shared with current user (imported by a friend)
+            final isShared = r.playerName != null && r.sharedWith.isNotEmpty;
             return Dismissible(
               key: ValueKey(r.id),
               direction: DismissDirection.endToStart,
@@ -329,7 +331,13 @@ class _RoundsScreenState extends State<RoundsScreen> {
                   MaterialPageRoute(
                       builder: (_) => RoundDetailScreen(round: r)),
                 ),
-                child: _RoundCard(round: r, c: c, sw: sw, sh: sh),
+                child: _RoundCard(
+                  round: r,
+                  c: c,
+                  sw: sw,
+                  sh: sh,
+                  sharedByName: isShared ? r.playerName : null,
+                ),
               ),
             );
           },
@@ -387,12 +395,15 @@ class _RoundCard extends StatelessWidget {
   final AppColors c;
   final double sw;
   final double sh;
+  /// Non-null when this round was imported by a friend and shared with us.
+  final String? sharedByName;
 
   const _RoundCard({
     required this.round,
     required this.c,
     required this.sw,
     required this.sh,
+    this.sharedByName,
   });
 
   Color get _diffColor {
@@ -507,6 +518,25 @@ class _RoundCard extends StatelessWidget {
                         style: TextStyle(color: c.secondaryText, fontSize: label),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    if (sharedByName != null) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.person_rounded,
+                              size: 11,
+                              color: c.accent.withValues(alpha: 0.8)),
+                          const SizedBox(width: 3),
+                          Text(
+                            'Shared by $sharedByName',
+                            style: TextStyle(
+                              color: c.accent.withValues(alpha: 0.8),
+                              fontSize: label * 0.88,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ],

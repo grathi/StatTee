@@ -821,11 +821,11 @@
     }
   },
 
-  "greetingPerfectTeeTime": "Heure de départ idéale ⛳",
-  "greetingSunnyBreezy": "Ensoleillé mais venteux ⛳",
-  "greetingToughWeather": "Météo difficile en vue 🌧️",
-  "greetingGoodScoring": "Bon temps pour scorer ⛅",
-  "greetingPlaySmart": "Jouez intelligemment aujourd'hui 💨",
+  "greetingPerfectTeeTime": "Heure de départ idéale",
+  "greetingSunnyBreezy": "Ensoleillé mais venteux",
+  "greetingToughWeather": "Météo difficile en vue",
+  "greetingGoodScoring": "Bon temps pour scorer",
+  "greetingPlaySmart": "Jouez intelligemment aujourd'hui",
   "greetingEarlyTeeTime": "Départ matinal",
   "greetingMorningRound": "Tour du matin",
   "greetingPerfectMorning": "Matinée parfaite",

@@ -565,12 +565,13 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
     if (gr == null) return const SizedBox.shrink();
 
     // Build ordered list: current user first, then others by displayName.
+    // Include ALL players regardless of roundId — those without it show empty scores.
     final myUid = round.userId;
     final ordered = <(GroupRoundPlayer, Round?)>[];
     final me = gr.players[myUid];
     if (me != null) ordered.add((me, round));
     final others = gr.players.values
-        .where((p) => p.uid != myUid && p.roundId != null)
+        .where((p) => p.uid != myUid)
         .toList()
       ..sort((a, b) => a.displayName.compareTo(b.displayName));
     for (final p in others) {
@@ -578,12 +579,15 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
     }
     if (ordered.length < 2) return const SizedBox.shrink();
 
-    // Par data: prefer GroupRound.holes, fall back to user's own scores.
+    // Par data: seed from API holes, then override with actual saved scores
+    // (user may have adjusted par during play — their scores are authoritative).
     final Map<int, int> parByHole = {};
-    if (gr.holes.isNotEmpty) {
-      for (final h in gr.holes) parByHole[h.hole] = h.par;
-    } else {
-      for (final h in round.scores) parByHole[h.hole] = h.par;
+    for (final h in gr.holes) parByHole[h.hole] = h.par;
+    for (final h in round.scores) parByHole[h.hole] = h.par;
+    for (final peerRound in _peerRounds.values) {
+      for (final h in (peerRound?.scores ?? [])) {
+        parByHole.putIfAbsent(h.hole, () => h.par);
+      }
     }
 
     final totalHoles = round.totalHoles;
@@ -606,7 +610,7 @@ class _RoundDetailScreenState extends State<RoundDetailScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          '${gr.players.values.where((p) => p.status == 'completed').length} players · ${gr.courseName}',
+          '${gr.players.length} players · ${gr.courseName}',
           style: TextStyle(
             color: c.secondaryText,
             fontSize: label,
