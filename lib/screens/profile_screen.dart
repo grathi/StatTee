@@ -11,8 +11,6 @@ import '../theme/app_theme.dart';
 import '../services/notification_service.dart';
 import '../screens/notification_preferences_screen.dart';
 import '../widgets/shimmer_widgets.dart';
-import '../widgets/tip_banner.dart';
-import '../services/onboarding_service.dart';
 import '../widgets/golf_dna_widgets.dart';
 import '../services/golf_dna_service.dart';
 import '../widgets/play_style_widgets.dart';
@@ -76,26 +74,10 @@ class ProfileScreen extends StatelessWidget {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: hPad),
-                child: TipBanner(
-                  title: context.l10n.profileSubtitle,
-                  body: context.l10n.profileDescription,
-                  hasSeenFn: OnboardingService.hasSeenProfileTip,
-                  markSeenFn: OnboardingService.markProfileTipSeen,
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
                 padding: EdgeInsets.fromLTRB(hPad, sh * 0.028, hPad, sh * 0.14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Avatar + name card
-                    _buildProfileCard(context, c, sw, sh, body, label, initials, name, email),
-
-                    SizedBox(height: sh * 0.022),
-
                     // Stats summary + Achievements
                     StreamBuilder(
                       stream: RoundService.allCompletedRoundsStream(),
@@ -109,10 +91,14 @@ class ProfileScreen extends StatelessWidget {
                         return Skeletonizer(
                           enabled: loading,
                           child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              PlayStyleSection(identity: playStyle),
+                              // Avatar + name card (needs stats for the strip)
+                              _buildProfileCard(context, c, sw, sh, body, label, initials, name, email, stats),
+
                               SizedBox(height: sh * 0.022),
-                              _buildStatsRow(context, c, sw, sh, body, label, stats),
+
+                              PlayStyleSection(identity: playStyle),
                               SizedBox(height: sh * 0.022),
                               _buildAchievementsSection(context, c, sw, sh, body, label, unlocked),
                               SizedBox(height: sh * 0.022),
@@ -196,21 +182,36 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildProfileCard(BuildContext context, AppColors c, double sw, double sh, double body,
-      double label, String initials, String name, String email) {
-    final avatarSize = (sw * 0.18).clamp(62.0, 76.0);
+      double label, String initials, String name, String email, AppStats stats) {
+    const darkBg = Color(0xFF0F172A);
+    const gold   = Color(0xFFF5C842);
+    const white  = Colors.white;
+
+    final avatarSize = (sw * 0.20).clamp(70.0, 84.0);
+
     return Container(
       decoration: ShapeDecoration(
-        color: c.cardBg,
+        color: darkBg,
         shape: SuperellipseShape(
           borderRadius: BorderRadius.circular(48),
-          side: BorderSide(color: c.cardBorder),
         ),
-        shadows: c.cardShadow,
+        shadows: const [
+          BoxShadow(
+            color: Color(0x2E000000),
+            blurRadius: 20,
+            offset: Offset(0, 6),
+          ),
+        ],
       ),
       padding: EdgeInsets.all((sw * 0.055).clamp(18.0, 24.0)),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Avatar + name/email/edit row ────────────────────────────────
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Tappable avatar with edit badge
+              // Tappable avatar
               GestureDetector(
                 onTap: () => _showAvatarPickerSheet(context, c, sw, sh, body, label),
                 child: Stack(
@@ -220,59 +221,65 @@ class ProfileScreen extends StatelessWidget {
                       bottom: 0,
                       right: 0,
                       child: Container(
-                        width: 24,
-                        height: 24,
+                        width: 22,
+                        height: 22,
                         decoration: BoxDecoration(
-                          color: c.accent,
+                          color: const Color(0xFF7BC344),
                           shape: BoxShape.circle,
-                          border: Border.all(color: c.cardBg, width: 2),
+                          border: Border.all(color: darkBg, width: 2),
                         ),
                         child: const Icon(Icons.edit_rounded,
-                            color: Colors.white, size: 12),
+                            color: Colors.white, size: 11),
                       ),
                     ),
                   ],
                 ),
               ),
-              SizedBox(width: (sw * 0.04).clamp(12.0, 18.0)),
+              SizedBox(width: (sw * 0.045).clamp(14.0, 20.0)),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      name.split(' ').first,
-                      style: TextStyle(fontFamily: 'Nunito',
-                        color: c.primaryText,
-                        fontSize: (sw * 0.052).clamp(18.0, 22.0),
+                      name,
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        color: white,
+                        fontSize: (sw * 0.056).clamp(20.0, 24.0),
                         fontWeight: FontWeight.w800,
+                        height: 1.1,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
                       email,
-                      style: TextStyle(color: c.secondaryText, fontSize: label),
+                      style: TextStyle(
+                        color: white.withValues(alpha: 0.55),
+                        fontSize: label,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                      decoration: ShapeDecoration(
-                        color: c.accentBg,
-                        shape: SuperellipseShape(
-                          borderRadius: BorderRadius.circular(16),
-                          side: BorderSide(color: c.accentBorder),
-                        ),
-                      ),
-                      child: Text(
-                        context.l10n.profileGolfer,
-                        style: TextStyle(
-                          color: c.accent,
-                          fontSize: label * 0.9,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    const SizedBox(height: 10),
+                    GestureDetector(
+                      onTap: () => _showEditProfileSheet(context, c, sw, sh, body, label),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Edit profile',
+                            style: TextStyle(
+                              color: const Color(0xFF7BC344),
+                              fontSize: (sw * 0.032).clamp(12.0, 14.0),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 3),
+                          const Icon(Icons.arrow_forward_ios_rounded,
+                              size: 10, color: Color(0xFF7BC344)),
+                        ],
                       ),
                     ),
                   ],
@@ -280,6 +287,79 @@ class ProfileScreen extends StatelessWidget {
               ),
             ],
           ),
+
+          const SizedBox(height: 18),
+
+          // ── Rounds milestone + stats strip ──────────────────────────────
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: white.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: white.withValues(alpha: 0.10),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Left: rounds milestone
+                Row(
+                  children: [
+                    const Icon(Icons.sports_golf_rounded,
+                        color: gold, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${stats.totalRounds} Rounds Played',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        color: gold,
+                        fontSize: (sw * 0.034).clamp(12.0, 15.0),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                // Right: handicap + birdies chips
+                Row(
+                  children: [
+                    _StatChip(label: 'HCP', value: stats.handicapLabel),
+                    const SizedBox(width: 16),
+                    _StatChip(label: 'Birdies', value: '${stats.totalBirdies}'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Small stat chip used in the dark header strip ─────────────────────────
+  Widget _StatChip({required String label, required String value}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            fontFamily: 'Nunito',
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            height: 1.1,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.45),
+            fontSize: 11,
+          ),
+        ),
+      ],
     );
   }
 

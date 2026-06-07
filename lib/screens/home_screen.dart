@@ -20,7 +20,6 @@ import 'rounds_screen.dart';
 import 'stats_screen.dart';
 import 'profile_screen.dart';
 import '../widgets/resume_round_card.dart';
-import 'swing_analyzer_screen.dart';
 import '../widgets/shimmer_widgets.dart';
 import '../widgets/weather_widgets.dart';
 import '../widgets/animated_hero_card.dart';
@@ -306,13 +305,13 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(pillH / 2),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.16),
-                blurRadius: 30,
-                offset: const Offset(0, 10),
+                color: Colors.black.withValues(alpha: 0.22),
+                blurRadius: 40,
+                offset: const Offset(0, 12),
               ),
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 6,
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
             ],
@@ -320,13 +319,14 @@ class _HomeScreenState extends State<HomeScreen> {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(pillH / 2),
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+              filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
               child: Container(
                 decoration: BoxDecoration(
                   color: c.navBg,
                   borderRadius: BorderRadius.circular(pillH / 2),
                   border: Border.all(
-                    color: c.navBorder.withValues(alpha: 0.50),
+                    color: Colors.white.withValues(alpha: 0.20),
+                    width: 1.0,
                   ),
                 ),
                 child: Row(
@@ -972,7 +972,7 @@ class _HomeTabState extends State<_HomeTab>
                               floating: true,
                               snap: true,
                               automaticallyImplyLeading: false,
-                              toolbarHeight: _sh * 0.030 + (_sw * 0.115).clamp(40.0, 52.0) + 36,
+                              toolbarHeight: 130,
                               flexibleSpace: _buildHeader(c, allSnap.data ?? [], stats),
                             ),
                             SliverToBoxAdapter(
@@ -994,11 +994,6 @@ class _HomeTabState extends State<_HomeTab>
                                         currentHole: 9,
                                       ) : activeRound,
                                     ),
-                                  ),
-                                  SizedBox(height: _sh * 0.024),
-                                  SmallWeatherCard(
-                                    lat: _userPosition?.latitude ?? _customLat,
-                                    lng: _userPosition?.longitude ?? _customLng,
                                   ),
                                   SizedBox(height: _sh * 0.024),
                                   Container(
@@ -1024,8 +1019,6 @@ class _HomeTabState extends State<_HomeTab>
                                   ),
                                   SizedBox(height: _sh * 0.024),
                                   _buildGolfNews(),
-                                  SizedBox(height: _sh * 0.024),
-                                  _buildSwingAnalyzerCard(),
                                   SizedBox(height: _sh * 0.14),
                                 ],
                               ),
@@ -1144,206 +1137,202 @@ class _HomeTabState extends State<_HomeTab>
     final subtitle     = _statSubtitle(allRounds, context);
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(_hPad, _sh * 0.018, _hPad, _sh * 0.012),
-      child: Row(
+      padding: EdgeInsets.fromLTRB(_hPad, _sh * 0.010, _hPad, _sh * 0.008),
+      child: Column(
         key: _greetingKey,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          StreamBuilder<String?>(
-            stream: UserProfileService.avatarUrlStream(),
-            builder: (context, snap) {
-              final url = snap.data;
-              final size = (_sw * 0.115).clamp(40.0, 52.0);
-              if (url != null) {
-                return Container(
-                  width: size,
-                  height: size,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                        color: const Color(0xFF8FD44E).withValues(alpha: 0.5),
-                        width: 2),
-                  ),
-                  child: ClipOval(
-                    child: Image.network(
-                      url,
+          // Row 1: avatar (left) + bell + settings (right)
+          Row(
+            children: [
+              StreamBuilder<String?>(
+                stream: UserProfileService.avatarUrlStream(),
+                builder: (context, snap) {
+                  final url = snap.data;
+                  final size = (_sw * 0.115).clamp(40.0, 52.0);
+                  if (url != null) {
+                    return Container(
                       width: size,
                       height: size,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _initialsCircle(size),
-                    ),
-                  ),
-                );
-              }
-              return _initialsCircle(size);
-            },
-          ),
-          SizedBox(width: _sw * 0.030),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  _firstName,
-                  style: TextStyle(fontFamily: 'Nunito',
-                    color: c.primaryText,
-                    fontSize: (_sw * 0.050).clamp(17.0, 22.0),
-                    fontWeight: FontWeight.w800,
-                    height: 1.1,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 1),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: c.accent.withValues(alpha: 0.85),
-                      fontSize: _labelSize * 0.88,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ],
-            ),
-          ),
-          // Friends icon button with pending badge
-          StreamBuilder<List<FriendProfile>>(
-            stream: _pendingFriendsStream,
-            builder: (context, snap) {
-              final count   = (snap.data ?? []).length;
-              final btnSize = (_sw * 0.110).clamp(38.0, 48.0);
-              return GestureDetector(
-                key: _friendsKey,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const FriendsScreen()),
-                ),
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Container(
-                      width: btnSize,
-                      height: btnSize,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: c.iconContainerBg,
-                        border: Border.all(color: c.iconContainerBorder),
+                        border: Border.all(
+                            color: const Color(0xFF8FD44E).withValues(alpha: 0.5),
+                            width: 2),
                       ),
-                      child: Icon(
-                        Icons.people_rounded,
-                        color: c.iconColor,
-                        size: btnSize * 0.46,
-                      ),
-                    ),
-                    if (count > 0)
-                      Positioned(
-                        top: 1,
-                        right: 1,
-                        child: Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF7BC344), Color(0xFF5A9E1F)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: c.scaffoldBg, width: 1.5),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF5A9E1F).withValues(alpha: 0.5),
-                                blurRadius: 4,
-                                offset: const Offset(0, 1),
-                              ),
-                            ],
-                          ),
+                      child: ClipOval(
+                        child: Image.network(
+                          url,
+                          width: size,
+                          height: size,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _initialsCircle(size),
                         ),
                       ),
-                  ],
-                ),
-              );
-            },
-          ),
-          SizedBox(width: (_sw * 0.025).clamp(8.0, 12.0)),
-          // Language picker — round FA icon, dropdown on tap, persists to prefs
-          ValueListenableBuilder<Locale>(
-            valueListenable: appLocaleNotifier,
-            builder: (context, locale, _) {
-              final current = locale.languageCode;
-              final btnSize = (_sw * 0.110).clamp(38.0, 48.0);
-              return GestureDetector(
-                onTapUp: (details) async {
-                  final RenderBox box = context.findRenderObject()! as RenderBox;
-                  final RenderBox overlay = Navigator.of(context)
-                      .overlay!
-                      .context
-                      .findRenderObject()! as RenderBox;
-                  final offset = box.localToGlobal(Offset.zero, ancestor: overlay);
-                  final selected = await showMenu<String>(
-                    context: context,
-                    position: RelativeRect.fromLTRB(
-                      offset.dx,
-                      offset.dy + box.size.height + 4,
-                      overlay.size.width - offset.dx - box.size.width,
-                      0,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 8,
-                    items: kSupportedLocales.map((l) {
-                      final code  = l.languageCode;
-                      final label = kLocaleLabels[code] ?? code;
-                      return PopupMenuItem<String>(
-                        value: code,
-                        child: Row(
-                          children: [
-                            Text(label, style: const TextStyle(fontSize: 14)),
-                            if (code == current) ...[
-                              const Spacer(),
-                              Icon(Icons.check_rounded,
-                                  size: 16, color: const Color(0xFF5A9E1F)),
-                            ],
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  );
-                  if (selected != null && selected != current) {
-                    await saveLocale(selected);
+                    );
                   }
+                  return _initialsCircle(size);
                 },
-                child: Container(
-                  width: btnSize,
-                  height: btnSize,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: c.iconContainerBg,
-                    border: Border.all(color: c.iconContainerBorder),
-                  ),
-                  child: Center(
-                    child: FaIcon(
-                      FontAwesomeIcons.language,
-                      color: c.iconColor,
-                      size: btnSize * 0.42,
+              ),
+              const Spacer(),
+              // Friends button
+              StreamBuilder<List<FriendProfile>>(
+                stream: _pendingFriendsStream,
+                builder: (context, snap) {
+                  final count  = (snap.data ?? []).length;
+                  const sz = 42.0;
+                  const iconSz = 20.0;
+                  return GestureDetector(
+                    key: _friendsKey,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const FriendsScreen()),
                     ),
-                  ),
-                ),
-              );
-            },
+                    child: Container(
+                      width: sz,
+                      height: sz,
+                      decoration: BoxDecoration(
+                        color: c.accentBg,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: c.accentBorder, width: 1.2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.07),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        clipBehavior: Clip.none,
+                        children: [
+                          Icon(Icons.people_outline_rounded,
+                              color: c.accent, size: iconSz),
+                          if (count > 0)
+                            Positioned(
+                              top: 4,
+                              right: 4,
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFF7BC344), Color(0xFF5A9E1F)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white, width: 1.5),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 10),
+              // Language picker button
+              ValueListenableBuilder<Locale>(
+                valueListenable: appLocaleNotifier,
+                builder: (context, locale, _) {
+                  final current = locale.languageCode;
+                  return GestureDetector(
+                    onTapUp: (details) async {
+                      final RenderBox box = context.findRenderObject()! as RenderBox;
+                      final RenderBox overlay = Navigator.of(context).overlay!.context.findRenderObject()! as RenderBox;
+                      final offset = box.localToGlobal(Offset.zero, ancestor: overlay);
+                      final selected = await showMenu<String>(
+                        context: context,
+                        position: RelativeRect.fromLTRB(
+                          offset.dx,
+                          offset.dy + box.size.height + 4,
+                          overlay.size.width - offset.dx - box.size.width,
+                          0,
+                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 8,
+                        items: kSupportedLocales.map((l) {
+                          final code  = l.languageCode;
+                          final label = kLocaleLabels[code] ?? code;
+                          return PopupMenuItem<String>(
+                            value: code,
+                            child: Row(
+                              children: [
+                                Text(label, style: const TextStyle(fontSize: 14)),
+                                if (code == current) ...[
+                                  const Spacer(),
+                                  Icon(Icons.check_rounded, size: 16, color: const Color(0xFF5A9E1F)),
+                                ],
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      );
+                      if (selected != null && selected != current) {
+                        await saveLocale(selected);
+                      }
+                    },
+                    child: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: c.accentBg,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: c.accentBorder, width: 1.2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.07),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.translate_rounded,
+                        color: Color(0xFF5A9E1F),
+                        size: 20,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+          // Row 2: "Hi, Gaurav"
+          SizedBox(height: _sh * 0.005),
+          Text(
+            'Hi, $_firstName',
+            style: TextStyle(
+              fontFamily: 'Nunito',
+              color: c.primaryText,
+              fontSize: (_sw * 0.075).clamp(26.0, 34.0),
+              fontWeight: FontWeight.w800,
+              height: 1.1,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          // Row 3: hardcoded greeting
+          const SizedBox(height: 2),
+          Text(
+            'Ready for another great round?',
+            style: TextStyle(
+              color: c.secondaryText,
+              fontSize: _labelSize * 0.90,
+              fontWeight: FontWeight.w400,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
     );
   }
   Widget _buildTopCarousel(Round? activeRound) {
-    final cardHeight = (_sh * 0.210).clamp(150.0, 210.0);
+    final cardHeight = (_sh * 0.265).clamp(210.0, 265.0);
     final hasActive  = activeRound != null;
     final pageCount  = hasActive ? 2 : 1;
 
@@ -1485,7 +1474,7 @@ class _HomeTabState extends State<_HomeTab>
             const SizedBox(height: 10),
             // Horizontal scroll
             SizedBox(
-              height: 178,
+              height: 190,
               child: loading
                   ? _buildNewsShimmer(c, hPad, cardW)
                   : ListView.separated(
@@ -1525,36 +1514,9 @@ class _HomeTabState extends State<_HomeTab>
         itemBuilder: (_, __) => Container(
           width: cardW,
           clipBehavior: Clip.antiAlias,
-          decoration: ShapeDecoration(
-            color: c.cardBg,
-            shape: SuperellipseShape(borderRadius: BorderRadius.circular(48), side: BorderSide(color: c.cardBorder)),
-            shadows: c.cardShadow,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // image area
-              Container(
-                height: 108,
-                width: double.infinity,
-                color: c.iconContainerBg,
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(10, 8, 10, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(height: 10, width: cardW * 0.35, decoration: BoxDecoration(color: c.accent.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(4))),
-                    const SizedBox(height: 6),
-                    Container(height: 11, width: double.infinity, decoration: BoxDecoration(color: c.primaryText.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(4))),
-                    const SizedBox(height: 4),
-                    Container(height: 11, width: cardW * 0.75, decoration: BoxDecoration(color: c.primaryText.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(4))),
-                    const SizedBox(height: 4),
-                    Container(height: 11, width: cardW * 0.55, decoration: BoxDecoration(color: c.primaryText.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4))),
-                  ],
-                ),
-              ),
-            ],
+          decoration: BoxDecoration(
+            color: c.iconContainerBg,
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
       ),
@@ -1605,7 +1567,7 @@ class _HomeTabState extends State<_HomeTab>
           )
         else
           SizedBox(
-            height: (_sh * 0.155).clamp(120.0, 145.0),
+            height: (_sh * 0.130).clamp(100.0, 120.0),
             child: ListView.separated(
               physics: const BouncingScrollPhysics(),
               scrollDirection: Axis.horizontal,
@@ -1672,178 +1634,195 @@ class _HomeTabState extends State<_HomeTab>
   }
 
   Widget _buildRoundCard(_RoundCardData round) {
-    final c = AppColors.of(context);
-    final diffColor = _diffColor(round.diff);
-    final cardW = (_sw * 0.52).clamp(175.0, 220.0);
+    final c          = AppColors.of(context);
+    final diff       = round.diff;
+    final isUnderPar = diff <= 0;
+    final cardW      = (_sw * 0.62).clamp(220.0, 270.0);
+    const vPad       = 12.0;
+    const hPad       = 14.0;
+
+    // Par/under: Celadon green pill; over-par: soft thistle tint
+    final pillBg   = isUnderPar ? const Color(0xFF7BE0AD) : const Color(0xFFE5D0E3);
+    final pillText = isUnderPar ? const Color(0xFF1A5C38)  : const Color(0xFF6B3F6B);
+
+    Color hc(int d) {
+      if (d <= -2) return const Color(0xFFFFD700);
+      if (d == -1) return const Color(0xFF7BE0AD);
+      if (d == 0)  return const Color(0xFFAEE5D8);
+      if (d == 1)  return const Color(0xFFFFB74D);
+      return const Color(0xFFE07070);
+    }
+
+    // Consolidated meta line: "📍 Pleasanton, CA · 9H · 1 week ago"
+    final metaParts = <String>[
+      if (round.location.isNotEmpty) round.location
+      else context.l10n.homeNoLocation,
+      round.isActive
+          ? '${round.holesPlayed}/${round.totalHoles} ${context.l10n.roundSummaryHoles}'
+          : '${round.totalHoles}H',
+      round.timeAgo,
+    ];
+
     return Container(
       width: cardW,
-      decoration: ShapeDecoration(
-        gradient: LinearGradient(
-          colors: round.isActive
-              ? [c.cardBg, c.cardBg]
-              : c.cardGradient,
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+      decoration: BoxDecoration(
+        color: const Color(0xFFFDFDFD),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: round.isActive
+              ? c.accentBorder
+              : const Color(0xFFE5D0E3).withValues(alpha: 0.55),
+          width: 1.2,
         ),
-        shape: SuperellipseShape(
-          borderRadius: BorderRadius.circular(48), side: BorderSide(
-            color: round.isActive ? c.accentBorder : c.cardBorder,
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFE5D0E3).withValues(alpha: 0.30),
+            blurRadius: 14,
+            offset: const Offset(0, 3),
           ),
-        ),
-        shadows: round.isActive ? [] : c.cardShadow,
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      padding: EdgeInsets.all((_sw * 0.042).clamp(14.0, 18.0)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  round.course,
-                  style: TextStyle(fontFamily: 'Nunito',
-                    color: c.primaryText,
-                    fontSize: _bodySize,
-                    fontWeight: FontWeight.w700,
+          // ── Content row ─────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(hPad, vPad, hPad, 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // ── Left: course name + metadata line ─────────────────
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (round.isActive)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 3),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: c.accentBg,
+                              borderRadius: BorderRadius.circular(5),
+                              border: Border.all(color: c.accentBorder),
+                            ),
+                            child: Text(
+                              context.l10n.homeActive,
+                              style: TextStyle(
+                                color: c.accent,
+                                fontSize: _labelSize * 0.85,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      Text(
+                        round.course,
+                        style: TextStyle(
+                          color: c.primaryText,
+                          fontSize: _bodySize,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.2,
+                          height: 1.2,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 3),
+                      // Consolidated single meta line
+                      Row(
+                        children: [
+                          Icon(Icons.location_on_rounded,
+                              color: c.tertiaryText, size: _labelSize * 0.90),
+                          const SizedBox(width: 2),
+                          Expanded(
+                            child: Text(
+                              metaParts.join(' · '),
+                              style: TextStyle(
+                                color: c.tertiaryText,
+                                fontSize: _labelSize * 0.88,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              if (round.isActive)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: ShapeDecoration(
-                    color: c.accentBg,
-                    shape: SuperellipseShape(
-                      borderRadius: BorderRadius.circular(40), side: BorderSide(color: c.accentBorder),
+                const SizedBox(width: 12),
+                // ── Right: score + par-pill, vertically centered ───────
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      round.isActive
+                          ? '${round.holesPlayed}/${round.totalHoles}'
+                          : '${round.score}',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        color: c.primaryText,
+                        fontSize: (_sw * 0.060).clamp(22.0, 27.0),
+                        fontWeight: FontWeight.w800,
+                        height: 1.0,
+                      ),
                     ),
-                  ),
-                  child: Text(
-                    context.l10n.homeActive,
-                    style: TextStyle(
-                      color: c.accent,
-                      fontSize: _labelSize * 0.9,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                    if (!round.isActive) ...[
+                      const SizedBox(width: 5),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: pillBg,
+                          borderRadius: BorderRadius.circular(7),
+                        ),
+                        child: Text(
+                          round.diffLabel,
+                          style: TextStyle(
+                            fontFamily: 'Nunito',
+                            color: pillText,
+                            fontSize: _labelSize * 0.92,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-            ],
+              ],
+            ),
           ),
-          Row(
-            children: [
-              Icon(Icons.location_on_rounded,
-                  color: c.tertiaryText, size: _labelSize),
-              const SizedBox(width: 3),
-              Expanded(
-                child: Text(
-                  round.location.isNotEmpty ? round.location : context.l10n.homeNoLocation,
-                  style: TextStyle(color: c.tertiaryText, fontSize: _labelSize),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          if (round.scores.isNotEmpty) ...[
-            const SizedBox(height: 5),
+
+          // ── Hole-by-hole track pinned to bottom ──────────────────────
+          if (round.scores.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2),
+              padding: const EdgeInsets.fromLTRB(hPad * 0.7, 0, hPad * 0.7, vPad * 0.75),
               child: Row(
                 children: round.scores.map((h) {
-                  Color hc(int d) {
-                    if (d <= -2) return const Color(0xFFFFD700);
-                    if (d == -1) return const Color(0xFF4CAF82);
-                    if (d == 0)  return const Color(0xFF64B5F6);
-                    if (d == 1)  return const Color(0xFFFFB74D);
-                    return const Color(0xFFE53935);
-                  }
-                  final diff = h.score - h.par;
-                  return Expanded(child: Container(
-                    height: 6,
-                    margin: const EdgeInsets.symmetric(horizontal: 1),
-                    decoration: BoxDecoration(
-                      color: hc(diff),
-                      borderRadius: BorderRadius.circular(2),
+                  final d = h.score - h.par;
+                  return Expanded(
+                    child: Container(
+                      height: 4,
+                      margin: const EdgeInsets.symmetric(horizontal: 0.8),
+                      decoration: BoxDecoration(
+                        color: hc(d),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
-                  ));
+                  );
                 }).toList(),
               ),
-            ),
-            const SizedBox(height: 5),
-          ],
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    round.isActive
-                        ? '${round.holesPlayed}/${round.totalHoles}'
-                        : '${round.score}',
-                    style: TextStyle(fontFamily: 'Nunito',
-                      color: c.primaryText,
-                      fontSize: (_sw * 0.058).clamp(20.0, 26.0),
-                      fontWeight: FontWeight.w800,
-                      height: 1.0,
-                    ),
-                  ),
-                  Text(
-                    round.isActive ? context.l10n.roundSummaryHoles : context.l10n.roundSummaryScore,
-                    style:
-                        TextStyle(color: c.tertiaryText, fontSize: _labelSize),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-              ),
-              if (!round.isActive)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
-                  decoration: ShapeDecoration(
-                    color: diffColor.withValues(alpha: 0.12),
-                    shape: SuperellipseShape(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: Text(
-                    round.diffLabel,
-                    style: TextStyle(fontFamily: 'Nunito',
-                      color: diffColor,
-                      fontSize: _bodySize,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              Flexible(
-                child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '${round.totalHoles}H',
-                    style: TextStyle(
-                      color: c.secondaryText,
-                      fontSize: _bodySize,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    round.timeAgo,
-                    style:
-                        TextStyle(color: c.tertiaryText, fontSize: _labelSize),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-              ),
-            ],
-          ),
+            )
+          else
+            const SizedBox(height: vPad * 0.5),
         ],
       ),
     );
@@ -2213,7 +2192,7 @@ class _HomeTabState extends State<_HomeTab>
           Skeletonizer(
             enabled: _loadingNearby,
             child: SizedBox(
-              height: (_sh * 0.265).clamp(200.0, 220.0),
+              height: (_sh * 0.310).clamp(240.0, 268.0),
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: EdgeInsets.symmetric(horizontal: _hPad),
@@ -2355,93 +2334,35 @@ class _HomeTabState extends State<_HomeTab>
   }
 
   Widget _buildNearbyCourseCard(GolfCourseDetail course, AppColors c) {
-    final cardW    = (_sw * 0.68).clamp(220.0, 290.0);
-    final pad      = (_sw * 0.04).clamp(12.0, 18.0);
-    final diff     = _difficulty(course);
-    final diffCol  = _difficultyColor(diff);
-    final tags     = _courseTags(course);
+    final cardW   = (_sw * 0.68).clamp(220.0, 290.0);
+    final pad     = (_sw * 0.04).clamp(12.0, 18.0);
+    final diff    = _difficulty(course);
+    final diffCol = _difficultyColor(diff);
+    final tags    = _courseTags(course);
 
-    final startHereBadge = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: ShapeDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF5A9E1F), Color(0xFF7BC344)],
-        ),
-        shape: SuperellipseShape(borderRadius: BorderRadius.circular(40)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.sports_golf_rounded, color: Colors.white, size: 11),
-          const SizedBox(width: 4),
-          Text(
-            'Start Here',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: _labelSize * 0.88,
-              fontWeight: FontWeight.w700,
-            ),
+    Widget bgImage() {
+      if (course.photoUrl != null) {
+        return CachedNetworkImage(
+          imageUrl: course.photoUrl!,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+          placeholder: (_, __) => Shimmer.fromColors(
+            baseColor: Colors.grey.shade300,
+            highlightColor: Colors.grey.shade100,
+            child: Container(color: Colors.grey.shade300),
           ),
-        ],
-      ),
-    );
-
-    Widget imageBlock(Widget fallback) => Stack(
-      children: [
-        fallback,
-        // Bottom gradient so name area blends
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Colors.transparent, Colors.black.withValues(alpha: 0.18)],
-              ),
-            ),
+          errorWidget: (_, __, ___) => Container(
+            color: c.accentBg,
+            child: Icon(Icons.golf_course_rounded, color: c.accent, size: 48),
           ),
-        ),
-        Positioned(top: 8, right: 8, child: startHereBadge),
-        // Star rating overlay — bottom-right of image
-        if (course.rating != null)
-          Positioned(
-            bottom: 7,
-            right: 8,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.55),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.star_rounded, color: Color(0xFFFFC107), size: 11),
-                  const SizedBox(width: 3),
-                  Text(
-                    course.rating!.toStringAsFixed(1),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  if (course.reviewCount != null && course.reviewCount! > 0) ...[
-                    const SizedBox(width: 3),
-                    Text(
-                      '(${course.reviewCount})',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.75),
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-      ],
-    );
+        );
+      }
+      return Container(
+        color: c.accentBg,
+        child: Icon(Icons.golf_course_rounded, color: c.accent, size: 48),
+      );
+    }
 
     return GestureDetector(
       onTap: () {
@@ -2460,120 +2381,166 @@ class _HomeTabState extends State<_HomeTab>
       },
       child: Container(
         width: cardW,
+        height: 200,
         clipBehavior: Clip.antiAlias,
         decoration: ShapeDecoration(
-          gradient: LinearGradient(colors: c.cardGradient, begin: Alignment.topCenter, end: Alignment.bottomCenter),
           shape: SuperellipseShape(
-            borderRadius: BorderRadius.circular(48), side: BorderSide(color: c.cardBorder),
+            borderRadius: BorderRadius.circular(48),
+            side: BorderSide(color: c.cardBorder),
           ),
           shadows: c.cardShadow,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            // ── Banner image ────────────────────────────────────────────
-            if (course.photoUrl != null)
-              imageBlock(
-                CachedNetworkImage(
-                  imageUrl: course.photoUrl!,
-                  width: cardW,
-                  height: 90,
-                  fit: BoxFit.cover,
-                  placeholder: (_, __) => Shimmer.fromColors(
-                    baseColor: Colors.grey.shade300,
-                    highlightColor: Colors.grey.shade100,
-                    child: Container(width: cardW, height: 90, color: Colors.grey.shade300),
+            // ── Layer 1: full-bleed background image ───────────────────
+            bgImage(),
+
+            // ── Layer 2: bottom gradient scrim ─────────────────────────
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: const [0.30, 1.0],
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.80),
+                    ],
                   ),
-                  errorWidget: (_, __, ___) => Container(
-                    width: cardW,
-                    height: 90,
-                    color: c.accentBg,
-                    child: Icon(Icons.golf_course_rounded, color: c.accent, size: 36),
-                  ),
-                ),
-              )
-            else
-              imageBlock(
-                Container(
-                  width: cardW,
-                  height: 90,
-                  color: c.accentBg,
-                  child: Icon(Icons.golf_course_rounded, color: c.accent, size: 36),
                 ),
               ),
+            ),
 
-            // ── Content ─────────────────────────────────────────────────
-            Padding(
-              padding: EdgeInsets.fromLTRB(pad, pad * 0.55, pad, pad * 0.65),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Course name
-                  Text(
-                    course.name,
-                    style: TextStyle(
-                      fontFamily: 'Nunito',
-                      color: c.primaryText,
-                      fontSize: _bodySize,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-
-                  // Difficulty pill
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            // ── Layer 3: top-right frosted config pill ──────────────────
+            Positioned(
+              top: 10,
+              right: 10,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(40),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: diffCol.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: diffCol.withValues(alpha: 0.35), width: 0.8),
+                      color: Colors.black.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(40),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.20)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(color: diffCol, shape: BoxShape.circle),
-                        ),
+                        const Text('⚡', style: TextStyle(fontSize: 11)),
                         const SizedBox(width: 4),
                         Text(
-                          'Difficulty: $diff',
+                          '18 Holes · Stroke Play',
                           style: TextStyle(
-                            color: diffCol,
-                            fontSize: _labelSize * 0.82,
+                            color: Colors.white,
+                            fontSize: _labelSize * 0.80,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
                     ),
                   ),
+                ),
+              ),
+            ),
 
-                  // Quick tags
-                  const SizedBox(height: 5),
-                  Wrap(
-                    spacing: 5,
-                    runSpacing: 5,
-                    children: tags.map((tag) => Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: c.accentBg,
-                        borderRadius: BorderRadius.circular(20),
+            // ── Layer 4: bottom content (name + meta + CTA) ────────────
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(pad, 0, pad, pad * 0.8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      course.name,
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        color: Colors.white,
+                        fontSize: _bodySize,
+                        fontWeight: FontWeight.w800,
+                        shadows: const [Shadow(color: Colors.black54, blurRadius: 6)],
                       ),
-                      child: Text(
-                        tag,
-                        style: TextStyle(
-                          color: c.accent,
-                          fontSize: _labelSize * 0.80,
-                          fontWeight: FontWeight.w600,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        if (course.rating != null) ...[
+                          const Icon(Icons.star_rounded, color: Color(0xFFFFC107), size: 12),
+                          const SizedBox(width: 3),
+                          Text(
+                            course.rating!.toStringAsFixed(1),
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.90),
+                              fontSize: _labelSize * 0.82,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          _metaDotWhite(),
+                        ],
+                        Text(
+                          diff,
+                          style: TextStyle(
+                            color: diffCol,
+                            fontSize: _labelSize * 0.82,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
+                        if (tags.isNotEmpty) ...[
+                          _metaDotWhite(),
+                          Flexible(
+                            child: Text(
+                              tags.first,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.80),
+                                fontSize: _labelSize * 0.82,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: ShapeDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF5A9E1F), Color(0xFF7BC344)],
+                        ),
+                        shape: SuperellipseShape(borderRadius: BorderRadius.circular(40)),
                       ),
-                    )).toList(),
-                  ),
-                ],
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.sports_golf_rounded, color: Colors.white, size: 14),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Start Here',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: _labelSize * 0.92,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 13),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -2581,6 +2548,22 @@ class _HomeTabState extends State<_HomeTab>
       ),
     );
   }
+
+  Widget _metaDot(AppColors c) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 5),
+    child: Text(
+      '·',
+      style: TextStyle(color: c.tertiaryText, fontSize: _labelSize * 0.85),
+    ),
+  );
+
+  Widget _metaDotWhite() => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 5),
+    child: Text(
+      '·',
+      style: TextStyle(color: Colors.white54, fontSize: _labelSize * 0.85),
+    ),
+  );
 
   Widget _sectionTitle(String title) {
     final c = AppColors.of(context);
@@ -2590,157 +2573,11 @@ class _HomeTabState extends State<_HomeTab>
         color: c.primaryText,
         fontSize: (_sw * 0.048).clamp(16.0, 20.0),
         fontWeight: FontWeight.w700,
+        letterSpacing: 0.3,
       ),
     );
   }
 
-  Widget _buildSwingAnalyzerCard() {
-    final c = AppColors.of(context);
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: _hPad),
-      child: GestureDetector(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const SwingAnalyzerScreen()),
-        ),
-        child: Container(
-          width: double.infinity,
-          decoration: ShapeDecoration(
-            color: c.cardBg,
-            shape: SuperellipseShape(borderRadius: BorderRadius.circular(48)),
-            shadows: [
-              BoxShadow(
-                color: const Color(0xFF7BC344).withValues(alpha: 0.13),
-                blurRadius: 20,
-                offset: const Offset(0, 5),
-              ),
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: ClipPath(
-            clipper: ShapeBorderClipper(
-              shape: SuperellipseShape(borderRadius: BorderRadius.circular(48)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Green accent top strip
-                Container(
-                  height: 3,
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0xFF5A9E1F), Color(0xFF8FD44E)],
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    (_sw * 0.045).clamp(14.0, 20.0),
-                    (_sh * 0.018).clamp(14.0, 18.0),
-                    (_sw * 0.045).clamp(14.0, 20.0),
-                    (_sh * 0.018).clamp(14.0, 18.0),
-                  ),
-                  child: Row(
-                    children: [
-                      // Icon container
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: ShapeDecoration(
-                          color: c.accentBg,
-                          shape: SuperellipseShape(
-                              borderRadius: BorderRadius.circular(14)),
-                        ),
-                        child: Icon(Icons.sports_golf_rounded,
-                            color: c.accent, size: 24),
-                      ),
-                      SizedBox(width: (_sw * 0.035).clamp(12.0, 16.0)),
-                      // Text content
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                  context.l10n.swingAnalyzerAITracerTitle,
-                                  style: TextStyle(
-                                    fontFamily: 'Nunito',
-                                    color: c.primaryText,
-                                    fontSize: (_sw * 0.040).clamp(14.0, 16.0),
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                ),
-                                const SizedBox(width: 8),
-                                // Beta badge
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 7, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF5A9E1F)
-                                        .withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(
-                                      color: const Color(0xFF5A9E1F)
-                                          .withValues(alpha: 0.35),
-                                      width: 0.8,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    'BETA',
-                                    style: TextStyle(
-                                      color: c.accent,
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: 0.8,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              'Record or upload a swing to trace the ball path',
-                              style: TextStyle(
-                                color: c.secondaryText,
-                                fontSize: (_sw * 0.030).clamp(11.0, 12.5),
-                                height: 1.4,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      // Arrow CTA
-                      Container(
-                        width: 34,
-                        height: 34,
-                        decoration: ShapeDecoration(
-                          color: c.accentBg,
-                          shape: SuperellipseShape(
-                              borderRadius: BorderRadius.circular(10)),
-                        ),
-                        child: Icon(Icons.arrow_forward_rounded,
-                            color: c.accent, size: 18),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -2771,9 +2608,12 @@ class _RoundCardData {
 
   factory _RoundCardData.fromRound(Round r,
       {required bool isActive, required String timeAgo}) {
+    // Strip trailing postal code (e.g. "Pleasanton, CA 94566" → "Pleasanton, CA")
+    final rawLoc = r.courseLocation;
+    final loc = rawLoc.replaceAll(RegExp(r'\s+\d{5}(-\d{4})?$'), '').trim();
     return _RoundCardData(
       course: r.courseName,
-      location: r.courseLocation,
+      location: loc,
       score: r.totalScore,
       par: r.totalPar,
       holesPlayed: r.holesPlayed,
@@ -3661,116 +3501,142 @@ class _NewsHCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const imageHeight = 100.0;
+    final ago = _timeAgo(article.publishedAt);
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: width,
-        decoration: ShapeDecoration(
-          color: c.cardBg,
-          shape: SuperellipseShape(borderRadius: BorderRadius.circular(48), side: BorderSide(color: c.cardBorder)),
-          shadows: c.cardShadow,
+        height: double.infinity,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.10),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        child: ClipPath(
-          clipper: ShapeBorderClipper(
-            shape: SuperellipseShape(borderRadius: BorderRadius.circular(48)),
-          ),
-          child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            // Image area
-            SizedBox(
-              height: imageHeight,
-              width: double.infinity,
-              child: article.imageUrl != null
-                  ? Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.network(
-                          article.imageUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _imgPlaceholder(),
-                        ),
-                        // gradient overlay
-                        Positioned(
-                          bottom: 0, left: 0, right: 0,
-                          child: Container(
-                            height: 36,
-                            decoration: const BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.bottomCenter,
-                                end: Alignment.topCenter,
-                                colors: [Colors.black45, Colors.transparent],
-                              ),
-                            ),
+            // ── Layer 1: full-bleed background image ──────────────────
+            article.imageUrl != null
+                ? Image.network(
+                    article.imageUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _imgPlaceholder(),
+                  )
+                : _imgPlaceholder(),
+
+            // ── Layer 2: bottom gradient scrim ────────────────────────
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: const [0.30, 1.0],
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.82),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // ── Layer 3: top-left source + timestamp pill ─────────────
+            Positioned(
+              top: 10,
+              left: 10,
+              right: 10,
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE5D0E3).withValues(alpha: 0.28),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: const Color(0xFFE5D0E3).withValues(alpha: 0.40),
+                            width: 0.8,
                           ),
                         ),
-                        // source pill
-                        Positioned(
-                          top: 8, left: 8,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: Colors.black54,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
                               article.sourceName,
                               style: const TextStyle(
-                                fontFamily: 'Nunito',
-                                fontSize: 9,
+                                color: Color(0xFFAEE5D8),
+                                fontSize: 10,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.white,
+                                letterSpacing: 0.2,
                               ),
                             ),
-                          ),
+                            const SizedBox(width: 5),
+                            Container(
+                              width: 2,
+                              height: 2,
+                              decoration: const BoxDecoration(
+                                color: Colors.white54,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              ago,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    )
-                  : _imgPlaceholder(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            // Text
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 7, 10, 6),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      article.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: 'Nunito',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: c.primaryText,
-                        height: 1.3,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      _timeAgo(article.publishedAt),
-                      style: TextStyle(
-                        fontFamily: 'Nunito',
-                        fontSize: 10,
-                        color: c.tertiaryText,
-                      ),
-                    ),
-                  ],
+
+            // ── Layer 4: headline pinned to bottom ────────────────────
+            Positioned(
+              left: 12,
+              right: 12,
+              bottom: 12,
+              child: Text(
+                article.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  height: 1.3,
+                  shadows: [Shadow(color: Colors.black54, blurRadius: 6)],
                 ),
               ),
             ),
           ],
         ),
-        ),  // ClipPath
-      ),    // Container
+      ),
     );
   }
 
   Widget _imgPlaceholder() => Container(
-        color: c.accentBg,
+        decoration: BoxDecoration(
+          color: c.accentBg,
+          borderRadius: BorderRadius.circular(16),
+        ),
         child: Center(
           child: Icon(Icons.sports_golf_rounded, color: c.accent, size: 32),
         ),

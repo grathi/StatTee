@@ -130,6 +130,18 @@ class _AnimatedHeroCardState extends State<AnimatedHeroCard>
     return '🌤️';
   }
 
+  /// Dynamic headline for the hero card based on weather conditions
+  String get _conditionHeadline {
+    if (!_hasWeather)              return 'Ready to Play?';
+    if (_isRainy)                  return 'Wet Conditions';
+    if (_isFoggy)                  return 'Foggy Morning';
+    if (_windSpeed > 20)           return 'Breezy Day';
+    if (_isSunny && _windSpeed < 8) return 'Perfect Conditions';
+    if (_isSunny)                  return 'Great Day for Golf';
+    if (_isCloudy)                 return 'Good Conditions';
+    return 'Ready to Play?';
+  }
+
   /// CTA heading — concise, top-left title
   String get _headingText {
     final r = widget.activeRound;
@@ -316,17 +328,114 @@ class _AnimatedHeroCardState extends State<AnimatedHeroCard>
                 ),
               ),
 
-              // ── Layer 9: UI — CTA button pinned to bottom-left ──────────
+              // ── Layer 9: UI overlay ─────────────────────────────────────
               Padding(
                 padding: EdgeInsets.all(innerPad),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Top row: weather card (left, dark for visibility)
+                    if (widget.weather != null)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 9),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.45),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.15),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text(_weatherIcon,
+                                    style: const TextStyle(fontSize: 20)),
+                                const SizedBox(width: 8),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      widget.weather!.tempLabel,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: widget.labelSize * 1.3,
+                                        fontWeight: FontWeight.w800,
+                                        height: 1.0,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${widget.weather!.condition}  ·  ${widget.weather!.windLabel}',
+                                      style: TextStyle(
+                                        color: Colors.white
+                                            .withValues(alpha: 0.80),
+                                        fontSize: widget.labelSize * 0.78,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 14),
+                    // Dynamic condition headline
+                    Text(
+                      _conditionHeadline,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'Nunito',
+                        fontSize: widget.labelSize * 1.55,
+                        fontWeight: FontWeight.w800,
+                        height: 1.15,
+                        shadows: const [
+                          Shadow(color: Colors.black38, blurRadius: 8)
+                        ],
+                      ),
+                      maxLines: 2,
+                    ),
+                    // Location
+                    if (widget.locationName != null &&
+                        widget.locationName!.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on_outlined,
+                              color: Colors.white70, size: 13),
+                          const SizedBox(width: 3),
+                          Flexible(
+                            child: Text(
+                              widget.locationName!,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.80),
+                                fontSize: widget.labelSize * 0.88,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     const Spacer(),
-                    _CTAButton(
-                      label: _ctaLabel,
-                      labelSize: widget.labelSize,
-                      onTap: widget.onTap,
+                    // Full-width CTA button
+                    SizedBox(
+                      width: double.infinity,
+                      child: _CTAButton(
+                        label: _ctaLabel,
+                        labelSize: widget.labelSize,
+                        onTap: widget.onTap,
+                      ),
                     ),
                   ],
                 ),
@@ -381,6 +490,7 @@ class _CTAButtonState extends State<_CTAButton> {
         duration: const Duration(milliseconds: 120),
         curve: Curves.easeOut,
         child: Container(
+          width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -394,7 +504,7 @@ class _CTAButtonState extends State<_CTAButton> {
             ],
           ),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 widget.label,

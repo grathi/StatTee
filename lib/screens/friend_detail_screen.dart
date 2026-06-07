@@ -7,6 +7,7 @@ import '../services/stats_service.dart';
 import '../services/pressure_score_service.dart';
 import '../theme/app_theme.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 
 class FriendDetailScreen extends StatefulWidget {
   const FriendDetailScreen({super.key, required this.friend});
@@ -27,23 +28,28 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
   }
 
   Future<_DetailData> _load() async {
-    final meUid  = FirebaseAuth.instance.currentUser!.uid;
-    final friend = widget.friend;
+    try {
+      final meUid  = FirebaseAuth.instance.currentUser!.uid;
+      final friend = widget.friend;
 
-    final results = await Future.wait([
-      FriendsService.loadStatsForUser(friend.uid),
-      FriendsService.loadStatsForUser(meUid),
-      FriendsService.loadRecentRoundsForUser(friend.uid, limit: 50),
-      FriendsService.loadRecentRoundsForUser(meUid, limit: 50),
-    ]);
+      final results = await Future.wait([
+        FriendsService.loadStatsForUser(friend.uid),
+        FriendsService.loadStatsForUser(meUid),
+        FriendsService.loadRecentRoundsForUser(friend.uid, limit: 50),
+        FriendsService.loadRecentRoundsForUser(meUid, limit: 50),
+      ]);
 
-    return _DetailData(
-      friendStats: results[0] as AppStats,
-      myStats: results[1] as AppStats,
-      recentRounds: results[2] as List<Round>,
-      friendRounds: results[2] as List<Round>,
-      myRounds: results[3] as List<Round>,
-    );
+      return _DetailData(
+        friendStats: results[0] as AppStats,
+        myStats: results[1] as AppStats,
+        recentRounds: results[2] as List<Round>,
+        friendRounds: results[2] as List<Round>,
+        myRounds: results[3] as List<Round>,
+      );
+    } catch (e, st) {
+      debugPrint('[FriendDetail] _load error: $e\n$st');
+      rethrow;
+    }
   }
 
   @override
@@ -115,8 +121,17 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
                           // Remove friend
                           GestureDetector(
                             onTap: () => _confirmRemove(context, c, body, label),
-                            child: Icon(Icons.person_remove_outlined,
-                                color: c.tertiaryText, size: 22),
+                            child: Container(
+                              width: 42,
+                              height: 42,
+                              decoration: BoxDecoration(
+                                color: c.accentBg,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: c.accentBorder, width: 1.2),
+                              ),
+                              child: Icon(Icons.person_remove_outlined,
+                                  color: c.accent, size: 20),
+                            ),
                           ),
                         ],
                       ),
@@ -132,8 +147,28 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
                   else if (snap.hasError)
                     SliverFillRemaining(
                       child: Center(
-                          child: Text('Could not load data',
-                              style: TextStyle(color: c.tertiaryText))),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('Could not load data',
+                                style: TextStyle(color: c.tertiaryText)),
+                            if (kDebugMode) ...[
+                              const SizedBox(height: 8),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 24),
+                                child: Text('${snap.error}',
+                                    style: TextStyle(color: c.tertiaryText, fontSize: 11),
+                                    textAlign: TextAlign.center),
+                              ),
+                            ],
+                            const SizedBox(height: 16),
+                            TextButton(
+                              onPressed: () => setState(() { _future = _load(); }),
+                              child: Text('Retry', style: TextStyle(color: c.accent)),
+                            ),
+                          ],
+                        ),
+                      ),
                     )
                   else ...[
                     // Stats row
@@ -147,12 +182,11 @@ class _FriendDetailScreenState extends State<FriendDetailScreen> {
                       ),
                     ),
 
-                    // Head-to-head
+                    // Rivalry chart
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding:
-                            EdgeInsets.fromLTRB(hPad, sh * 0.022, hPad, 0),
-                        child: _HeadToHead(
+                        padding: EdgeInsets.fromLTRB(hPad, sh * 0.022, hPad, 0),
+                        child: _RivalryChart(
                           c: c,
                           body: body,
                           label: label,
@@ -319,7 +353,7 @@ class _StatsRow extends StatelessWidget {
        value: stats.handicapLabel,
        lbl: 'Handicap'),
       (icon: Icons.sports_golf_rounded,
-       color: c.accent,
+       color: const Color(0xFF7BE0AD),
        value: stats.avgScoreLabel,
        lbl: 'Avg Score'),
       (icon: Icons.emoji_events_rounded,
@@ -337,27 +371,41 @@ class _StatsRow extends StatelessWidget {
           .map((t) => Expanded(
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 3),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: ShapeDecoration(
-                    color: c.cardBg,
+                    color: Colors.white,
                     shape: SuperellipseShape(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(color: c.cardBorder),
+                      borderRadius: BorderRadius.circular(20),
+                      side: BorderSide(color: const Color(0xFFE7E5E5)),
                     ),
-                    shadows: c.cardShadow,
+                    shadows: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: Column(
                     children: [
-                      Icon(t.icon, color: t.color, size: body * 1.1),
-                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: BoxDecoration(
+                          color: t.color.withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(t.icon, color: t.color, size: body),
+                      ),
+                      const SizedBox(height: 6),
                       Text(t.value,
                           style: TextStyle(
-                              color: c.primaryText,
-                              fontSize: body,
+                              color: const Color(0xFF0F172A),
+                              fontSize: body * 1.05,
                               fontWeight: FontWeight.w800)),
                       Text(t.lbl,
                           style: TextStyle(
-                              color: c.tertiaryText, fontSize: label * 0.9)),
+                              color: const Color(0xFF94A3B8),
+                              fontSize: label * 0.9)),
                     ],
                   ),
                 ),
@@ -367,10 +415,10 @@ class _StatsRow extends StatelessWidget {
   }
 }
 
-// ── Head-to-head ──────────────────────────────────────────────────────────────
+// ── Rivalry Chart (replaces Head-to-Head) ─────────────────────────────────────
 
-class _HeadToHead extends StatelessWidget {
-  const _HeadToHead({
+class _RivalryChart extends StatelessWidget {
+  const _RivalryChart({
     required this.c,
     required this.body,
     required this.label,
@@ -389,40 +437,51 @@ class _HeadToHead extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Score badge — count categories where each player wins
     int myWins = 0, theirWins = 0;
     void tally(bool iWin, bool theyWin) {
-      if (iWin)    myWins++;
+      if (iWin) myWins++;
       if (theyWin) theirWins++;
     }
-    tally(
-      myStats.handicapIndex != null && friendStats.handicapIndex != null &&
-          myStats.handicapIndex! < friendStats.handicapIndex!,
-      myStats.handicapIndex != null && friendStats.handicapIndex != null &&
-          friendStats.handicapIndex! < myStats.handicapIndex!,
-    );
-    tally(myStats.avgScore < friendStats.avgScore, friendStats.avgScore < myStats.avgScore);
-    tally(myStats.totalBirdies > friendStats.totalBirdies, friendStats.totalBirdies > myStats.totalBirdies);
-    tally(myStats.girPct > friendStats.girPct, friendStats.girPct > myStats.girPct);
-    tally(myStats.avgPutts < friendStats.avgPutts, friendStats.avgPutts < myStats.avgPutts);
 
-    // Pressure scores
-    final myPressure     = PressureScoreService.compute(myRounds);
+    final hcpIWin = myStats.handicapIndex != null &&
+        friendStats.handicapIndex != null &&
+        myStats.handicapIndex! < friendStats.handicapIndex!;
+    final hcpTheyWin = myStats.handicapIndex != null &&
+        friendStats.handicapIndex != null &&
+        friendStats.handicapIndex! < myStats.handicapIndex!;
+    tally(hcpIWin, hcpTheyWin);
+    tally(myStats.totalBirdies > friendStats.totalBirdies,
+        friendStats.totalBirdies > myStats.totalBirdies);
+    tally(myStats.girPct > friendStats.girPct,
+        friendStats.girPct > myStats.girPct);
+    tally(myStats.avgPutts < friendStats.avgPutts,
+        friendStats.avgPutts < myStats.avgPutts);
+
+    final myPressure = PressureScoreService.compute(myRounds);
     final friendPressure = PressureScoreService.compute(friendRounds);
-    final myPS    = myPressure.compositeScore;
-    final themPS  = friendPressure.compositeScore;
-    final psIWin    = myRounds.length >= 5 && friendRounds.length >= 5 && myPS > themPS;
-    final psTheyWin = myRounds.length >= 5 && friendRounds.length >= 5 && themPS > myPS;
-    if (psIWin)    myWins++;
-    if (psTheyWin) theirWins++;
+    final myPS = myPressure.compositeScore;
+    final themPS = friendPressure.compositeScore;
+    if (myRounds.length >= 5 && friendRounds.length >= 5) {
+      tally(myPS > themPS, themPS > myPS);
+    }
 
-    // Course duel — find courses both players have played
-    final myCourses     = <String, List<Round>>{};
+    String badgeText;
+    if (myWins > theirWins) {
+      badgeText = 'You lead $myWins–$theirWins';
+    } else if (theirWins > myWins) {
+      badgeText = '$friendName leads $theirWins–$myWins';
+    } else {
+      badgeText = 'Tied $myWins–$theirWins';
+    }
+    final iLeading = myWins > theirWins;
+    final isTied = myWins == theirWins;
+
+    // Course duel
+    final myCourses = <String, List<Round>>{};
     final friendCourses = <String, List<Round>>{};
-    for (final r in myRounds)     myCourses.putIfAbsent(r.courseName, () => []).add(r);
+    for (final r in myRounds) myCourses.putIfAbsent(r.courseName, () => []).add(r);
     for (final r in friendRounds) friendCourses.putIfAbsent(r.courseName, () => []).add(r);
     final sharedCourses = myCourses.keys.where(friendCourses.containsKey).toList();
-    // Pick the shared course with most combined rounds
     String? duelCourse;
     if (sharedCourses.isNotEmpty) {
       sharedCourses.sort((a, b) =>
@@ -430,324 +489,298 @@ class _HeadToHead extends StatelessWidget {
               .compareTo((myCourses[a]?.length ?? 0) + (friendCourses[a]?.length ?? 0)));
       duelCourse = sharedCourses.first;
     }
-
-    double _avg(List<Round> rs) {
-      if (rs.isEmpty) return 0;
-      return rs.fold(0.0, (s, r) => s + r.scoreDiff) / rs.length;
-    }
-
-    final friendShort = friendName.length > 8
-        ? '${friendName.substring(0, 7)}…'
-        : friendName;
+    double _avgScore(List<Round> rs) =>
+        rs.isEmpty ? 0 : rs.fold(0.0, (s, r) => s + r.scoreDiff) / rs.length;
 
     final rows = [
-      _H2HRow(
-        stat: 'Handicap',
-        mine: myStats.handicapLabel,
-        theirs: friendStats.handicapLabel,
-        iWin: myStats.handicapIndex != null && friendStats.handicapIndex != null &&
-              myStats.handicapIndex! < friendStats.handicapIndex!,
-        theyWin: myStats.handicapIndex != null && friendStats.handicapIndex != null &&
-                 friendStats.handicapIndex! < myStats.handicapIndex!,
+      _RivalryMetric(
+        label: 'Handicap',
+        myVal: myStats.handicapLabel,
+        theirVal: friendStats.handicapLabel,
+        myScore: myStats.handicapIndex != null ? -myStats.handicapIndex! : 0,
+        theirScore: friendStats.handicapIndex != null ? -friendStats.handicapIndex! : 0,
+        lowerIsBetter: true,
       ),
-      _H2HRow(
-        stat: 'Avg Score',
-        mine: myStats.avgScoreLabel,
-        theirs: friendStats.avgScoreLabel,
-        iWin: myStats.avgScore < friendStats.avgScore,
-        theyWin: friendStats.avgScore < myStats.avgScore,
+      _RivalryMetric(
+        label: 'Avg Score',
+        myVal: myStats.avgScoreLabel,
+        theirVal: friendStats.avgScoreLabel,
+        myScore: myStats.avgScore,
+        theirScore: friendStats.avgScore,
+        lowerIsBetter: true,
       ),
-      _H2HRow(
-        stat: 'Birdies',
-        mine: '${myStats.totalBirdies}',
-        theirs: '${friendStats.totalBirdies}',
-        iWin: myStats.totalBirdies > friendStats.totalBirdies,
-        theyWin: friendStats.totalBirdies > myStats.totalBirdies,
+      _RivalryMetric(
+        label: 'Birdies',
+        myVal: '${myStats.totalBirdies}',
+        theirVal: '${friendStats.totalBirdies}',
+        myScore: myStats.totalBirdies.toDouble(),
+        theirScore: friendStats.totalBirdies.toDouble(),
+        lowerIsBetter: false,
       ),
-      _H2HRow(
-        stat: 'GIR %',
-        mine: '${myStats.girPct.toStringAsFixed(0)}%',
-        theirs: '${friendStats.girPct.toStringAsFixed(0)}%',
-        iWin: myStats.girPct > friendStats.girPct,
-        theyWin: friendStats.girPct > myStats.girPct,
+      _RivalryMetric(
+        label: 'GIR %',
+        myVal: '${myStats.girPct.toStringAsFixed(0)}%',
+        theirVal: '${friendStats.girPct.toStringAsFixed(0)}%',
+        myScore: myStats.girPct,
+        theirScore: friendStats.girPct,
+        lowerIsBetter: false,
       ),
-      _H2HRow(
-        stat: 'Avg Putts',
-        mine: myStats.avgPutts.toStringAsFixed(1),
-        theirs: friendStats.avgPutts.toStringAsFixed(1),
-        iWin: myStats.avgPutts < friendStats.avgPutts,
-        theyWin: friendStats.avgPutts < myStats.avgPutts,
-      ),
-      _H2HRow(
-        stat: 'Pressure',
-        mine: myRounds.length >= 5 ? '$myPS' : '--',
-        theirs: friendRounds.length >= 5 ? '$themPS' : '--',
-        iWin: psIWin,
-        theyWin: psTheyWin,
+      _RivalryMetric(
+        label: 'Avg Putts',
+        myVal: myStats.avgPutts.toStringAsFixed(1),
+        theirVal: friendStats.avgPutts.toStringAsFixed(1),
+        myScore: myStats.avgPutts,
+        theirScore: friendStats.avgPutts,
+        lowerIsBetter: true,
       ),
     ];
-
-    // Score badge text
-    String badgeText;
-    if (myWins > theirWins) {
-      badgeText = 'You lead $myWins–$theirWins';
-    } else if (theirWins > myWins) {
-      badgeText = '$friendShort leads $theirWins–$myWins';
-    } else {
-      badgeText = 'Tied $myWins–$theirWins';
-    }
-    final badgeColor = myWins > theirWins
-        ? c.accent
-        : theirWins > myWins
-            ? c.secondaryText
-            : const Color(0xFFFFB74D);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Container(
-          decoration: ShapeDecoration(
-            color: c.cardBg,
-            shape: SuperellipseShape(
-              borderRadius: BorderRadius.circular(20),
-              side: BorderSide(color: c.cardBorder),
+        // Lead badge
+        Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+            decoration: BoxDecoration(
+              color: isTied
+                  ? const Color(0xFFFEF3C7)
+                  : iLeading
+                      ? const Color(0xFF7BE0AD).withValues(alpha: 0.18)
+                      : const Color(0xFFE5D0E3).withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(
+                color: isTied
+                    ? const Color(0xFFF59E0B).withValues(alpha: 0.4)
+                    : iLeading
+                        ? const Color(0xFF7BE0AD).withValues(alpha: 0.6)
+                        : const Color(0xFFE5D0E3),
+                width: 1.2,
+              ),
+              boxShadow: iLeading
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFF7BE0AD).withValues(alpha: 0.30),
+                        blurRadius: 12,
+                        spreadRadius: 0,
+                        offset: const Offset(0, 2),
+                      )
+                    ]
+                  : null,
             ),
-            shadows: c.cardShadow,
+            child: Text(
+              badgeText,
+              style: TextStyle(
+                color: isTied
+                    ? const Color(0xFFF59E0B)
+                    : iLeading
+                        ? const Color(0xFF16A34A)
+                        : const Color(0xFF7C3AED),
+                fontSize: label * 1.05,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
+              ),
+            ),
           ),
-          padding: const EdgeInsets.all(16),
+        ),
+        const SizedBox(height: 16),
+        // Rivalry chart card
+        Container(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          decoration: ShapeDecoration(
+            color: Colors.white,
+            shape: SuperellipseShape(
+              borderRadius: BorderRadius.circular(28),
+              side: const BorderSide(color: Color(0xFFE7E5E5)),
+            ),
+            shadows: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
           child: Column(
             children: [
-              // Score badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                decoration: BoxDecoration(
-                  color: badgeColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: badgeColor.withValues(alpha: 0.35)),
-                ),
-                child: Text(
-                  badgeText,
-                  style: TextStyle(
-                    color: badgeColor,
-                    fontSize: label,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.3,
-                  ),
+              // Header row
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text('You',
+                          style: TextStyle(
+                              color: const Color(0xFF16A34A),
+                              fontSize: label * 1.05,
+                              fontWeight: FontWeight.w700),
+                          textAlign: TextAlign.left),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Text('vs',
+                          style: TextStyle(
+                              color: const Color(0xFF94A3B8),
+                              fontSize: label,
+                              fontWeight: FontWeight.w600),
+                          textAlign: TextAlign.center),
+                    ),
+                    Expanded(
+                      child: Text(friendName,
+                          style: TextStyle(
+                              color: const Color(0xFF64748B),
+                              fontSize: label * 1.05,
+                              fontWeight: FontWeight.w700),
+                          textAlign: TextAlign.right),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              // Column headers
-              Row(
-                children: [
-                  Expanded(
-                    child: Text('You',
-                        style: TextStyle(
-                            color: c.accent,
-                            fontSize: label,
-                            fontWeight: FontWeight.w700),
-                        textAlign: TextAlign.center),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Text('Head to Head',
-                        style: TextStyle(
-                            color: c.primaryText,
-                            fontSize: label,
-                            fontWeight: FontWeight.w700),
-                        textAlign: TextAlign.center),
-                  ),
-                  Expanded(
-                    child: Text(
-                        friendShort,
-                        style: TextStyle(
-                            color: c.secondaryText,
-                            fontSize: label,
-                            fontWeight: FontWeight.w700),
-                        textAlign: TextAlign.center),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              ...rows.map((r) => _buildRow(r)),
+              const Divider(color: Color(0xFFE7E5E5), height: 1),
+              const SizedBox(height: 8),
+              ...rows.map((r) => _buildMetricRow(r)),
             ],
           ),
         ),
-
         // Course duel card
         if (duelCourse != null) ...[
           const SizedBox(height: 12),
-          _buildCourseDuel(context, duelCourse,
-              _avg(myCourses[duelCourse]!), _avg(friendCourses[duelCourse]!),
-              myCourses[duelCourse]!.length, friendCourses[duelCourse]!.length,
-              friendShort),
+          _CourseDuelCard(
+            c: c,
+            body: body,
+            label: label,
+            course: duelCourse,
+            myAvg: _avgScore(myCourses[duelCourse]!),
+            theirAvg: _avgScore(friendCourses[duelCourse]!),
+            myCount: myCourses[duelCourse]!.length,
+            theirCount: friendCourses[duelCourse]!.length,
+            friendName: friendName,
+          ),
         ],
       ],
     );
   }
 
-  Widget _buildCourseDuel(BuildContext context, String course,
-      double myAvg, double theirAvg, int myCount, int theirCount, String theirName) {
-    final iWin = myAvg <= theirAvg;
-    final myStr   = myAvg == 0 ? 'E' : myAvg > 0 ? '+${myAvg.toStringAsFixed(1)}' : myAvg.toStringAsFixed(1);
-    final theyStr = theirAvg == 0 ? 'E' : theirAvg > 0 ? '+${theirAvg.toStringAsFixed(1)}' : theirAvg.toStringAsFixed(1);
+  Widget _buildMetricRow(_RivalryMetric m) {
+    final total = m.myScore.abs() + m.theirScore.abs();
+    final myFrac = total == 0 ? 0.5 : m.myScore.abs() / (total == 0 ? 1 : total);
+    final theirFrac = total == 0 ? 0.5 : m.theirScore.abs() / (total == 0 ? 1 : total);
 
-    return Container(
-      decoration: ShapeDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFF1A3A08).withValues(alpha: 0.85),
-            const Color(0xFF3D6E14).withValues(alpha: 0.85),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        shape: SuperellipseShape(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        shadows: [
-          BoxShadow(
-            color: const Color(0xFF5A9E1F).withValues(alpha: 0.25),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.flag_rounded,
-                  color: Colors.white.withValues(alpha: 0.7), size: label * 1.1),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  course,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: label,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  iWin ? '✓ You win' : '$theirName wins',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: label * 0.9,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('You',
-                        style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.6),
-                            fontSize: label * 0.85)),
-                    const SizedBox(height: 2),
-                    Text('avg $myStr ($myCount rounds)',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: label,
-                            fontWeight: iWin ? FontWeight.w800 : FontWeight.w500)),
-                  ],
-                ),
-              ),
-              Container(
-                width: 1,
-                height: 32,
-                color: Colors.white.withValues(alpha: 0.2),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(theirName,
-                        style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.6),
-                            fontSize: label * 0.85)),
-                    const SizedBox(height: 2),
-                    Text('avg $theyStr ($theirCount rounds)',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: label,
-                            fontWeight: !iWin ? FontWeight.w800 : FontWeight.w500)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+    final myBetter = m.lowerIsBetter
+        ? m.myScore < m.theirScore
+        : m.myScore > m.theirScore;
+    final theirBetter = m.lowerIsBetter
+        ? m.theirScore < m.myScore
+        : m.theirScore > m.myScore;
 
-  Widget _buildRow(_H2HRow row) {
+    const winColor = Color(0xFF7BE0AD);
+    const loseColor = Color(0xFFE2E8F0);
+    const textWin = Color(0xFF16A34A);
+    const textLose = Color(0xFF94A3B8);
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Expanded(
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: row.iWin
-                  ? BoxDecoration(
-                      color: c.accentBg,
-                      borderRadius: BorderRadius.circular(8))
-                  : null,
-              child: Text(row.mine,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      color: row.iWin ? c.accent : c.secondaryText,
-                      fontSize: label,
-                      fontWeight:
-                          row.iWin ? FontWeight.w800 : FontWeight.w500)),
+          // My value
+          SizedBox(
+            width: 44,
+            child: Text(
+              m.myVal,
+              style: TextStyle(
+                color: myBetter ? textWin : textLose,
+                fontSize: label * 1.0,
+                fontWeight: myBetter ? FontWeight.w800 : FontWeight.w500,
+              ),
+              textAlign: TextAlign.left,
             ),
           ),
+          // Bidirectional bar
           Expanded(
-            flex: 2,
-            child: Text(row.stat,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    color: c.tertiaryText,
-                    fontSize: label * 0.95,
-                    fontWeight: FontWeight.w500)),
-          ),
-          Expanded(
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: row.theyWin
-                  ? BoxDecoration(
-                      color: c.fieldBg,
-                      borderRadius: BorderRadius.circular(8))
-                  : null,
-              child: Text(row.theirs,
-                  textAlign: TextAlign.center,
+            child: Column(
+              children: [
+                Text(
+                  m.label,
                   style: TextStyle(
-                      color: row.theyWin ? c.primaryText : c.secondaryText,
-                      fontSize: label,
-                      fontWeight: row.theyWin
-                          ? FontWeight.w800
-                          : FontWeight.w500)),
+                    color: const Color(0xFF64748B),
+                    fontSize: label * 0.88,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 5),
+                LayoutBuilder(builder: (context, constraints) {
+                  final w = constraints.maxWidth;
+                  final half = w / 2;
+                  final myBarW = myBetter
+                      ? half * myFrac.clamp(0.15, 1.0)
+                      : half * 0.15;
+                  final theirBarW = theirBetter
+                      ? half * theirFrac.clamp(0.15, 1.0)
+                      : half * 0.15;
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // My bar (right-aligned to center)
+                      SizedBox(
+                        width: (w - 2) / 2,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Container(
+                              width: myBarW,
+                              height: 7,
+                              decoration: BoxDecoration(
+                                color: myBetter ? winColor : loseColor,
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(4),
+                                  bottomLeft: Radius.circular(4),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Center divider
+                      Container(
+                          width: 2, height: 14,
+                          color: const Color(0xFFCBD5E1)),
+                      // Their bar (left-aligned from center)
+                      SizedBox(
+                        width: (w - 2) / 2,
+                        child: Row(
+                          children: [
+                            Container(
+                              width: theirBarW,
+                              height: 7,
+                              decoration: BoxDecoration(
+                                color: theirBetter ? winColor : loseColor,
+                                borderRadius: const BorderRadius.only(
+                                  topRight: Radius.circular(4),
+                                  bottomRight: Radius.circular(4),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                }),
+              ],
+            ),
+          ),
+          // Their value
+          SizedBox(
+            width: 44,
+            child: Text(
+              m.theirVal,
+              style: TextStyle(
+                color: theirBetter ? textWin : textLose,
+                fontSize: label * 1.0,
+                fontWeight: theirBetter ? FontWeight.w800 : FontWeight.w500,
+              ),
+              textAlign: TextAlign.right,
             ),
           ),
         ],
@@ -756,15 +789,191 @@ class _HeadToHead extends StatelessWidget {
   }
 }
 
-class _H2HRow {
-  final String stat, mine, theirs;
-  final bool iWin, theyWin;
-  const _H2HRow(
-      {required this.stat,
-      required this.mine,
-      required this.theirs,
-      required this.iWin,
-      required this.theyWin});
+class _RivalryMetric {
+  final String label, myVal, theirVal;
+  final double myScore, theirScore;
+  final bool lowerIsBetter;
+  const _RivalryMetric({
+    required this.label,
+    required this.myVal,
+    required this.theirVal,
+    required this.myScore,
+    required this.theirScore,
+    required this.lowerIsBetter,
+  });
+}
+
+// ── Course Rivalry Card ────────────────────────────────────────────────────────
+
+class _CourseDuelCard extends StatelessWidget {
+  const _CourseDuelCard({
+    required this.c,
+    required this.body,
+    required this.label,
+    required this.course,
+    required this.myAvg,
+    required this.theirAvg,
+    required this.myCount,
+    required this.theirCount,
+    required this.friendName,
+  });
+
+  final AppColors c;
+  final double body, label;
+  final String course, friendName;
+  final double myAvg, theirAvg;
+  final int myCount, theirCount;
+
+  String _avgStr(double avg) =>
+      avg == 0 ? 'E' : avg > 0 ? '+${avg.toStringAsFixed(1)}' : avg.toStringAsFixed(1);
+
+  @override
+  Widget build(BuildContext context) {
+    final iWin = myAvg <= theirAvg;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: ShapeDecoration(
+        color: Colors.white,
+        shape: SuperellipseShape(
+          borderRadius: BorderRadius.circular(28),
+          side: const BorderSide(color: Color(0xFFAEE5D8), width: 1.2),
+        ),
+        shadows: [
+          BoxShadow(
+            color: const Color(0xFF7BE0AD).withValues(alpha: 0.15),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(7),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE6FAF3),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.flag_rounded,
+                    color: Color(0xFF7BE0AD), size: 15),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  course,
+                  style: TextStyle(
+                    color: const Color(0xFF0F172A),
+                    fontSize: body * 0.95,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: iWin
+                      ? const Color(0xFF7BE0AD).withValues(alpha: 0.15)
+                      : const Color(0xFFE5D0E3).withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: iWin
+                        ? const Color(0xFF7BE0AD)
+                        : const Color(0xFFE5D0E3),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  iWin ? '✓ You win' : '$friendName wins',
+                  style: TextStyle(
+                    color: iWin
+                        ? const Color(0xFF16A34A)
+                        : const Color(0xFF7C3AED),
+                    fontSize: label * 0.9,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFB),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Your Avg',
+                          style: TextStyle(
+                              color: const Color(0xFF94A3B8),
+                              fontSize: label * 0.85)),
+                      const SizedBox(height: 3),
+                      Text(
+                        _avgStr(myAvg),
+                        style: TextStyle(
+                          color: iWin
+                              ? const Color(0xFF16A34A)
+                              : const Color(0xFF0F172A),
+                          fontSize: body * 1.2,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      Text('$myCount rounds',
+                          style: TextStyle(
+                              color: const Color(0xFF94A3B8),
+                              fontSize: label * 0.82)),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 48,
+                  color: const Color(0xFFE2E8F0),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text('${friendName.length > 10 ? '${friendName.substring(0, 9)}…' : friendName}\'s Avg',
+                          style: TextStyle(
+                              color: const Color(0xFF94A3B8),
+                              fontSize: label * 0.85)),
+                      const SizedBox(height: 3),
+                      Text(
+                        _avgStr(theirAvg),
+                        style: TextStyle(
+                          color: !iWin
+                              ? const Color(0xFF16A34A)
+                              : const Color(0xFF0F172A),
+                          fontSize: body * 1.2,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      Text('$theirCount rounds',
+                          style: TextStyle(
+                              color: const Color(0xFF94A3B8),
+                              fontSize: label * 0.82)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ── Round row ─────────────────────────────────────────────────────────────────
@@ -788,64 +997,102 @@ class _RoundRow extends StatelessWidget {
     final diffColor = diff < 0
         ? const Color(0xFF3B82F6)
         : diff == 0
-            ? c.accent
-            : c.tertiaryText;
+            ? const Color(0xFF16A34A)
+            : const Color(0xFF94A3B8);
+    final diffBg = diff < 0
+        ? const Color(0xFFEFF6FF)
+        : diff == 0
+            ? const Color(0xFFE6FAF3)
+            : const Color(0xFFF1F5F9);
+
+    final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    final d = (round.completedAt ?? round.startedAt).toLocal();
+    final dateStr = '${months[d.month - 1]} ${d.day}, ${d.year}';
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: ShapeDecoration(
-        color: c.cardBg,
+        color: Colors.white,
         shape: SuperellipseShape(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: c.cardBorder),
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Color(0xFFE7E5E5)),
         ),
-        shadows: c.cardShadow,
+        shadows: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
         children: [
+          // Course icon
+          Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: Color(0xFFE6FAF3),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.sports_golf_rounded,
+                color: Color(0xFF7BE0AD), size: 18),
+          ),
+          const SizedBox(width: 12),
+          // Course + date
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(round.courseName,
-                    style: TextStyle(
-                        color: c.primaryText,
-                        fontSize: body * 0.95,
-                        fontWeight: FontWeight.w700)),
-                Text(
-                  _formatDate(round.completedAt ?? round.startedAt),
-                  style: TextStyle(color: c.tertiaryText, fontSize: label),
-                ),
+                    style: const TextStyle(
+                        color: Color(0xFF0F172A),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 2),
+                Text(dateStr,
+                    style: const TextStyle(
+                        color: Color(0xFF94A3B8), fontSize: 11)),
               ],
             ),
           ),
+          const SizedBox(width: 10),
+          // Score + diff pill
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('${round.totalScore}',
+              Text(
+                '${round.totalScore}',
+                style: const TextStyle(
+                  color: Color(0xFF0F172A),
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  height: 1.0,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: diffBg,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  diffStr,
                   style: TextStyle(
-                      color: c.primaryText,
-                      fontSize: body,
-                      fontWeight: FontWeight.w800)),
-              Text(diffStr,
-                  style: TextStyle(
-                      color: diffColor,
-                      fontSize: label,
-                      fontWeight: FontWeight.w700)),
+                    color: diffColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
             ],
           ),
         ],
       ),
     );
-  }
-
-  String _formatDate(DateTime d) {
-    final l = d.toLocal();
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    return '${months[l.month - 1]} ${l.day}, ${l.year}';
   }
 }
 
@@ -861,14 +1108,21 @@ class _AvatarLg extends StatelessWidget {
   Widget build(BuildContext context) {
     const size = 52.0;
     final c = AppColors.of(context);
-    if (url != null && url!.isNotEmpty) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(size / 2),
-        child: Image.network(url!, width: size, height: size, fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => _initials(c, size)),
-      );
-    }
-    return _initials(c, size);
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: c.accentBg,
+        shape: BoxShape.circle,
+        border: Border.all(color: c.accentBorder, width: 1.5),
+      ),
+      child: ClipOval(
+        child: url != null && url!.isNotEmpty
+            ? Image.network(url!, width: size, height: size, fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _initials(c, size))
+            : _initials(c, size),
+      ),
+    );
   }
 
   Widget _initials(AppColors c, double size) {
