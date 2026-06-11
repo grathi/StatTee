@@ -135,11 +135,12 @@ class _StartRoundScreenState extends State<StartRoundScreen>
       });
     }
 
-    // Pre-fill if launched from a nearby course card
+    // Pre-fill if launched from a nearby course card and trigger API lookup
     if (widget.initialCourseName != null) {
       _courseNameCtrl.text = widget.initialCourseName!;
       _locationCtrl.text   = widget.initialLocation ?? '';
       _selectedPlaceId     = 'prefilled';
+      WidgetsBinding.instance.addPostFrameCallback((_) => _fetchPrefilledCourse());
     }
   }
 
@@ -155,6 +156,42 @@ class _StartRoundScreenState extends State<StartRoundScreen>
     _courseNameFocus.dispose();
     _friendSearchCtrl.dispose();
     super.dispose();
+  }
+
+
+  // ── Prefilled course API lookup ───────────────────────────────────────────
+
+  Future<void> _fetchPrefilledCourse() async {
+    if (!mounted) return;
+    setState(() => _loadingApiCourse = true);
+
+    final courseDetail = await GolfCourseApiService.findBestMatch(
+      widget.initialCourseName!,
+      address: widget.initialLocation?.isNotEmpty == true ? widget.initialLocation : null,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _loadingApiCourse = false;
+      if (courseDetail != null && courseDetail.hasTeeData) {
+        _apiCourseDetail = courseDetail;
+        final tee = courseDetail.availableTees.first;
+        _selectedApiTee = tee;
+        _applyTee(tee);
+      }
+    });
+
+    // Firestore fallback
+    if (courseDetail == null || !courseDetail.hasTeeData) {
+      final fsData = await CourseService.findCourse(widget.initialCourseName!);
+      if (mounted) {
+        setState(() {
+          _firestoreCourse      = fsData;
+          _selectedFirestoreTee = fsData?.tees.isNotEmpty == true ? fsData!.tees.first : null;
+          if (_selectedFirestoreTee != null) _applyFirestoreTee(_selectedFirestoreTee!);
+        });
+      }
+    }
   }
 
   // ── Location ──────────────────────────────────────────────────────────────

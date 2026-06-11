@@ -279,10 +279,7 @@ class GolfCourseApiService {
       for (final r in results) {
         final nameWords = _normalize(r.clubName).split(' ').toSet();
         final overlap   = queryWords.intersection(nameWords).length;
-        // City-fallback candidates must share ≥ 2 words with the original name.
-        // This prevents a broad city search (e.g. "pleasanton") from matching
-        // an unrelated course just because the city name appears in its title.
-        final threshold = isCityFallback ? 2 : 1;
+        final threshold = 1;
         if (overlap >= threshold && overlap > bestScore) {
           bestScore = overlap;
           best = r;
@@ -293,8 +290,7 @@ class GolfCourseApiService {
       if (bestScore >= 2) break;
     }
 
-    // City-fallback matches require a higher minimum confidence (≥ 2 word overlap)
-    final minRequired = bestFromCityFallback ? 2 : 1;
+    final minRequired = 1;
     if (best == null || bestScore < minRequired) return null;
     return getCourse(best.id);
   }
@@ -311,6 +307,10 @@ class GolfCourseApiService {
 
   static String _normalize(String s) => s
       .toLowerCase()
+      .replaceAll('golf course', 'golf')
+      .replaceAll('golf club', 'golf')
+      .replaceAll(RegExp(r'\bgc\b'), 'golf')
+      .replaceAll(RegExp(r'\bcc\b'), 'country club')
       .replaceAll(RegExp(r'\bthe\b|\ba\b'), '')
       .replaceAll(RegExp(r'[^a-z0-9 ]'), '')
       .replaceAll(RegExp(r'\s+'), ' ')
